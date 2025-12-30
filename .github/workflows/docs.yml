@@ -48,7 +48,36 @@ jobs:
           ls -la docs/
           
           # Verify documentation was generated
-          if [ ! -d "docs/documentation" ] && [ ! -f "docs/index.html" ]; then
+          # Check for .doccarchive files (what's actually created) or transformed static HTML
+          if ls docs/*.doccarchive 1> /dev/null 2>&1; then
+            echo "✓ Documentation archives found"
+            # Create index.html for GitHub Pages if it doesn't exist
+            if [ ! -f "docs/index.html" ]; then
+              echo "Creating index.html for GitHub Pages..."
+              cat > docs/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGUISwift Documentation</title>
+    <meta http-equiv="refresh" content="0; url=AGUICore.doccarchive/index.html">
+    <style>
+        body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; text-align: center; }
+        a { color: #007AFF; }
+    </style>
+</head>
+<body>
+    <h1>AGUISwift Documentation</h1>
+    <p>Redirecting to documentation...</p>
+    <p><a href="AGUICore.doccarchive/index.html">Click here if you are not redirected</a></p>
+</body>
+</html>
+EOF
+            fi
+          elif [ -d "docs/documentation" ] || [ -f "docs/index.html" ]; then
+            echo "✓ Static HTML documentation found"
+          else
             echo "Error: Documentation was not generated"
             exit 1
           fi
