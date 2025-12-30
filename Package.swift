@@ -19,6 +19,9 @@ let package = Package(
             name: "AGUIClient",
             targets: ["AGUIClient"]),
         .library(
+            name: "AGUIAgentSDK",
+            targets: ["AGUIAgentSDK"]),
+        .library(
             name: "AGUITools",
             targets: ["AGUITools"]),
     ],
@@ -33,6 +36,9 @@ let package = Package(
             name: "AGUIClient",
             dependencies: ["AGUICore"]),
         .target(
+            name: "AGUIAgentSDK",
+            dependencies: ["AGUICore", "AGUIClient"]),
+        .target(
             name: "AGUITools",
             dependencies: ["AGUICore"]),
         .testTarget(
@@ -41,6 +47,9 @@ let package = Package(
         .testTarget(
             name: "AGUIClientTests",
             dependencies: ["AGUIClient"]),
+        .testTarget(
+            name: "AGUIAgentSDKTests",
+            dependencies: ["AGUIAgentSDK"]),
         .testTarget(
             name: "AGUIToolsTests",
             dependencies: ["AGUITools"]),
