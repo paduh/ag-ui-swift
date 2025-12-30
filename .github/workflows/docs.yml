@@ -50,11 +50,9 @@ jobs:
       
       - name: Generate documentation
         run: |
-          # Get repository name for hosting-base-path (must start with /)
+          # Get repository name for hosting-base-path (NO leading slash)
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          HOSTING_BASE_PATH="$REPO_NAME"
           echo "Repository name: $REPO_NAME"
-          echo "Hosting base path: $HOSTING_BASE_PATH"
           
           # Generate documentation for AGUICore (primary module)
           swift package \
@@ -63,9 +61,12 @@ jobs:
             --target AGUICore \
             --output-path ./docs \
             --transform-for-static-hosting \
-            --hosting-base-path "$HOSTING_BASE_PATH"
+            --hosting-base-path "$REPO_NAME"
           
           echo "✅ Documentation generated successfully"
+          
+          # Verify output
+          ls -la ./docs/
           
           # Verify output and ensure index.html exists
           if [ -d "./docs/documentation" ]; then
