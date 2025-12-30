@@ -32,8 +32,6 @@ jobs:
 
     runs-on: macos-latest
 
-    
-
     steps:
 
     - name: Checkout
@@ -57,7 +55,18 @@ jobs:
             --output-path ./docs/$target
         done
 
+    - name: Fix filenames for artifact upload
+      run: |
+        # Replace colons with hyphens in filenames
+        find ./docs -depth -name "*:*" | while read -r file; do
+          dir=$(dirname "$file")
+          base=$(basename "$file")
+          newbase=$(echo "$base" | tr ':' '-')
+          mv "$file" "$dir/$newbase"
+        done
         
+        # Update JSON references
+        find ./docs -name "*.json" -type f -exec sed -i '' 's/:/\\-/g' {} +
 
     - name: Upload documentation artifacts
 
