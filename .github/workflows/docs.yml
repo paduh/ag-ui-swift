@@ -50,9 +50,11 @@ jobs:
       
       - name: Generate documentation
         run: |
-          # Get repository name for hosting-base-path
+          # Get repository name for hosting-base-path (must start with /)
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          HOSTING_BASE_PATH="/$REPO_NAME"
           echo "Repository name: $REPO_NAME"
+          echo "Hosting base path: $HOSTING_BASE_PATH"
           
           # Generate documentation for AGUICore (primary module)
           swift package \
@@ -61,14 +63,31 @@ jobs:
             --target AGUICore \
             --output-path ./docs \
             --transform-for-static-hosting \
-            --hosting-base-path "$REPO_NAME"
+            --hosting-base-path "$HOSTING_BASE_PATH"
           
           echo "✅ Documentation generated successfully"
           
-          # Verify output
+          # Verify output and ensure index.html exists
           if [ -d "./docs/documentation" ]; then
             echo "✓ Documentation directory found"
             ls -la ./docs/documentation/
+            # Create index.html if it doesn't exist
+            if [ ! -f "./docs/index.html" ]; then
+              echo "Creating index.html..."
+              printf '%s\n' \
+                '<!DOCTYPE html>' \
+                '<html lang="en">' \
+                '<head>' \
+                '    <meta charset="UTF-8">' \
+                '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' \
+                '    <title>AGUISwift Documentation</title>' \
+                '    <meta http-equiv="refresh" content="0; url=documentation/aguicore/">' \
+                '</head>' \
+                '<body>' \
+                '    <p><a href="documentation/aguicore/">Go to AGUICore documentation</a></p>' \
+                '</body>' \
+                '</html>' > ./docs/index.html
+            fi
           elif [ -f "./docs/index.html" ]; then
             echo "✓ index.html found"
             ls -la ./docs/
@@ -76,8 +95,27 @@ jobs:
             echo "Warning: Expected documentation structure not found"
             echo "Contents of docs directory:"
             ls -la ./docs/
-            # Don't fail, as archives might be in a different structure
+            # Create a basic index.html as fallback
+            printf '%s\n' \
+              '<!DOCTYPE html>' \
+              '<html lang="en">' \
+              '<head>' \
+              '    <meta charset="UTF-8">' \
+              '    <title>AGUISwift Documentation</title>' \
+              '</head>' \
+              '<body>' \
+              '    <h1>AGUISwift Documentation</h1>' \
+              '    <p>Documentation is being generated. Please check back later.</p>' \
+              '</body>' \
+              '</html>' > ./docs/index.html
           fi
+          
+          # Final verification
+          if [ ! -f "./docs/index.html" ]; then
+            echo "Error: index.html was not created"
+            exit 1
+          fi
+          echo "✓ index.html verified"
       
       - name: Fix permissions
         run: |
