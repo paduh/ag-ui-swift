@@ -7,8 +7,8 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testInitialization() {
         // Given
-        let threadId = TestData.threadId
-        let runId = TestData.runId
+        let threadId = EventTestData.threadId
+        let runId = EventTestData.runId
         
         // When
         let event = RunFinishedEvent(threadId: threadId, runId: runId)
@@ -25,10 +25,10 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testInitializationWithOptionalParameters() {
         // Given
-        let threadId = TestData.threadId
-        let runId = TestData.runId
-        let timestamp = TestData.timestamp
-        let rawEvent = TestData.rawEventData
+        let threadId = EventTestData.threadId
+        let runId = EventTestData.runId
+        let timestamp = EventTestData.timestamp
+        let rawEvent = EventTestData.rawEventData
         
         // When
         let event = RunFinishedEvent(
@@ -78,7 +78,7 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testEventTypeProperty() {
         // Given
-        let event = TestData.makeEvent()
+        let event = makeEvent()
         
         // When & Then
         XCTAssertEqual(
@@ -92,7 +92,7 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testEncoding() throws {
         // Given
-        let event = TestData.makeEvent()
+        let event = makeEvent()
         let encoder = JSONEncoder()
         
         // When
@@ -103,13 +103,13 @@ final class RunFinishedEventTests: XCTestCase {
         )
         
         // Then
-        assertJSONStructure(json, shouldOmitTimestamp: true)
+        assertJSONStructure(json, expectedType: "RUN_FINISHED", shouldOmitTimestamp: true)
     }
     
     func testEncodingWithTimestamp() throws {
         // Given
-        let timestamp = TestData.timestamp
-        let event = TestData.makeEvent(timestamp: timestamp)
+        let timestamp = EventTestData.timestamp
+        let event = makeEvent(timestamp: timestamp)
         let encoder = JSONEncoder()
         
         // When
@@ -120,7 +120,7 @@ final class RunFinishedEventTests: XCTestCase {
         )
         
         // Then
-        assertJSONStructure(json, expectedTimestamp: timestamp)
+        assertJSONStructure(json, expectedType: "RUN_FINISHED", expectedTimestamp: timestamp)
     }
     
     func testEncodingOmitsRawEvent() throws {
@@ -128,8 +128,8 @@ final class RunFinishedEventTests: XCTestCase {
         // rawEvent is intentionally excluded from JSON encoding
         // as it represents the original raw data and shouldn't be serialized
         // to avoid duplication and potential inconsistencies
-        let rawEvent = TestData.rawEventData
-        let event = TestData.makeEvent(rawEvent: rawEvent)
+        let rawEvent = EventTestData.rawEventData
+        let event = makeEvent(rawEvent: rawEvent)
         let encoder = JSONEncoder()
         
         // When
@@ -149,7 +149,7 @@ final class RunFinishedEventTests: XCTestCase {
     func testEncodingWithZeroTimestamp() throws {
         // Given
         let timestamp: Int64 = 0
-        let event = TestData.makeEvent(timestamp: timestamp)
+        let event = makeEvent(timestamp: timestamp)
         let encoder = JSONEncoder()
         
         // When
@@ -160,14 +160,14 @@ final class RunFinishedEventTests: XCTestCase {
         )
         
         // Then
-        assertJSONStructure(json, expectedTimestamp: timestamp)
+        assertJSONStructure(json, expectedType: "RUN_FINISHED", expectedTimestamp: timestamp)
     }
     
     func testEncodingWithUnicodeIDs() throws {
         // Given
         let threadId = "thread-🚀-123"
         let runId = "run-测试-456"
-        let event = TestData.makeEvent(threadId: threadId, runId: runId)
+        let event = makeEvent(threadId: threadId, runId: runId)
         let encoder = JSONEncoder()
         
         // When
@@ -180,6 +180,7 @@ final class RunFinishedEventTests: XCTestCase {
         // Then
         assertJSONStructure(
             json,
+            expectedType: "RUN_FINISHED",
             expectedThreadId: threadId,
             expectedRunId: runId,
             shouldOmitTimestamp: true
@@ -190,7 +191,7 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testDecoding() throws {
         // Given
-        let json = TestData.makeJSON()
+        let json = EventTestData.makeJSON(type: "RUN_FINISHED")
         let data = try JSONSerialization.data(withJSONObject: json)
         let decoder = JSONDecoder()
         
@@ -200,8 +201,8 @@ final class RunFinishedEventTests: XCTestCase {
         // Then
         assertEventProperties(
             event,
-            expectedThreadId: TestData.threadId,
-            expectedRunId: TestData.runId,
+            expectedThreadId: EventTestData.threadId,
+            expectedRunId: EventTestData.runId,
             expectedTimestamp: nil,
             expectedRawEvent: nil
         )
@@ -214,8 +215,8 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testDecodingWithTimestamp() throws {
         // Given
-        let timestamp = TestData.timestamp
-        let json = TestData.makeJSON(timestamp: timestamp)
+        let timestamp = EventTestData.timestamp
+        let json = EventTestData.makeJSON(type: "RUN_FINISHED", timestamp: timestamp)
         let data = try JSONSerialization.data(withJSONObject: json)
         let decoder = JSONDecoder()
         
@@ -225,8 +226,8 @@ final class RunFinishedEventTests: XCTestCase {
         // Then
         assertEventProperties(
             event,
-            expectedThreadId: TestData.threadId,
-            expectedRunId: TestData.runId,
+            expectedThreadId: EventTestData.threadId,
+            expectedRunId: EventTestData.runId,
             expectedTimestamp: timestamp
         )
         XCTAssertEqual(
@@ -239,7 +240,7 @@ final class RunFinishedEventTests: XCTestCase {
     func testDecodingWithZeroTimestamp() throws {
         // Given
         let timestamp: Int64 = 0
-        let json = TestData.makeJSON(timestamp: timestamp)
+        let json = EventTestData.makeJSON(type: "RUN_FINISHED", timestamp: timestamp)
         let data = try JSONSerialization.data(withJSONObject: json)
         let decoder = JSONDecoder()
         
@@ -258,7 +259,7 @@ final class RunFinishedEventTests: XCTestCase {
         // Given
         let threadId = "thread-🚀-123"
         let runId = "run-测试-456"
-        let json = TestData.makeJSON(threadId: threadId, runId: runId)
+        let json = EventTestData.makeJSON(type: "RUN_FINISHED", threadId: threadId, runId: runId)
         let data = try JSONSerialization.data(withJSONObject: json)
         let decoder = JSONDecoder()
         
@@ -274,7 +275,7 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testDecodingFailsWithWrongType() {
         // Given
-        let json = TestData.makeJSON(type: "RUN_STARTED") // Wrong type
+        let json = EventTestData.makeJSON(type: "RUN_STARTED") // Wrong type
         guard let data = try? JSONSerialization.data(withJSONObject: json) else {
             XCTFail("Failed to create JSON data")
             return
@@ -311,8 +312,8 @@ final class RunFinishedEventTests: XCTestCase {
         // Given
         let json: [String: Any] = [
             // type is intentionally missing
-            "threadId": TestData.threadId,
-            "runId": TestData.runId
+            "threadId": EventTestData.threadId,
+            "runId": EventTestData.runId
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: json) else {
             XCTFail("Failed to create JSON data")
@@ -332,8 +333,8 @@ final class RunFinishedEventTests: XCTestCase {
     func testDecodingFailsWithMissingThreadId() {
         // Given
         let json: [String: Any] = [
-            "type": TestData.expectedEventType,
-            "runId": TestData.runId
+            "type": "RUN_FINISHED",
+            "runId": EventTestData.runId
             // threadId is intentionally missing
         ]
         let data = try! JSONSerialization.data(withJSONObject: json)
@@ -351,8 +352,8 @@ final class RunFinishedEventTests: XCTestCase {
     func testDecodingFailsWithMissingRunId() {
         // Given
         let json: [String: Any] = [
-            "type": TestData.expectedEventType,
-            "threadId": TestData.threadId
+            "type": "RUN_FINISHED",
+            "threadId": EventTestData.threadId
             // runId is intentionally missing
         ]
         let data = try! JSONSerialization.data(withJSONObject: json)
@@ -370,9 +371,9 @@ final class RunFinishedEventTests: XCTestCase {
     func testDecodingFailsWithInvalidTimestampType() {
         // Given
         let json: [String: Any] = [
-            "type": TestData.expectedEventType,
-            "threadId": TestData.threadId,
-            "runId": TestData.runId,
+            "type": "RUN_FINISHED",
+            "threadId": EventTestData.threadId,
+            "runId": EventTestData.runId,
             "timestamp": "invalid" // Should be Int64, not String
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: json) else {
@@ -408,7 +409,7 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testRoundTripEncodingDecoding() throws {
         // Given
-        let originalEvent = TestData.makeEvent(timestamp: TestData.timestamp)
+        let originalEvent = makeEvent(timestamp: EventTestData.timestamp)
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
         
@@ -446,7 +447,7 @@ final class RunFinishedEventTests: XCTestCase {
     
     func testRoundTripEncodingDecodingWithoutTimestamp() throws {
         // Given
-        let originalEvent = TestData.makeEvent()
+        let originalEvent = makeEvent()
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
         
@@ -480,7 +481,7 @@ final class RunFinishedEventTests: XCTestCase {
         // Given
         let threadId = "thread-🚀-123"
         let runId = "run-测试-456"
-        let originalEvent = TestData.makeEvent(threadId: threadId, runId: runId)
+        let originalEvent = makeEvent(threadId: threadId, runId: runId)
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
         
@@ -500,158 +501,20 @@ final class RunFinishedEventTests: XCTestCase {
             "Unicode runId should survive round-trip"
         )
     }
-
-       // MARK: - Test Data
     
-    private enum TestData {
-        static let threadId = "thread-123"
-        static let runId = "run-456"
-        static let timestamp: Int64 = 1234567890
-        static let rawEventData = Data("{\"test\": \"data\"}".utf8)
-        static let expectedEventType = "RUN_FINISHED"
-        
-        static func makeEvent(
-            threadId: String = TestData.threadId,
-            runId: String = TestData.runId,
-            timestamp: Int64? = nil,
-            rawEvent: Data? = nil
-        ) -> RunFinishedEvent {
-            RunFinishedEvent(
-                threadId: threadId,
-                runId: runId,
-                timestamp: timestamp,
-                rawEvent: rawEvent
-            )
-        }
-        
-        static func makeJSON(
-            type: String = TestData.expectedEventType,
-            threadId: String = TestData.threadId,
-            runId: String = TestData.runId,
-            timestamp: Int64? = nil
-        ) -> [String: Any] {
-            var json: [String: Any] = [
-                "type": type,
-                "threadId": threadId,
-                "runId": runId
-            ]
-            if let timestamp = timestamp {
-                json["timestamp"] = timestamp
-            }
-            return json
-        }
-    }
+    // MARK: - Event-Specific Factory Methods
     
-    // MARK: - Helper Methods
-    
-    private func assertEventProperties(
-        _ event: RunFinishedEvent,
-        expectedThreadId: String,
-        expectedRunId: String,
-        expectedTimestamp: Int64? = nil,
-        expectedRawEvent: Data? = nil,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(
-            event.threadId,
-            expectedThreadId,
-            "threadId should match expected value",
-            file: file,
-            line: line
+    private func makeEvent(
+        threadId: String = EventTestData.threadId,
+        runId: String = EventTestData.runId,
+        timestamp: Int64? = nil,
+        rawEvent: Data? = nil
+    ) -> RunFinishedEvent {
+        RunFinishedEvent(
+            threadId: threadId,
+            runId: runId,
+            timestamp: timestamp,
+            rawEvent: rawEvent
         )
-        XCTAssertEqual(
-            event.runId,
-            expectedRunId,
-            "runId should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.timestamp,
-            expectedTimestamp,
-            "timestamp should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.rawEvent,
-            expectedRawEvent,
-            "rawEvent should match expected value",
-            file: file,
-            line: line
-        )
-    }
-    
-    private func assertJSONStructure(
-        _ json: [String: Any],
-        expectedType: String = TestData.expectedEventType,
-        expectedThreadId: String = TestData.threadId,
-        expectedRunId: String = TestData.runId,
-        expectedTimestamp: Int64? = nil,
-        shouldOmitTimestamp: Bool = false,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(
-            json["type"] as? String,
-            expectedType,
-            "Event type should be \(expectedType)",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            json["threadId"] as? String,
-            expectedThreadId,
-            "threadId should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            json["runId"] as? String,
-            expectedRunId,
-            "runId should match expected value",
-            file: file,
-            line: line
-        )
-        
-        if shouldOmitTimestamp {
-            XCTAssertNil(
-                json["timestamp"],
-                "timestamp should be omitted when nil",
-                file: file,
-                line: line
-            )
-        } else if let expectedTimestamp = expectedTimestamp {
-            XCTAssertEqual(
-                json["timestamp"] as? Int64,
-                expectedTimestamp,
-                "timestamp should match expected value",
-                file: file,
-                line: line
-            )
-        }
-        
-        XCTAssertNil(
-            json["rawEvent"],
-            "rawEvent should not be encoded in JSON",
-            file: file,
-            line: line
-        )
-    }
-    
-    private func assertDecodingError(
-        _ error: Error,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        guard error is DecodingError else {
-            XCTFail(
-                "Expected DecodingError, got \(type(of: error))",
-                file: file,
-                line: line
-            )
-            return
-        }
     }
 }
