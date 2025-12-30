@@ -13,18 +13,9 @@ jobs:
     name: Test macOS
     runs-on: macos-latest
     
-    strategy:
-      matrix:
-        swift-version: ["latest"]
-    
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v1
-        with:
-          swift-version: ${{ matrix.swift-version }}
       
       - name: Resolve Dependencies
         run: swift package resolve
@@ -55,13 +46,8 @@ jobs:
     runs-on: macos-latest
     
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v1
-        with:
-          swift-version: "latest"
       
       - name: Check Package Format
         run: swift package resolve
@@ -81,13 +67,8 @@ jobs:
         target: [AGUICore, AGUIClient, AGUITools, AGUIAgentSDK]
     
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v1
-        with:
-          swift-version: "latest"
       
       - name: Build ${{ matrix.target }}
         run: swift build --target ${{ matrix.target }}
@@ -99,13 +80,8 @@ jobs:
     if: github.event_name == 'pull_request'
     
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v1
-        with:
-          swift-version: "latest"
       
       - name: Run Tests with Coverage
         run: swift test --enable-code-coverage

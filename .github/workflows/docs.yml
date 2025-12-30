@@ -23,13 +23,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Setup Swift
-        uses: swift-actions/setup-swift@v1
-        with:
-          swift-version: "latest"
       
       - name: Build Documentation
         run: |
