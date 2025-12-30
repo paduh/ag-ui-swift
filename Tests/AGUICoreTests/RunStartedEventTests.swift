@@ -25,7 +25,7 @@ final class RunStartedEventTests: XCTestCase {
         let threadId = "thread-123"
         let runId = "run-456"
         let timestamp: Int64 = 1234567890
-        let rawEvent = "{\"test\": \"data\"}".data(using: .utf8)
+        let rawEvent = Data("{\"test\": \"data\"}".utf8)
         
         // When
         let event = RunStartedEvent(
@@ -99,7 +99,7 @@ final class RunStartedEventTests: XCTestCase {
     
     func testEncodingOmitsRawEvent() throws {
         // Given
-        let rawEvent = "{\"test\": \"data\"}".data(using: .utf8)
+        let rawEvent = Data("{\"test\": \"data\"}".utf8)
         let event = RunStartedEvent(
             threadId: "thread-123",
             runId: "run-456",
@@ -190,7 +190,10 @@ final class RunStartedEventTests: XCTestCase {
             "threadId": "thread-123",
             "runId": "run-456"
         ]
-        let data = try! JSONSerialization.data(withJSONObject: json)
+        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
+            XCTFail("Failed to create JSON data")
+            return
+        }
         let decoder = JSONDecoder()
         
         // When & Then
@@ -212,7 +215,10 @@ final class RunStartedEventTests: XCTestCase {
             "threadId": "thread-123",
             "runId": "run-456"
         ]
-        let data = try! JSONSerialization.data(withJSONObject: json)
+        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
+            XCTFail("Failed to create JSON data")
+            return
+        }
         let decoder = JSONDecoder()
         
         // When & Then

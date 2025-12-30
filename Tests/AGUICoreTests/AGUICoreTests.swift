@@ -11,4 +11,3 @@ final class AGUICoreTests: XCTestCase {
         XCTAssertEqual(AGUICore.version, "1.0.0")
     }
 }
-
