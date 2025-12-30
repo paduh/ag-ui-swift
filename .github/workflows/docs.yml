@@ -52,7 +52,7 @@ jobs:
         run: |
           # Get repository name for hosting-base-path (must start with /)
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          HOSTING_BASE_PATH="/$REPO_NAME"
+          HOSTING_BASE_PATH="$REPO_NAME"
           echo "Repository name: $REPO_NAME"
           echo "Hosting base path: $HOSTING_BASE_PATH"
           
