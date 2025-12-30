@@ -52,4 +52,3 @@ public protocol BaseEvent: Codable {
     /// for re-parsing or inspection without losing information.
     var rawEvent: Data? { get }
 }
-
