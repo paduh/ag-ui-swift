@@ -7,7 +7,7 @@ import Foundation
 /// pure while this layer handles infrastructure concerns.
 ///
 /// This is an internal implementation detail and should not be used directly
-/// by external consumers. Use the domain `EventTimestamp` type instead.
+/// by external integrators. Use the domain `EventTimestamp` type instead.
 struct SerializableEventTimestamp: Codable, Equatable, Comparable {
     /// The domain value object.
     let domainValue: EventTimestamp
@@ -80,4 +80,3 @@ extension SerializableEventTimestamp: CustomStringConvertible {
         return "\(domainValue.millisecondsSinceEpoch)ms"
     }
 }
-

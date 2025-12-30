@@ -54,4 +54,3 @@ enum ValueObjectAdapter {
         return serializable.map { $0.domainValue }
     }
 }
-

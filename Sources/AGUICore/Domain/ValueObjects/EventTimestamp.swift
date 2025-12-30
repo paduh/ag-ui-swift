@@ -23,4 +23,3 @@ public struct EventTimestamp: Equatable, Comparable {
         return lhs.millisecondsSinceEpoch < rhs.millisecondsSinceEpoch
     }
 }
-

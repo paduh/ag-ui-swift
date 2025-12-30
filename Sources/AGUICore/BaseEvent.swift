@@ -53,4 +53,3 @@ public protocol BaseEvent: Codable {
     var rawEvent: Data? { get }
 }
 
-

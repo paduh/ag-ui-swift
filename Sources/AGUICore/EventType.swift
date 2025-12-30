@@ -49,4 +49,3 @@ public enum EventType: String, Codable {
     // These are left out for now as they do not appear in the actual protocol documentation,
     // but could be added if needed.
 }
-

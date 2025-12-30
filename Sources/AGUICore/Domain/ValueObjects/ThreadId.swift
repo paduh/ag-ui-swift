@@ -30,4 +30,3 @@ public struct ThreadId: Hashable, Equatable {
         self.value = value
     }
 }
-

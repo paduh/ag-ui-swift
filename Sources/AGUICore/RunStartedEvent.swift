@@ -90,4 +90,3 @@ public struct RunStartedEvent: BaseEvent {
         try container.encodeIfPresent(timestamp, forKey: .timestamp)
     }
 }
-

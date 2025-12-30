@@ -11,4 +11,3 @@ public struct AGUICore {
         return "AGUICore is working"
     }
 }
-

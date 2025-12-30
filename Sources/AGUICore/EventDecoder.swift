@@ -98,4 +98,3 @@ internal struct GenericEvent: BaseEvent {
         try container.encodeIfPresent(timestamp, forKey: .timestamp)
     }
 }
-

@@ -1,5 +1,5 @@
-import Foundation
 import AGUICore
+import Foundation
 
 /// AGUITools provides utility tools and helpers
 public struct AGUITools {
@@ -14,4 +14,3 @@ public struct AGUITools {
         return "AGUITools is working with \(core.coreFunction())"
     }
 }
-

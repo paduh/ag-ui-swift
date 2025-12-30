@@ -67,4 +67,3 @@ internal enum EventCodingKeys: String, CodingKey {
     case type
     case timestamp
 }
-

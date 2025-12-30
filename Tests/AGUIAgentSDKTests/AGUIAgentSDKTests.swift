@@ -11,4 +11,3 @@ final class AGUIAgentSDKTests: XCTestCase {
         XCTAssertNotNil(sdk)
     }
 }
-

@@ -89,4 +89,3 @@ public struct RunFinishedEvent: BaseEvent {
         try container.encodeIfPresent(timestamp, forKey: .timestamp)
     }
 }
-

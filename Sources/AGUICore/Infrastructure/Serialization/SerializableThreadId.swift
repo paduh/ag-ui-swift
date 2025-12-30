@@ -7,7 +7,7 @@ import Foundation
 /// this layer handles serialization.
 ///
 /// This is an internal implementation detail and should not be used directly
-/// by external consumers. Use the domain `ThreadId` type instead.
+/// by external integrators. Use the domain `ThreadId` type instead.
 struct SerializableThreadId: Codable, Hashable, Equatable {
     /// The domain value object.
     let domainValue: ThreadId
@@ -53,4 +53,3 @@ extension SerializableThreadId: CustomStringConvertible {
         return domainValue.value
     }
 }
-

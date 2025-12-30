@@ -1,5 +1,5 @@
-import Foundation
 import AGUICore
+import Foundation
 
 /// AGUIClient provides client-side functionality
 public struct AGUIClient {
@@ -14,4 +14,3 @@ public struct AGUIClient {
         return "AGUIClient is working with \(core.coreFunction())"
     }
 }
-

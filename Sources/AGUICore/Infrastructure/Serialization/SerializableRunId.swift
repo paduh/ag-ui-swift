@@ -7,7 +7,7 @@ import Foundation
 /// this layer handles serialization.
 ///
 /// This is an internal implementation detail and should not be used directly
-/// by external consumers. Use the domain `RunId` type instead.
+/// by external integrators. Use the domain `RunId` type instead.
 struct SerializableRunId: Codable, Hashable, Equatable {
     /// The domain value object.
     let domainValue: RunId
@@ -53,4 +53,3 @@ extension SerializableRunId: CustomStringConvertible {
         return domainValue.value
     }
 }
-

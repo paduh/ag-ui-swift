@@ -9,4 +9,3 @@ final class AGUIClientTests: XCTestCase {
         XCTAssertTrue(result.contains("AGUICore is working"))
     }
 }
-

@@ -17,4 +17,3 @@ enum DomainError: Error, Equatable {
     /// Event does not belong to the expected stream.
     case eventDoesNotBelongToStream(String)
 }
-
