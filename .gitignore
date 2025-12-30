@@ -92,3 +92,8 @@ iOSInjectionProject/
 # macOS
 .DS_Store
 
+# Documentation (generated files, keep README.md and .nojekyll)
+docs/*
+!docs/README.md
+!docs/.nojekyll
+

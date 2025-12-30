@@ -37,6 +37,12 @@ Tool execution framework for extending agent capabilities.
 - Swift 5.9+
 - iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+
 
+## Documentation
+
+API documentation is automatically generated and published to [GitHub Pages](https://paduh.github.io/ag-ui-swift/).
+
+For local documentation generation, see the [Documentation README](docs/README.md).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
