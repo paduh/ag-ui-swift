@@ -29,14 +29,14 @@ jobs:
       - name: Build for iOS
         run: |
           xcodebuild build \
-            -scheme AGUISwift \
+            -scheme AGUISwift-Package \
             -destination 'platform=iOS Simulator,name=iPhone 15' \
             -quiet || true
       
       - name: Build for macOS
         run: |
           xcodebuild build \
-            -scheme AGUISwift \
+            -scheme AGUISwift-Package \
             -destination 'platform=macOS' \
             -quiet || true
 
@@ -81,15 +81,17 @@ jobs:
       - name: Build ${{ matrix.target }}
         run: swift build --target ${{ matrix.target }}
 
-  # Test coverage (optional, runs on macOS only)
+  # Test coverage (runs on macOS only)
   coverage:
     name: Test Coverage
     runs-on: macos-latest
-    if: github.event_name == 'pull_request'
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      
+      - name: Resolve Dependencies
+        run: swift package resolve
       
       - name: Run Tests with Coverage
         run: swift test --enable-code-coverage
