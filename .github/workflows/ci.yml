@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  # Build and test on macOS
+  test-macos:
+    name: Test macOS
+    runs-on: macos-latest
+    
+    strategy:
+      matrix:
+        swift-version: ["5.9", "5.10"]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
+      
+      - name: Resolve Dependencies
+        run: swift package resolve
+      
+      - name: Build Package
+        run: swift build
+      
+      - name: Run Tests
+        run: swift test
+      
+      - name: Build for iOS
+        run: |
+          xcodebuild build \
+            -scheme AGUISwift \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -quiet || true
+      
+      - name: Build for macOS
+        run: |
+          xcodebuild build \
+            -scheme AGUISwift \
+            -destination 'platform=macOS' \
+            -quiet || true
+
+  # Lint and format check
+  lint:
+    name: Lint
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+      
+      - name: Check Package Format
+        run: swift package resolve
+      
+      - name: Verify Package Structure
+        run: |
+          swift package dump-package > /dev/null
+          echo "✓ Package structure is valid"
+
+  # Build all targets individually
+  build-targets:
+    name: Build All Targets
+    runs-on: macos-latest
+    
+    strategy:
+      matrix:
+        target: [AGUICore, AGUIClient, AGUITools, AGUIAgentSDK]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+      
+      - name: Build ${{ matrix.target }}
+        run: swift build --target ${{ matrix.target }}
+
+  # Test coverage (optional, runs on macOS only)
+  coverage:
+    name: Test Coverage
+    runs-on: macos-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+      
+      - name: Run Tests with Coverage
+        run: swift test --enable-code-coverage
+

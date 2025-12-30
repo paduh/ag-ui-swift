@@ -1,5 +1,8 @@
 # AGUISwift
 
+[![CI](https://github.com/paduh/ag-ui-swift/actions/workflows/ci.yml/badge.svg)](https://github.com/paduh/ag-ui-swift/actions/workflows/ci.yml)
+[![Documentation](https://github.com/paduh/ag-ui-swift/actions/workflows/docs.yml/badge.svg)](https://github.com/paduh/ag-ui-swift/actions/workflows/docs.yml)
+
 The AG-UI Swift SDK is a Swift library for building AI agent user interfaces that implement the Agent User Interaction Protocol (AG-UI). It provides real-time streaming communication between Swift applications and AI agents.
 
 ## Architecture
