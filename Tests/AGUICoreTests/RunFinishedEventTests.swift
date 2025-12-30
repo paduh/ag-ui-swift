@@ -303,5 +303,3 @@ final class RunFinishedEventTests: XCTestCase {
         XCTAssertEqual(decodedEvent.eventType, originalEvent.eventType)
     }
 }
-
-

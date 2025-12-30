@@ -15,6 +15,12 @@ excluded:
 disabled_rules:
   - trailing_whitespace  # Can be handled by formatter
 
+# Disable sorted_imports for test files to allow @testable imports after regular imports
+# SwiftLint sorts alphabetically, but Swift convention prefers @testable after regular imports
+test_files:
+  disabled_rules:
+    - sorted_imports
+
 opt_in_rules:
   - empty_count
   - empty_string
