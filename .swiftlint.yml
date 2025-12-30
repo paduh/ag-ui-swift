@@ -3,13 +3,13 @@
 # Paths to include/exclude
 included:
   - Sources
-  - Tests
 
 excluded:
   - .build
   - .swiftpm
   - Package.swift
   - Package.resolved
+  - Tests  # Test files are excluded from strict linting
 
 # Rules configuration
 disabled_rules:
@@ -55,4 +55,3 @@ file_length:
 
 # Reporter type
 reporter: "xcode"
-
