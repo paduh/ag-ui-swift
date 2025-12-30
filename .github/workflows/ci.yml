@@ -15,7 +15,7 @@ jobs:
     
     strategy:
       matrix:
-        swift-version: ["5.9", "5.10"]
+        swift-version: ["6.2"]
     
     steps:
       - name: Checkout
@@ -61,7 +61,7 @@ jobs:
       - name: Setup Swift
         uses: swift-actions/setup-swift@v1
         with:
-          swift-version: "5.9"
+          swift-version: "6.2"
       
       - name: Check Package Format
         run: swift package resolve
@@ -87,7 +87,7 @@ jobs:
       - name: Setup Swift
         uses: swift-actions/setup-swift@v1
         with:
-          swift-version: "5.9"
+          swift-version: "6.2"
       
       - name: Build ${{ matrix.target }}
         run: swift build --target ${{ matrix.target }}
@@ -105,7 +105,7 @@ jobs:
       - name: Setup Swift
         uses: swift-actions/setup-swift@v1
         with:
-          swift-version: "5.9"
+          swift-version: "6.2"
       
       - name: Run Tests with Coverage
         run: swift test --enable-code-coverage
