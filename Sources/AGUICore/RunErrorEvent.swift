@@ -92,4 +92,3 @@ public struct RunErrorEvent: BaseEvent {
         try container.encodeIfPresent(timestamp, forKey: .timestamp)
     }
 }
-
