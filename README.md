@@ -38,7 +38,7 @@ Tool execution framework for extending agent capabilities.
 ## Requirements
 
 - Swift 5.9+
-- iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+
+- iOS 15.0+ / macOS 13.0+
 
 ## Documentation
 
