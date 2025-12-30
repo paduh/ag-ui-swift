@@ -97,3 +97,6 @@ docs/*
 !docs/README.md
 !docs/.nojekyll
 
+# SwiftLint
+.swiftlintcache
+
