@@ -35,7 +35,11 @@ jobs:
         run: |
           swift package resolve
           
-          # Generate documentation for static hosting
+          # Create docs directory
+          mkdir -p docs
+          
+          # Generate documentation using swift-docc-plugin
+          # This will fail the workflow if documentation generation fails
           swift package --allow-writing-to-directory docs generate-documentation \
             --target AGUICore \
             --target AGUIClient \
@@ -43,18 +47,16 @@ jobs:
             --target AGUIAgentSDK \
             --transform-for-static-hosting \
             --hosting-base-path /ag-ui-swift \
-            --output-path docs || {
-              echo "Documentation generation failed, trying alternative method..."
-              # Alternative: Build with xcodebuild
-              xcodebuild docbuild \
-                -scheme AGUISwift \
-                -destination 'generic/platform=iOS' \
-                -derivedDataPath .build \
-                OTHER_DOCC_FLAGS="--transform-for-static-hosting --hosting-base-path /ag-ui-swift"
-              
-              # Find and copy the generated documentation
-              find .build -name "*.doccarchive" -exec cp -R {} docs/ \;
-            }
+            --output-path docs
+          
+          echo "Documentation generated successfully"
+          ls -la docs/
+          
+          # Verify documentation was generated
+          if [ ! -d "docs/documentation" ] && [ ! -f "docs/index.html" ]; then
+            echo "Error: Documentation was not generated"
+            exit 1
+          fi
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
