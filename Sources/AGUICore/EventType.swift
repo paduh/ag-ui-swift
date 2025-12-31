@@ -7,10 +7,12 @@ import Foundation
 ///
 /// ## Event Categories
 /// - **Lifecycle**: `runStarted`, `runFinished`, `runError`, `stepStarted`, `stepFinished`
-/// - **Text Messages**: `textMessageStarted`, `textMessageChunk`, `textMessageFinished`
-/// - **Tool Calls**: `toolCallStarted`, `toolCallArgumentChunk`, `toolCallFinished`, `toolCallResult`, `toolCallErrored`
-/// - **State**: `stateSnapshot`, `stateUpdate`
-/// - **Special**: `rawEvent`, `customEvent`
+/// - **Text Messages**: `textMessageStart`, `textMessageContent`, `textMessageEnd`, `textMessageChunk`
+/// - **Tool Calls**: `toolCallStart`, `toolCallArgs`, `toolCallEnd`, `toolCallResult`, `toolCallChunk`
+/// - **State**: `stateSnapshot`, `stateDelta`, `messagesSnapshot`
+/// - **Thinking**: `thinkingStart`, `thinkingEnd`, `thinkingTextMessageStart`, `thinkingTextMessageContent`, `thinkingTextMessageEnd`
+/// - **Activity**: `activitySnapshot`, `activityDelta`
+/// - **Special**: `raw`, `custom`
 
 @frozen
 public enum EventType: String, Codable, CaseIterable, Sendable {
@@ -31,47 +33,78 @@ public enum EventType: String, Codable, CaseIterable, Sendable {
     /// Agent step has finished
     case stepFinished = "STEP_FINISHED"
     
-    // MARK: - Text Message Events (3)
+    // MARK: - Text Message Events (4)
     
     /// Text message generation started
-    case textMessageStarted = "TEXT_MESSAGE_STARTED"
+    case textMessageStart = "TEXT_MESSAGE_START"
+    
+    /// Text message content received
+    case textMessageContent = "TEXT_MESSAGE_CONTENT"
+    
+    /// Text message generation finished
+    case textMessageEnd = "TEXT_MESSAGE_END"
     
     /// Chunk of text message received
     case textMessageChunk = "TEXT_MESSAGE_CHUNK"
     
-    /// Text message generation finished
-    case textMessageFinished = "TEXT_MESSAGE_FINISHED"
-    
     // MARK: - Tool Call Events (5)
     
     /// Tool call started
-    case toolCallStarted = "TOOL_CALL_STARTED"
+    case toolCallStart = "TOOL_CALL_START"
     
-    /// Tool call argument chunk received
-    case toolCallArgumentChunk = "TOOL_CALL_ARGUMENT_CHUNK"
+    /// Tool call arguments received
+    case toolCallArgs = "TOOL_CALL_ARGS"
     
     /// Tool call finished
-    case toolCallFinished = "TOOL_CALL_FINISHED"
+    case toolCallEnd = "TOOL_CALL_END"
     
     /// Tool call result received
     case toolCallResult = "TOOL_CALL_RESULT"
     
-    /// Tool call encountered an error
-    case toolCallErrored = "TOOL_CALL_ERRORED"
+    /// Chunk of tool call data received
+    case toolCallChunk = "TOOL_CALL_CHUNK"
     
-    // MARK: - State Management Events (2)
+    // MARK: - State Management Events (3)
     
     /// State snapshot received
     case stateSnapshot = "STATE_SNAPSHOT"
     
     /// Incremental state update received
-    case stateUpdate = "STATE_UPDATE"
+    case stateDelta = "STATE_DELTA"
+    
+    /// Messages snapshot received
+    case messagesSnapshot = "MESSAGES_SNAPSHOT"
+    
+    // MARK: - Thinking Events (5)
+    
+    /// Thinking phase started
+    case thinkingStart = "THINKING_START"
+    
+    /// Thinking phase ended
+    case thinkingEnd = "THINKING_END"
+    
+    /// Thinking text message generation started
+    case thinkingTextMessageStart = "THINKING_TEXT_MESSAGE_START"
+    
+    /// Thinking text message content received
+    case thinkingTextMessageContent = "THINKING_TEXT_MESSAGE_CONTENT"
+    
+    /// Thinking text message generation finished
+    case thinkingTextMessageEnd = "THINKING_TEXT_MESSAGE_END"
     
     // MARK: - Special Events (2)
     
     /// Raw untyped event
-    case rawEvent = "RAW_EVENT"
+    case raw = "RAW"
     
     /// Custom event type
-    case customEvent = "CUSTOM_EVENT"
+    case custom = "CUSTOM"
+    
+    // MARK: - Activity Events (2)
+    
+    /// Activity snapshot received
+    case activitySnapshot = "ACTIVITY_SNAPSHOT"
+    
+    /// Incremental activity update received
+    case activityDelta = "ACTIVITY_DELTA"
 }
