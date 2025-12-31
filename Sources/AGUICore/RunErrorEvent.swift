@@ -10,7 +10,7 @@ import Foundation
 ///   - code: Optional error code for programmatic error handling
 ///   - timestamp: Optional timestamp when the error occurred (milliseconds since epoch)
 ///   - rawEvent: Optional raw JSON representation of the event
-public struct RunErrorEvent: BaseEvent {
+public struct RunErrorEvent: AGUIEvent {
     /// Human-readable error message describing what went wrong.
     public let message: String
     

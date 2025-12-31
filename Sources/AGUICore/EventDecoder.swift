@@ -11,9 +11,9 @@ public enum EventDecoder {
     /// Decodes a single event from JSON data.
     ///
     /// - Parameter data: The JSON data to decode
-    /// - Returns: A `BaseEvent` instance decoded from the data
+    /// - Returns: An `AGUIEvent` instance decoded from the data
     /// - Throws: `DecodingError` if the data cannot be decoded
-    public static func decodeEvent(from data: Data) throws -> BaseEvent {
+    public static func decodeEvent(from data: Data) throws -> AGUIEvent {
         // First, parse the JSON to extract the type field
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         
@@ -39,12 +39,12 @@ public enum EventDecoder {
     /// Decodes an array of events from JSON data.
     ///
     /// - Parameter data: The JSON data containing an array of events
-    /// - Returns: An array of `BaseEvent` instances
+    /// - Returns: An array of `AGUIEvent` instances
     /// - Throws: `DecodingError` if the data cannot be decoded
-    public static func decodeEvents(from data: Data) throws -> [BaseEvent] {
+    public static func decodeEvents(from data: Data) throws -> [AGUIEvent] {
         let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]]
         
-        return try jsonArray?.compactMap { json -> BaseEvent? in
+        return try jsonArray?.compactMap { json -> AGUIEvent? in
             let jsonData = try JSONSerialization.data(withJSONObject: json)
             return try? decodeEvent(from: jsonData)
         } ?? []
@@ -53,10 +53,10 @@ public enum EventDecoder {
 
 /// Generic event implementation for polymorphic decoding.
 ///
-/// This is a concrete implementation of `BaseEvent` that can represent any
+/// This is a concrete implementation of `AGUIEvent` that can represent any
 /// event type. Specific event types should be implemented as separate structs
-/// conforming to `BaseEvent` for better type safety and functionality.
-internal struct GenericEvent: BaseEvent {
+/// conforming to `AGUIEvent` for better type safety and functionality.
+internal struct GenericEvent: AGUIEvent {
     let eventType: EventType
     let timestamp: Int64?
     let rawEvent: Data?

@@ -23,7 +23,7 @@ import Foundation
 /// specific event type to deserialize to.
 ///
 /// - SeeAlso: `EventType`
-public protocol BaseEvent: Codable {
+public protocol AGUIEvent: Codable {
     /// The type of this event.
     ///
     /// This property is used for pattern matching and event handling logic.

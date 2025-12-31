@@ -1,10 +1,10 @@
 import Foundation
 
-/// Protocol extension providing default Codable implementation for BaseEvent.
+/// Protocol extension providing default Codable implementation for AGUIEvent.
 ///
 /// This extension handles the common "type" field encoding/decoding pattern,
 /// allowing concrete event types to focus on their specific properties.
-extension BaseEvent {
+extension AGUIEvent {
     /// Default implementation for encoding the "type" field.
     ///
     /// Concrete types should call this from their `encode(to:)` implementation

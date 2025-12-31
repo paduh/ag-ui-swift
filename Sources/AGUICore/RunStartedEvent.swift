@@ -11,7 +11,7 @@ import Foundation
 ///   - runId: The unique identifier for this specific run
 ///   - timestamp: Optional timestamp when the run started (milliseconds since epoch)
 ///   - rawEvent: Optional raw JSON representation of the event
-public struct RunStartedEvent: BaseEvent {
+public struct RunStartedEvent: AGUIEvent {
     /// The identifier for the conversation thread
     public let threadId: String
     

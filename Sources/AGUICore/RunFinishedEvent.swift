@@ -10,7 +10,7 @@ import Foundation
 ///   - runId: The unique identifier for the completed run
 ///   - timestamp: Optional timestamp when the run finished (milliseconds since epoch)
 ///   - rawEvent: Optional raw JSON representation of the event
-public struct RunFinishedEvent: BaseEvent {
+public struct RunFinishedEvent: AGUIEvent {
     /// The identifier for the conversation thread
     public let threadId: String
     

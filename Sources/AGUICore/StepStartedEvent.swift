@@ -10,7 +10,7 @@ import Foundation
 ///   - stepName: The name of the step that has started
 ///   - timestamp: Optional timestamp when the step started (milliseconds since epoch)
 ///   - rawEvent: Optional raw JSON representation of the event
-public struct StepStartedEvent: BaseEvent {
+public struct StepStartedEvent: AGUIEvent {
     /// The name of the step that has started.
     public let stepName: String
     

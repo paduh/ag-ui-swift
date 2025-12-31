@@ -38,7 +38,7 @@ AGUISwift follows a clean, modular architecture with strict Domain-Driven Design
 │  ├──────────────────────────────────────────────────────┤  │
 │  │              Protocol Layer                           │  │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │  │
-│  │  │ BaseEvent    │  │ EventType    │  │EventDecoder│  │  │
+│  │  │ AGUIEvent    │  │ EventType    │  │EventDecoder│  │  │
 │  │  │             │  │              │  │           │  │  │
 │  │  │RunStarted   │  │              │  │           │  │  │
 │  │  │RunFinished  │  │              │  │           │  │  │
@@ -67,7 +67,7 @@ Protocol types, events, and message definitions with strict DDD layering.
 - **Errors**: `DomainError` - Domain validation errors
 
 **Protocol Layer** (Protocol-specific types):
-- **BaseEvent**: Base protocol for all AG-UI protocol events
+- **AGUIEvent**: Base protocol for all AG-UI protocol events
 - **EventType**: Enumeration of all AG-UI protocol event types
 - **EventDecoder**: Polymorphic event decoder helper
 - **Concrete Events**: `RunStartedEvent`, `RunFinishedEvent` (and more to come)
@@ -122,7 +122,7 @@ Tool execution framework for extending agent capabilities.
 - Domain value objects (ThreadId, RunId, EventTimestamp)
 - Infrastructure serialization wrappers
 - Domain/Infrastructure adapters
-- BaseEvent protocol and EventType enum
+- AGUIEvent protocol and EventType enum
 - RunStartedEvent and RunFinishedEvent implementations
 - Comprehensive unit tests for events
 - DDD layering structure
