@@ -9,7 +9,6 @@ import Foundation
 ///   - message: Human-readable error message describing what went wrong
 ///   - code: Optional error code for programmatic error handling
 ///   - timestamp: Optional timestamp when the error occurred (milliseconds since epoch)
-///   - rawEvent: Optional raw JSON representation of the event
 public struct RunErrorEvent: AGUIEvent {
     /// Human-readable error message describing what went wrong.
     public let message: String
@@ -25,13 +24,6 @@ public struct RunErrorEvent: AGUIEvent {
     /// The timestamp is represented as milliseconds since epoch (Unix timestamp).
     public let timestamp: Int64?
     
-    /// Optional raw JSON representation of the original event.
-    ///
-    /// This field preserves the original JSON structure of the event as received
-    /// from the agent. It can be useful for debugging, logging, or handling
-    /// protocol extensions that aren't yet supported by the typed event classes.
-    public let rawEvent: Data?
-    
     /// The type of this event.
     ///
     /// This is a computed property that always returns `.runError`.
@@ -46,17 +38,14 @@ public struct RunErrorEvent: AGUIEvent {
     ///   - message: Human-readable error message describing what went wrong
     ///   - code: Optional error code for programmatic error handling (default: `nil`)
     ///   - timestamp: Optional timestamp when the error occurred (default: `nil`)
-    ///   - rawEvent: Optional raw JSON representation (default: `nil`)
     public init(
         message: String,
         code: String? = nil,
-        timestamp: Int64? = nil,
-        rawEvent: Data? = nil
+        timestamp: Int64? = nil
     ) {
         self.message = message
         self.code = code
         self.timestamp = timestamp
-        self.rawEvent = rawEvent
     }
     
     // MARK: - Codable
@@ -77,11 +66,6 @@ public struct RunErrorEvent: AGUIEvent {
         self.message = try container.decode(String.self, forKey: .message)
         self.code = try container.decodeIfPresent(String.self, forKey: .code)
         self.timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
-        
-        // rawEvent is typically set by EventDecoder which has access to original data
-        // When decoding via Codable directly, rawEvent will be nil unless provided
-        // via the public initializer
-        self.rawEvent = nil
     }
     
     public func encode(to encoder: Encoder) throws {

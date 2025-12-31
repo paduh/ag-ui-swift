@@ -19,7 +19,6 @@ final class RunFinishedEventTests: XCTestCase {
             expectedThreadId: threadId,
             expectedRunId: runId,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
     }
     
@@ -28,14 +27,11 @@ final class RunFinishedEventTests: XCTestCase {
         let threadId = EventTestData.threadId
         let runId = EventTestData.runId
         let timestamp = EventTestData.timestamp
-        let rawEvent = EventTestData.rawEventData
-        
         // When
         let event = RunFinishedEvent(
             threadId: threadId,
             runId: runId,
-            timestamp: timestamp,
-            rawEvent: rawEvent
+            timestamp: timestamp
         )
         
         // Then
@@ -43,8 +39,7 @@ final class RunFinishedEventTests: XCTestCase {
             event,
             expectedThreadId: threadId,
             expectedRunId: runId,
-            expectedTimestamp: timestamp,
-            expectedRawEvent: rawEvent
+            expectedTimestamp: timestamp
         )
     }
     
@@ -123,29 +118,6 @@ final class RunFinishedEventTests: XCTestCase {
         assertJSONStructure(json, expectedType: "RUN_FINISHED", expectedTimestamp: timestamp)
     }
     
-    func testEncodingOmitsRawEvent() throws {
-        // Given
-        // rawEvent is intentionally excluded from JSON encoding
-        // as it represents the original raw data and shouldn't be serialized
-        // to avoid duplication and potential inconsistencies
-        let rawEvent = EventTestData.rawEventData
-        let event = makeEvent(rawEvent: rawEvent)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        XCTAssertNil(
-            json["rawEvent"],
-            "rawEvent should not be encoded in JSON"
-        )
-    }
-    
     func testEncodingWithZeroTimestamp() throws {
         // Given
         let timestamp: Int64 = 0
@@ -204,7 +176,6 @@ final class RunFinishedEventTests: XCTestCase {
             expectedThreadId: EventTestData.threadId,
             expectedRunId: EventTestData.runId,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
         XCTAssertEqual(
             event.eventType,
@@ -438,11 +409,6 @@ final class RunFinishedEventTests: XCTestCase {
             originalEvent.eventType,
             "eventType should match after round-trip"
         )
-        // Note: rawEvent will be nil after round-trip as per implementation
-        XCTAssertNil(
-            decodedEvent.rawEvent,
-            "rawEvent will be nil after round-trip (not encoded)"
-        )
     }
     
     func testRoundTripEncodingDecodingWithoutTimestamp() throws {
@@ -508,13 +474,11 @@ final class RunFinishedEventTests: XCTestCase {
         threadId: String = EventTestData.threadId,
         runId: String = EventTestData.runId,
         timestamp: Int64? = nil,
-        rawEvent: Data? = nil
     ) -> RunFinishedEvent {
         RunFinishedEvent(
             threadId: threadId,
             runId: runId,
             timestamp: timestamp,
-            rawEvent: rawEvent
         )
     }
     
@@ -525,7 +489,6 @@ final class RunFinishedEventTests: XCTestCase {
         expectedThreadId: String,
         expectedRunId: String,
         expectedTimestamp: Int64? = nil,
-        expectedRawEvent: Data? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -547,13 +510,6 @@ final class RunFinishedEventTests: XCTestCase {
             event.timestamp,
             expectedTimestamp,
             "timestamp should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.rawEvent,
-            expectedRawEvent,
-            "rawEvent should match expected value",
             file: file,
             line: line
         )
@@ -608,12 +564,6 @@ final class RunFinishedEventTests: XCTestCase {
             )
         }
         
-        XCTAssertNil(
-            json["rawEvent"],
-            "rawEvent should not be encoded in JSON",
-            file: file,
-            line: line
-        )
     }
     
     private func assertDecodingError(

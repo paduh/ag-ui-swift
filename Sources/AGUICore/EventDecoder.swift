@@ -31,8 +31,7 @@ public enum EventDecoder {
         // Specific event types will be implemented separately and registered here
         return GenericEvent(
             eventType: eventType,
-            timestamp: (json?["timestamp"] as? NSNumber)?.int64Value,
-            rawEvent: data
+            timestamp: (json?["timestamp"] as? NSNumber)?.int64Value
         )
     }
     
@@ -59,17 +58,15 @@ public enum EventDecoder {
 internal struct GenericEvent: AGUIEvent {
     let eventType: EventType
     let timestamp: Int64?
-    let rawEvent: Data?
     
     enum CodingKeys: String, CodingKey {
         case type
         case timestamp
     }
     
-    init(eventType: EventType, timestamp: Int64?, rawEvent: Data?) {
+    init(eventType: EventType, timestamp: Int64?) {
         self.eventType = eventType
         self.timestamp = timestamp
-        self.rawEvent = rawEvent
     }
     
     init(from decoder: Decoder) throws {
@@ -86,10 +83,6 @@ internal struct GenericEvent: AGUIEvent {
         
         self.eventType = eventType
         self.timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
-        
-        // rawEvent is set by EventDecoder.decodeEvent which has access to original data
-        // When decoding via Codable directly, rawEvent will be nil
-        self.rawEvent = nil
     }
     
     func encode(to encoder: Encoder) throws {

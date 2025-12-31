@@ -18,7 +18,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: message,
             expectedCode: nil,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
     }
     
@@ -27,14 +26,11 @@ final class RunErrorEventTests: XCTestCase {
         let message = "An error occurred"
         let code = "ERROR_CODE_123"
         let timestamp = EventTestData.timestamp
-        let rawEvent = EventTestData.rawEventData
-        
         // When
         let event = RunErrorEvent(
             message: message,
             code: code,
-            timestamp: timestamp,
-            rawEvent: rawEvent
+            timestamp: timestamp
         )
         
         // Then
@@ -42,8 +38,7 @@ final class RunErrorEventTests: XCTestCase {
             event,
             expectedMessage: message,
             expectedCode: code,
-            expectedTimestamp: timestamp,
-            expectedRawEvent: rawEvent
+            expectedTimestamp: timestamp
         )
     }
     
@@ -72,7 +67,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: message,
             expectedCode: code,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
     }
     
@@ -130,29 +124,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: message,
             expectedCode: code,
             expectedTimestamp: timestamp
-        )
-    }
-    
-    func testEncodingOmitsRawEvent() throws {
-        // Given
-        // rawEvent is intentionally excluded from JSON encoding
-        // as it represents the original raw data and shouldn't be serialized
-        // to avoid duplication and potential inconsistencies
-        let rawEvent = EventTestData.rawEventData
-        let event = makeEvent(rawEvent: rawEvent)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        XCTAssertNil(
-            json["rawEvent"],
-            "rawEvent should not be encoded in JSON"
         )
     }
     
@@ -234,7 +205,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: message,
             expectedCode: nil,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
         XCTAssertEqual(event.eventType, .runError, "eventType should be .runError")
     }
@@ -264,7 +234,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: message,
             expectedCode: code,
             expectedTimestamp: timestamp,
-            expectedRawEvent: nil
         )
         XCTAssertEqual(event.eventType, .runError, "eventType should be .runError")
     }
@@ -292,7 +261,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: message,
             expectedCode: code,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
     }
     
@@ -342,7 +310,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: message,
             expectedCode: code,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
     }
     
@@ -482,8 +449,7 @@ final class RunErrorEventTests: XCTestCase {
             decodedEvent,
             expectedMessage: originalEvent.message,
             expectedCode: originalEvent.code,
-            expectedTimestamp: originalEvent.timestamp,
-            expectedRawEvent: nil // rawEvent is nil after round-trip
+            expectedTimestamp: originalEvent.timestamp
         )
         XCTAssertEqual(
             decodedEvent.eventType,
@@ -508,7 +474,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: originalEvent.message,
             expectedCode: nil,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
         XCTAssertEqual(
             decodedEvent.eventType,
@@ -535,7 +500,6 @@ final class RunErrorEventTests: XCTestCase {
             expectedMessage: originalEvent.message,
             expectedCode: originalEvent.code,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
     }
     
@@ -545,13 +509,11 @@ final class RunErrorEventTests: XCTestCase {
         message: String = "An error occurred",
         code: String? = nil,
         timestamp: Int64? = nil,
-        rawEvent: Data? = nil
     ) -> RunErrorEvent {
         RunErrorEvent(
             message: message,
             code: code,
             timestamp: timestamp,
-            rawEvent: rawEvent
         )
     }
     
@@ -562,7 +524,6 @@ final class RunErrorEventTests: XCTestCase {
         expectedMessage: String,
         expectedCode: String? = nil,
         expectedTimestamp: Int64? = nil,
-        expectedRawEvent: Data? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -584,13 +545,6 @@ final class RunErrorEventTests: XCTestCase {
             event.timestamp,
             expectedTimestamp,
             "timestamp should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.rawEvent,
-            expectedRawEvent,
-            "rawEvent should match expected value",
             file: file,
             line: line
         )
@@ -663,12 +617,6 @@ final class RunErrorEventTests: XCTestCase {
             )
         }
         
-        XCTAssertNil(
-            json["rawEvent"],
-            "rawEvent should not be encoded in JSON",
-            file: file,
-            line: line
-        )
     }
     
     private func assertDecodingError(

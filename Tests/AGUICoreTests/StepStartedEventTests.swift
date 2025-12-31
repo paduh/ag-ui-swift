@@ -17,7 +17,6 @@ final class StepStartedEventTests: XCTestCase {
             event,
             expectedStepName: stepName,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
     }
     
@@ -25,21 +24,17 @@ final class StepStartedEventTests: XCTestCase {
         // Given
         let stepName = "tool_calling"
         let timestamp = EventTestData.timestamp
-        let rawEvent = EventTestData.rawEventData
-        
         // When
         let event = StepStartedEvent(
             stepName: stepName,
-            timestamp: timestamp,
-            rawEvent: rawEvent
+            timestamp: timestamp
         )
         
         // Then
         assertEventProperties(
             event,
             expectedStepName: stepName,
-            expectedTimestamp: timestamp,
-            expectedRawEvent: rawEvent
+            expectedTimestamp: timestamp
         )
     }
     
@@ -114,29 +109,6 @@ final class StepStartedEventTests: XCTestCase {
         assertJSONStructure(json, expectedType: "STEP_STARTED", expectedTimestamp: timestamp)
     }
     
-    func testEncodingOmitsRawEvent() throws {
-        // Given
-        // rawEvent is intentionally excluded from JSON encoding
-        // as it represents the original raw data and shouldn't be serialized
-        // to avoid duplication and potential inconsistencies
-        let rawEvent = EventTestData.rawEventData
-        let event = makeEvent(rawEvent: rawEvent)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        XCTAssertNil(
-            json["rawEvent"],
-            "rawEvent should not be encoded in JSON"
-        )
-    }
-    
     func testEncodingWithZeroTimestamp() throws {
         // Given
         let timestamp: Int64 = 0
@@ -196,7 +168,6 @@ final class StepStartedEventTests: XCTestCase {
             event,
             expectedStepName: stepName,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
         XCTAssertEqual(event.eventType, .stepStarted, "eventType should be .stepStarted")
     }
@@ -221,7 +192,6 @@ final class StepStartedEventTests: XCTestCase {
             event,
             expectedStepName: stepName,
             expectedTimestamp: timestamp,
-            expectedRawEvent: nil
         )
         XCTAssertEqual(event.eventType, .stepStarted, "eventType should be .stepStarted")
     }
@@ -400,8 +370,7 @@ final class StepStartedEventTests: XCTestCase {
         assertEventProperties(
             decodedEvent,
             expectedStepName: originalEvent.stepName,
-            expectedTimestamp: originalEvent.timestamp,
-            expectedRawEvent: nil // rawEvent is nil after round-trip
+            expectedTimestamp: originalEvent.timestamp
         )
         XCTAssertEqual(
             decodedEvent.eventType,
@@ -425,7 +394,6 @@ final class StepStartedEventTests: XCTestCase {
             decodedEvent,
             expectedStepName: originalEvent.stepName,
             expectedTimestamp: nil,
-            expectedRawEvent: nil
         )
         XCTAssertEqual(
             decodedEvent.eventType,
@@ -458,12 +426,10 @@ final class StepStartedEventTests: XCTestCase {
     private func makeEvent(
         stepName: String = "reasoning",
         timestamp: Int64? = nil,
-        rawEvent: Data? = nil
     ) -> StepStartedEvent {
         StepStartedEvent(
             stepName: stepName,
             timestamp: timestamp,
-            rawEvent: rawEvent
         )
     }
     
@@ -473,7 +439,6 @@ final class StepStartedEventTests: XCTestCase {
         _ event: StepStartedEvent,
         expectedStepName: String,
         expectedTimestamp: Int64? = nil,
-        expectedRawEvent: Data? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -488,13 +453,6 @@ final class StepStartedEventTests: XCTestCase {
             event.timestamp,
             expectedTimestamp,
             "timestamp should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.rawEvent,
-            expectedRawEvent,
-            "rawEvent should match expected value",
             file: file,
             line: line
         )
@@ -541,12 +499,6 @@ final class StepStartedEventTests: XCTestCase {
             )
         }
         
-        XCTAssertNil(
-            json["rawEvent"],
-            "rawEvent should not be encoded in JSON",
-            file: file,
-            line: line
-        )
     }
     
     private func assertDecodingError(

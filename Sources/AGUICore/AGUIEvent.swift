@@ -9,7 +9,6 @@ import Foundation
 /// Key Properties:
 /// - `eventType`: The specific type of event (used for pattern matching)
 /// - `timestamp`: Optional timestamp of when the event occurred
-/// - `rawEvent`: Optional raw JSON representation for debugging/logging
 ///
 /// Event Categories:
 /// - Lifecycle Events: Run and step start/finish/error events
@@ -41,14 +40,4 @@ public protocol AGUIEvent: Codable {
     /// timestamp format, but Int64 (milliseconds) is used here for consistency
     /// with standard timestamp conventions.
     var timestamp: Int64? { get }
-    
-    /// Optional raw JSON representation of the original event.
-    ///
-    /// This field preserves the original JSON structure of the event as received
-    /// from the agent. It can be useful for debugging, logging, or handling
-    /// protocol extensions that aren't yet supported by the typed event classes.
-    ///
-    /// The raw JSON is stored as `Data` to preserve the exact structure and allow
-    /// for re-parsing or inspection without losing information.
-    var rawEvent: Data? { get }
 }

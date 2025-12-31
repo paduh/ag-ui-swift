@@ -6,7 +6,6 @@ enum EventTestData {
     static let threadId = "thread-123"
     static let runId = "run-456"
     static let timestamp: Int64 = 1234567890
-    static let rawEventData = Data("{\"test\": \"data\"}".utf8)
     
     /// Creates a JSON dictionary for event testing
     /// - Parameters:

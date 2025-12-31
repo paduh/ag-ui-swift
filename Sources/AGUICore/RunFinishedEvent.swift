@@ -9,7 +9,6 @@ import Foundation
 ///   - threadId: The identifier for the conversation thread
 ///   - runId: The unique identifier for the completed run
 ///   - timestamp: Optional timestamp when the run finished (milliseconds since epoch)
-///   - rawEvent: Optional raw JSON representation of the event
 public struct RunFinishedEvent: AGUIEvent {
     /// The identifier for the conversation thread
     public let threadId: String
@@ -21,13 +20,6 @@ public struct RunFinishedEvent: AGUIEvent {
     ///
     /// The timestamp is represented as milliseconds since epoch (Unix timestamp).
     public let timestamp: Int64?
-    
-    /// Optional raw JSON representation of the original event.
-    ///
-    /// This field preserves the original JSON structure of the event as received
-    /// from the agent. It can be useful for debugging, logging, or handling
-    /// protocol extensions that aren't yet supported by the typed event classes.
-    public let rawEvent: Data?
     
     /// The type of this event.
     ///
@@ -43,17 +35,14 @@ public struct RunFinishedEvent: AGUIEvent {
     ///   - threadId: The identifier for the conversation thread
     ///   - runId: The unique identifier for the completed run
     ///   - timestamp: Optional timestamp when the run finished (default: `nil`)
-    ///   - rawEvent: Optional raw JSON representation (default: `nil`)
     public init(
         threadId: String,
         runId: String,
-        timestamp: Int64? = nil,
-        rawEvent: Data? = nil
+        timestamp: Int64? = nil
     ) {
         self.threadId = threadId
         self.runId = runId
         self.timestamp = timestamp
-        self.rawEvent = rawEvent
     }
     
     // MARK: - Codable
@@ -74,11 +63,6 @@ public struct RunFinishedEvent: AGUIEvent {
         self.threadId = try container.decode(String.self, forKey: .threadId)
         self.runId = try container.decode(String.self, forKey: .runId)
         self.timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
-        
-        // rawEvent is typically set by EventDecoder which has access to original data
-        // When decoding via Codable directly, rawEvent will be nil unless provided
-        // via the public initializer
-        self.rawEvent = nil
     }
     
     public func encode(to encoder: Encoder) throws {
