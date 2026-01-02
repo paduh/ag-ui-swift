@@ -137,7 +137,7 @@ Having 14 tests per event type might seem like overkill, but when building a pro
 Swift's protocol-oriented nature influenced several design decisions:
 
 ```swift
-public protocol BaseEvent: Codable {
+public protocol AGUIEvent: Codable {
     var eventType: EventType { get }
     var timestamp: Int64? { get }
     var rawEvent: Data? { get }
@@ -165,7 +165,7 @@ This catches errors at compile time rather than runtime.
 I created helper methods to reduce boilerplate:
 
 ```swift
-extension BaseEvent {
+extension AGUIEvent {
     static func verifyType(
         in container: KeyedDecodingContainer<Keys>,
         expected: EventType,
@@ -247,4 +247,5 @@ If you're working on a similar project or thinking about contributing to open so
 **Repository**: [github.com/paduh/ag-ui-swift](https://github.com/paduh/ag-ui-swift)  
 **AG-UI Protocol**: [github.com/ag-ui-protocol/ag-ui](https://github.com/ag-ui-protocol/ag-ui)  
 **Community Request**: [GitHub Issue #494](https://github.com/orgs/ag-ui-protocol/projects/1/views/5?pane=issue&itemId=132549057&issue=ag-ui-protocol%7Cag-ui%7C494)
+
 

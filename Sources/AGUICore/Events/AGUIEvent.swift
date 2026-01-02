@@ -22,7 +22,7 @@ import Foundation
 /// specific event type to deserialize to.
 ///
 /// - SeeAlso: `EventType`
-public protocol AGUIEvent: Codable {
+public protocol AGUIEvent: Sendable {
     /// The type of this event.
     ///
     /// This property is used for pattern matching and event handling logic.
@@ -30,7 +30,7 @@ public protocol AGUIEvent: Codable {
     ///
     /// - SeeAlso: `EventType`
     var eventType: EventType { get }
-    
+
     /// Optional timestamp indicating when this event occurred.
     ///
     /// The timestamp is represented as milliseconds since epoch (Unix timestamp).
@@ -40,4 +40,11 @@ public protocol AGUIEvent: Codable {
     /// timestamp format, but Int64 (milliseconds) is used here for consistency
     /// with standard timestamp conventions.
     var timestamp: Int64? { get }
+
+    /// Optional raw event data as received from the agent.
+    ///
+    /// This preserves the original JSON bytes for debugging, logging, and forward
+    /// compatibility with protocol extensions. May be nil if the event was created
+    /// programmatically rather than decoded from JSON.
+    var rawEvent: Data? { get }
 }

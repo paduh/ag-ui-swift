@@ -2,582 +2,287 @@ import XCTest
 @testable import AGUICore
 
 final class RunFinishedEventTests: XCTestCase {
-    
-    // MARK: - Initialization Tests
-    
-    func testInitialization() {
+
+    // MARK: - Feature: Decode RUN_FINISHED
+
+    func test_decodeValidRunFinished_returnsRunFinishedEvent() throws {
         // Given
-        let threadId = EventTestData.threadId
-        let runId = EventTestData.runId
-        
-        // When
-        let event = RunFinishedEvent(threadId: threadId, runId: runId)
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedThreadId: threadId,
-            expectedRunId: runId,
-            expectedTimestamp: nil,
-        )
-    }
-    
-    func testInitializationWithOptionalParameters() {
-        // Given
-        let threadId = EventTestData.threadId
-        let runId = EventTestData.runId
-        let timestamp = EventTestData.timestamp
-        // When
-        let event = RunFinishedEvent(
-            threadId: threadId,
-            runId: runId,
-            timestamp: timestamp
-        )
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedThreadId: threadId,
-            expectedRunId: runId,
-            expectedTimestamp: timestamp
-        )
-    }
-    
-    func testInitializationWithEmptyStrings() {
-        // Given
-        let threadId = ""
-        let runId = ""
-        
-        // When
-        let event = RunFinishedEvent(threadId: threadId, runId: runId)
-        
-        // Then
-        XCTAssertEqual(event.threadId, threadId, "Should accept empty threadId")
-        XCTAssertEqual(event.runId, runId, "Should accept empty runId")
-    }
-    
-    func testInitializationWithUnicodeCharacters() {
-        // Given
-        let threadId = "thread-🚀-123"
-        let runId = "run-测试-456"
-        
-        // When
-        let event = RunFinishedEvent(threadId: threadId, runId: runId)
-        
-        // Then
-        XCTAssertEqual(event.threadId, threadId, "Should handle Unicode characters")
-        XCTAssertEqual(event.runId, runId, "Should handle Unicode characters")
-    }
-    
-    // MARK: - EventType Tests
-    
-    func testEventTypeProperty() {
-        // Given
-        let event = makeEvent()
-        
-        // When & Then
-        XCTAssertEqual(
-            event.eventType,
-            .runFinished,
-            "eventType should always return .runFinished"
-        )
-    }
-    
-    // MARK: - Encoding Tests
-    
-    func testEncoding() throws {
-        // Given
-        let event = makeEvent()
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(json, expectedType: "RUN_FINISHED", shouldOmitTimestamp: true)
-    }
-    
-    func testEncodingWithTimestamp() throws {
-        // Given
-        let timestamp = EventTestData.timestamp
-        let event = makeEvent(timestamp: timestamp)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(json, expectedType: "RUN_FINISHED", expectedTimestamp: timestamp)
-    }
-    
-    func testEncodingWithZeroTimestamp() throws {
-        // Given
-        let timestamp: Int64 = 0
-        let event = makeEvent(timestamp: timestamp)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(json, expectedType: "RUN_FINISHED", expectedTimestamp: timestamp)
-    }
-    
-    func testEncodingWithUnicodeIDs() throws {
-        // Given
-        let threadId = "thread-🚀-123"
-        let runId = "run-测试-456"
-        let event = makeEvent(threadId: threadId, runId: runId)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(
-            json,
-            expectedType: "RUN_FINISHED",
-            expectedThreadId: threadId,
-            expectedRunId: runId,
-            shouldOmitTimestamp: true
-        )
-    }
-    
-    // MARK: - Decoding Tests
-    
-    func testDecoding() throws {
-        // Given
-        let json = EventTestData.makeJSON(type: "RUN_FINISHED")
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(RunFinishedEvent.self, from: data)
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedThreadId: EventTestData.threadId,
-            expectedRunId: EventTestData.runId,
-            expectedTimestamp: nil,
-        )
-        XCTAssertEqual(
-            event.eventType,
-            .runFinished,
-            "eventType should be .runFinished"
-        )
-    }
-    
-    func testDecodingWithTimestamp() throws {
-        // Given
-        let timestamp = EventTestData.timestamp
-        let json = EventTestData.makeJSON(type: "RUN_FINISHED", timestamp: timestamp)
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(RunFinishedEvent.self, from: data)
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedThreadId: EventTestData.threadId,
-            expectedRunId: EventTestData.runId,
-            expectedTimestamp: timestamp
-        )
-        XCTAssertEqual(
-            event.eventType,
-            .runFinished,
-            "eventType should be .runFinished"
-        )
-    }
-    
-    func testDecodingWithZeroTimestamp() throws {
-        // Given
-        let timestamp: Int64 = 0
-        let json = EventTestData.makeJSON(type: "RUN_FINISHED", timestamp: timestamp)
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(RunFinishedEvent.self, from: data)
-        
-        // Then
-        XCTAssertEqual(
-            event.timestamp,
-            timestamp,
-            "Should decode zero timestamp correctly"
-        )
-    }
-    
-    func testDecodingWithUnicodeIDs() throws {
-        // Given
-        let threadId = "thread-🚀-123"
-        let runId = "run-测试-456"
-        let json = EventTestData.makeJSON(type: "RUN_FINISHED", threadId: threadId, runId: runId)
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(RunFinishedEvent.self, from: data)
-        
-        // Then
-        XCTAssertEqual(event.threadId, threadId, "Should decode Unicode threadId")
-        XCTAssertEqual(event.runId, runId, "Should decode Unicode runId")
-    }
-    
-    // MARK: - Error Handling Tests
-    
-    func testDecodingFailsWithWrongType() {
-        // Given
-        let json = EventTestData.makeJSON(type: "RUN_STARTED") // Wrong type
-        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
-            XCTFail("Failed to create JSON data")
-            return
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "thread-123",
+          "runId": "run-456"
         }
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(RunFinishedEvent.self, from: data),
-            "Should throw error when event type is incorrect"
-        ) { error in
-            guard let decodingError = error as? DecodingError else {
-                XCTFail("Expected DecodingError, got \(type(of: error))")
-                return
+        """)
+
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        guard let runFinished = event as? RunFinishedEvent else {
+            return XCTFail("Expected RunFinishedEvent, got \(type(of: event))")
+        }
+        XCTAssertEqual(runFinished.eventType, .runFinished)
+        XCTAssertEqual(runFinished.threadId, "thread-123")
+        XCTAssertEqual(runFinished.runId, "run-456")
+        XCTAssertNil(runFinished.timestamp)
+    }
+
+    func test_decodeRunFinished_withTimestamp_populatesTimestamp() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "thread-123",
+          "runId": "run-456",
+          "timestamp": 1704067200000
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertEqual(runFinished.timestamp, 1704067200000)
+    }
+
+    func test_decodeRunFinished_preservesRawEventBytes() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "thread-123",
+          "runId": "run-456",
+          "timestamp": 1704067200000
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertEqual(runFinished.rawEvent, data)
+    }
+
+    func test_decodeRunFinished_ignoresUnknownExtraFields() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "thread-123",
+          "runId": "run-456",
+          "extraField": "ignored",
+          "nested": { "x": 1 }
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertEqual(runFinished.threadId, "thread-123")
+        XCTAssertEqual(runFinished.runId, "run-456")
+    }
+
+    // MARK: - Feature: Error handling
+
+    func test_decodeMissingType_throwsMissingTypeField() {
+        // Given
+        let data = jsonData("""
+        {
+          "threadId": "thread-123",
+          "runId": "run-456"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
+        }
+    }
+
+    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_PAUSED",
+          "threadId": "thread-123",
+          "runId": "run-456"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .unknownEventType("RUN_PAUSED"))
+        }
+    }
+
+    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_PAUSED",
+          "threadId": "thread-123",
+          "runId": "run-456"
+        }
+        """)
+        let decoder = makeTolerantDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let unknown = try XCTUnwrap(event as? UnknownEvent)
+        XCTAssertEqual(unknown.typeRaw, "RUN_PAUSED")
+        XCTAssertEqual(unknown.rawEvent, data)
+    }
+
+    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "thread-123",
+          "runId": "run-456"
+        }
+        """)
+
+        // registry intentionally empty -> handler missing
+        let decoder = makeStrictDecoder(registry: [:])
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.runFinished))
+        }
+    }
+
+    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "thread-123",
+          "runId": "run-456"
+        }
+        """)
+        let decoder = makeTolerantDecoder(registry: [:])
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let unknown = try XCTUnwrap(event as? UnknownEvent)
+        XCTAssertEqual(unknown.typeRaw, "RUN_FINISHED")
+        XCTAssertEqual(unknown.rawEvent, data)
+    }
+
+    func test_decodeRunFinished_missingThreadId_throwsDecodingFailed() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "runId": "run-456"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            guard case .decodingFailed(let message) = (error as? EventDecodingError) else {
+                return XCTFail("Expected .decodingFailed, got \(error)")
             }
-            
-            guard case .dataCorrupted(let context) = decodingError else {
-                XCTFail("Expected DecodingError.dataCorrupted, got \(decodingError)")
-                return
+            XCTAssertTrue(message.contains("threadId"), "Expected message to mention 'threadId'. Got: \(message)")
+        }
+    }
+
+    func test_decodeRunFinished_threadIdWrongType_throwsDecodingFailed() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": 123,
+          "runId": "run-456"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            guard case .decodingFailed(let message) = (error as? EventDecodingError) else {
+                return XCTFail("Expected .decodingFailed, got \(error)")
             }
-            
-            XCTAssertTrue(
-                context.debugDescription.contains("RUN_FINISHED"),
-                "Error should mention expected type RUN_FINISHED"
-            )
-            XCTAssertTrue(
-                context.debugDescription.contains("RUN_STARTED"),
-                "Error should mention actual type RUN_STARTED"
-            )
+            XCTAssertTrue(message.lowercased().contains("type mismatch") || message.contains("Type mismatch"),
+                          "Expected a type mismatch message. Got: \(message)")
         }
     }
-    
-    func testDecodingFailsWithMissingType() {
+
+    func test_decodeInvalidJSON_throwsInvalidJSON() {
         // Given
-        let json: [String: Any] = [
-            // type is intentionally missing
-            "threadId": EventTestData.threadId,
-            "runId": EventTestData.runId
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
-            XCTFail("Failed to create JSON data")
-            return
-        }
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(RunFinishedEvent.self, from: data),
-            "Should throw error when type field is missing"
-        ) { error in
-            assertDecodingError(error)
+        let data = jsonData(#"{ "type": "RUN_FINISHED", "threadId": "t1", "#) // truncated JSON
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
         }
     }
-    
-    func testDecodingFailsWithMissingThreadId() {
+
+    // MARK: - Feature: Model behaviors
+
+    func test_runFinishedEvent_eventTypeIsAlwaysRunFinished() {
         // Given
-        let json: [String: Any] = [
-            "type": "RUN_FINISHED",
-            "runId": EventTestData.runId
-            // threadId is intentionally missing
-        ]
-        let data = try! JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(RunFinishedEvent.self, from: data),
-            "Should throw error when threadId is missing"
-        ) { error in
-            assertDecodingError(error)
-        }
-    }
-    
-    func testDecodingFailsWithMissingRunId() {
-        // Given
-        let json: [String: Any] = [
-            "type": "RUN_FINISHED",
-            "threadId": EventTestData.threadId
-            // runId is intentionally missing
-        ]
-        let data = try! JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(RunFinishedEvent.self, from: data),
-            "Should throw error when runId is missing"
-        ) { error in
-            assertDecodingError(error)
-        }
-    }
-    
-    func testDecodingFailsWithInvalidTimestampType() {
-        // Given
-        let json: [String: Any] = [
-            "type": "RUN_FINISHED",
-            "threadId": EventTestData.threadId,
-            "runId": EventTestData.runId,
-            "timestamp": "invalid" // Should be Int64, not String
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
-            XCTFail("Failed to create JSON data")
-            return
-        }
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(RunFinishedEvent.self, from: data),
-            "Should throw error when timestamp has wrong type"
-        ) { error in
-            assertDecodingError(error)
-        }
-    }
-    
-    func testDecodingFailsWithMalformedJSON() {
-        // Given
-        let malformedData = "{invalid json}".data(using: .utf8)!
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(RunFinishedEvent.self, from: malformedData),
-            "Should throw error when JSON is malformed"
-        ) { error in
-            assertDecodingError(error)
-        }
-    }
-    
-    // MARK: - Round-Trip Tests
-    
-    func testRoundTripEncodingDecoding() throws {
-        // Given
-        let originalEvent = makeEvent(timestamp: EventTestData.timestamp)
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-        
-        // When
-        let encodedData = try encoder.encode(originalEvent)
-        let decodedEvent = try decoder.decode(RunFinishedEvent.self, from: encodedData)
-        
+        let event = RunFinishedEvent(threadId: "t", runId: "r", timestamp: nil, rawEvent: nil)
+
         // Then
-        XCTAssertEqual(
-            decodedEvent.threadId,
-            originalEvent.threadId,
-            "threadId should match after round-trip"
-        )
-        XCTAssertEqual(
-            decodedEvent.runId,
-            originalEvent.runId,
-            "runId should match after round-trip"
-        )
-        XCTAssertEqual(
-            decodedEvent.timestamp,
-            originalEvent.timestamp,
-            "timestamp should match after round-trip"
-        )
-        XCTAssertEqual(
-            decodedEvent.eventType,
-            originalEvent.eventType,
-            "eventType should match after round-trip"
-        )
+        XCTAssertEqual(event.eventType, .runFinished)
     }
-    
-    func testRoundTripEncodingDecodingWithoutTimestamp() throws {
+
+    func test_runFinishedEvent_equatable_sameFields_areEqual() {
         // Given
-        let originalEvent = makeEvent()
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-        
-        // When
-        let encodedData = try encoder.encode(originalEvent)
-        let decodedEvent = try decoder.decode(RunFinishedEvent.self, from: encodedData)
-        
+        let a = RunFinishedEvent(threadId: "t", runId: "r", timestamp: 1, rawEvent: nil)
+        let b = RunFinishedEvent(threadId: "t", runId: "r", timestamp: 1, rawEvent: nil)
+
         // Then
-        XCTAssertEqual(
-            decodedEvent.threadId,
-            originalEvent.threadId,
-            "threadId should match after round-trip"
-        )
-        XCTAssertEqual(
-            decodedEvent.runId,
-            originalEvent.runId,
-            "runId should match after round-trip"
-        )
-        XCTAssertNil(
-            decodedEvent.timestamp,
-            "timestamp should remain nil after round-trip"
-        )
-        XCTAssertEqual(
-            decodedEvent.eventType,
-            originalEvent.eventType,
-            "eventType should match after round-trip"
+        XCTAssertEqual(a, b)
+    }
+
+    // MARK: - Helpers
+
+    private func makeStrictDecoder(
+        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
+    ) -> AGUIEventDecoder {
+        var config = AGUIEventDecoder.Configuration()
+        config.unknownEventStrategy = .throwError
+        return AGUIEventDecoder(
+            config: config,
+            makeDecoder: { JSONDecoder() },
+            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
         )
     }
-    
-    func testRoundTripWithUnicodeIDs() throws {
-        // Given
-        let threadId = "thread-🚀-123"
-        let runId = "run-测试-456"
-        let originalEvent = makeEvent(threadId: threadId, runId: runId)
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-        
-        // When
-        let encodedData = try encoder.encode(originalEvent)
-        let decodedEvent = try decoder.decode(RunFinishedEvent.self, from: encodedData)
-        
-        // Then
-        XCTAssertEqual(
-            decodedEvent.threadId,
-            originalEvent.threadId,
-            "Unicode threadId should survive round-trip"
-        )
-        XCTAssertEqual(
-            decodedEvent.runId,
-            originalEvent.runId,
-            "Unicode runId should survive round-trip"
+
+    private func makeTolerantDecoder(
+        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
+    ) -> AGUIEventDecoder {
+        var config = AGUIEventDecoder.Configuration()
+        config.unknownEventStrategy = .returnUnknown
+        return AGUIEventDecoder(
+            config: config,
+            makeDecoder: { JSONDecoder() },
+            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
         )
     }
-    
-    // MARK: - Event-Specific Factory Methods
-    
-    private func makeEvent(
-        threadId: String = EventTestData.threadId,
-        runId: String = EventTestData.runId,
-        timestamp: Int64? = nil,
-    ) -> RunFinishedEvent {
-        RunFinishedEvent(
-            threadId: threadId,
-            runId: runId,
-            timestamp: timestamp,
-        )
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func assertEventProperties(
-        _ event: RunFinishedEvent,
-        expectedThreadId: String,
-        expectedRunId: String,
-        expectedTimestamp: Int64? = nil,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(
-            event.threadId,
-            expectedThreadId,
-            "threadId should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.runId,
-            expectedRunId,
-            "runId should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.timestamp,
-            expectedTimestamp,
-            "timestamp should match expected value",
-            file: file,
-            line: line
-        )
-    }
-    
-    private func assertJSONStructure(
-        _ json: [String: Any],
-        expectedType: String = "RUN_FINISHED",
-        expectedThreadId: String = EventTestData.threadId,
-        expectedRunId: String = EventTestData.runId,
-        expectedTimestamp: Int64? = nil,
-        shouldOmitTimestamp: Bool = false,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(
-            json["type"] as? String,
-            expectedType,
-            "Event type should be \(expectedType)",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            json["threadId"] as? String,
-            expectedThreadId,
-            "threadId should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            json["runId"] as? String,
-            expectedRunId,
-            "runId should match expected value",
-            file: file,
-            line: line
-        )
-        
-        if shouldOmitTimestamp {
-            XCTAssertNil(
-                json["timestamp"],
-                "timestamp should be omitted when nil",
-                file: file,
-                line: line
-            )
-        } else if let expectedTimestamp = expectedTimestamp {
-            XCTAssertEqual(
-                json["timestamp"] as? Int64,
-                expectedTimestamp,
-                "timestamp should match expected value",
-                file: file,
-                line: line
-            )
-        }
-        
-    }
-    
-    private func assertDecodingError(
-        _ error: Error,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        guard error is DecodingError else {
-            XCTFail(
-                "Expected DecodingError, got \(type(of: error))",
-                file: file,
-                line: line
-            )
-            return
-        }
+
+    private func jsonData(_ json: String) -> Data {
+        Data(json.utf8)
     }
 }

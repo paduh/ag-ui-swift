@@ -2,518 +2,322 @@ import XCTest
 @testable import AGUICore
 
 final class StepStartedEventTests: XCTestCase {
-    
-    // MARK: - Initialization Tests
-    
-    func testInitialization() {
+
+    // MARK: - Feature: Decode STEP_STARTED
+
+    func test_decodeValidStepStarted_returnsStepStartedEvent() throws {
         // Given
-        let stepName = "reasoning"
-        
-        // When
-        let event = StepStartedEvent(stepName: stepName)
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedStepName: stepName,
-            expectedTimestamp: nil,
-        )
-    }
-    
-    func testInitializationWithOptionalParameters() {
-        // Given
-        let stepName = "tool_calling"
-        let timestamp = EventTestData.timestamp
-        // When
-        let event = StepStartedEvent(
-            stepName: stepName,
-            timestamp: timestamp
-        )
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedStepName: stepName,
-            expectedTimestamp: timestamp
-        )
-    }
-    
-    func testInitializationWithEmptyString() {
-        // Given
-        let stepName = ""
-        
-        // When
-        let event = StepStartedEvent(stepName: stepName)
-        
-        // Then
-        XCTAssertEqual(event.stepName, stepName, "Should accept empty stepName")
-    }
-    
-    func testInitializationWithUnicodeCharacters() {
-        // Given
-        let stepName = "推理-🚀-测试"
-        
-        // When
-        let event = StepStartedEvent(stepName: stepName)
-        
-        // Then
-        XCTAssertEqual(event.stepName, stepName, "Should handle Unicode characters")
-    }
-    
-    // MARK: - EventType Tests
-    
-    func testEventTypeProperty() {
-        // Given
-        let event = makeEvent()
-        
-        // When & Then
-        XCTAssertEqual(
-            event.eventType,
-            .stepStarted,
-            "eventType should always return .stepStarted"
-        )
-    }
-    
-    // MARK: - Encoding Tests
-    
-    func testEncoding() throws {
-        // Given
-        let event = makeEvent()
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(json, expectedType: "STEP_STARTED", shouldOmitTimestamp: true)
-    }
-    
-    func testEncodingWithTimestamp() throws {
-        // Given
-        let timestamp = EventTestData.timestamp
-        let event = makeEvent(timestamp: timestamp)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(json, expectedType: "STEP_STARTED", expectedTimestamp: timestamp)
-    }
-    
-    func testEncodingWithZeroTimestamp() throws {
-        // Given
-        let timestamp: Int64 = 0
-        let event = makeEvent(timestamp: timestamp)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(json, expectedType: "STEP_STARTED", expectedTimestamp: timestamp)
-    }
-    
-    func testEncodingWithUnicodeStepName() throws {
-        // Given
-        let stepName = "推理-🚀-测试"
-        let event = makeEvent(stepName: stepName)
-        let encoder = JSONEncoder()
-        
-        // When
-        let data = try encoder.encode(event)
-        let json = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [String: Any],
-            "JSON should be valid dictionary"
-        )
-        
-        // Then
-        assertJSONStructure(
-            json,
-            expectedType: "STEP_STARTED",
-            expectedStepName: stepName,
-            shouldOmitTimestamp: true
-        )
-    }
-    
-    // MARK: - Decoding Tests
-    
-    func testDecoding() throws {
-        // Given
-        let stepName = "reasoning"
-        let json = EventTestData.makeJSON(
-            type: "STEP_STARTED",
-            additionalFields: ["stepName": stepName]
-        )
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(StepStartedEvent.self, from: data)
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedStepName: stepName,
-            expectedTimestamp: nil,
-        )
-        XCTAssertEqual(event.eventType, .stepStarted, "eventType should be .stepStarted")
-    }
-    
-    func testDecodingWithTimestamp() throws {
-        // Given
-        let stepName = "tool_calling"
-        let timestamp = EventTestData.timestamp
-        let json = EventTestData.makeJSON(
-            type: "STEP_STARTED",
-            timestamp: timestamp,
-            additionalFields: ["stepName": stepName]
-        )
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(StepStartedEvent.self, from: data)
-        
-        // Then
-        assertEventProperties(
-            event,
-            expectedStepName: stepName,
-            expectedTimestamp: timestamp,
-        )
-        XCTAssertEqual(event.eventType, .stepStarted, "eventType should be .stepStarted")
-    }
-    
-    func testDecodingWithZeroTimestamp() throws {
-        // Given
-        let stepName = "reasoning"
-        let timestamp: Int64 = 0
-        let json = EventTestData.makeJSON(
-            type: "STEP_STARTED",
-            timestamp: timestamp,
-            additionalFields: ["stepName": stepName]
-        )
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(StepStartedEvent.self, from: data)
-        
-        // Then
-        XCTAssertEqual(
-            event.timestamp,
-            timestamp,
-            "Should decode zero timestamp correctly"
-        )
-    }
-    
-    func testDecodingWithUnicodeStepName() throws {
-        // Given
-        let stepName = "推理-🚀-测试"
-        let json = EventTestData.makeJSON(
-            type: "STEP_STARTED",
-            additionalFields: ["stepName": stepName]
-        )
-        let data = try JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When
-        let event = try decoder.decode(StepStartedEvent.self, from: data)
-        
-        // Then
-        XCTAssertEqual(event.stepName, stepName, "Should decode Unicode stepName")
-    }
-    
-    // MARK: - Error Handling Tests
-    
-    func testDecodingFailsWithWrongType() {
-        // Given
-        let json = EventTestData.makeJSON(
-            type: "RUN_STARTED",
-            additionalFields: ["stepName": "reasoning"]
-        )
-        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
-            XCTFail("Failed to create JSON data")
-            return
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "reasoning"
         }
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(StepStartedEvent.self, from: data),
-            "Should throw error when event type is incorrect"
-        ) { error in
-            guard let decodingError = error as? DecodingError else {
-                XCTFail("Expected DecodingError, got \(type(of: error))")
-                return
+        """)
+
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        guard let stepStarted = event as? StepStartedEvent else {
+            return XCTFail("Expected StepStartedEvent, got \(type(of: event))")
+        }
+        XCTAssertEqual(stepStarted.eventType, .stepStarted)
+        XCTAssertEqual(stepStarted.stepName, "reasoning")
+        XCTAssertNil(stepStarted.timestamp)
+    }
+
+    func test_decodeStepStarted_withTimestamp_populatesTimestamp() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "reasoning",
+          "timestamp": 1704067200000
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let stepStarted = try XCTUnwrap(event as? StepStartedEvent)
+        XCTAssertEqual(stepStarted.timestamp, 1704067200000)
+    }
+
+    func test_decodeStepStarted_preservesRawEventBytes() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "reasoning",
+          "timestamp": 1704067200000
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let stepStarted = try XCTUnwrap(event as? StepStartedEvent)
+        XCTAssertEqual(stepStarted.rawEvent, data)
+    }
+
+    func test_decodeStepStarted_ignoresUnknownExtraFields() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "reasoning",
+          "extraField": "ignored",
+          "nested": { "x": 1 }
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let stepStarted = try XCTUnwrap(event as? StepStartedEvent)
+        XCTAssertEqual(stepStarted.stepName, "reasoning")
+    }
+
+    func test_decodeStepStarted_withUnicodeStepName_handlesUnicode() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "推理-🚀-测试"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let stepStarted = try XCTUnwrap(event as? StepStartedEvent)
+        XCTAssertEqual(stepStarted.stepName, "推理-🚀-测试")
+    }
+
+    // MARK: - Feature: Error handling
+
+    func test_decodeMissingType_throwsMissingTypeField() {
+        // Given
+        let data = jsonData("""
+        {
+          "stepName": "reasoning"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
+        }
+    }
+
+    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_PAUSED",
+          "stepName": "reasoning"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .unknownEventType("STEP_PAUSED"))
+        }
+    }
+
+    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_PAUSED",
+          "stepName": "reasoning"
+        }
+        """)
+        let decoder = makeTolerantDecoder()
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let unknown = try XCTUnwrap(event as? UnknownEvent)
+        XCTAssertEqual(unknown.typeRaw, "STEP_PAUSED")
+        XCTAssertEqual(unknown.rawEvent, data)
+    }
+
+    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "reasoning"
+        }
+        """)
+
+        // registry intentionally empty -> handler missing
+        let decoder = makeStrictDecoder(registry: [:])
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.stepStarted))
+        }
+    }
+
+    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "reasoning"
+        }
+        """)
+        let decoder = makeTolerantDecoder(registry: [:])
+
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let unknown = try XCTUnwrap(event as? UnknownEvent)
+        XCTAssertEqual(unknown.typeRaw, "STEP_STARTED")
+        XCTAssertEqual(unknown.rawEvent, data)
+    }
+
+    func test_decodeStepStarted_missingStepName_throwsDecodingFailed() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            guard case .decodingFailed(let message) = (error as? EventDecodingError) else {
+                return XCTFail("Expected .decodingFailed, got \(error)")
             }
-            
-            guard case .dataCorrupted(let context) = decodingError else {
-                XCTFail("Expected DecodingError.dataCorrupted, got \(decodingError)")
-                return
+            XCTAssertTrue(message.contains("stepName"), "Expected message to mention 'stepName'. Got: \(message)")
+        }
+    }
+
+    func test_decodeStepStarted_stepNameWrongType_throwsDecodingFailed() {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": 123
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            guard case .decodingFailed(let message) = (error as? EventDecodingError) else {
+                return XCTFail("Expected .decodingFailed, got \(error)")
             }
-            
-            XCTAssertTrue(
-                context.debugDescription.contains("STEP_STARTED"),
-                "Error should mention expected type STEP_STARTED"
-            )
-            XCTAssertTrue(
-                context.debugDescription.contains("RUN_STARTED"),
-                "Error should mention actual type RUN_STARTED"
-            )
+            XCTAssertTrue(message.lowercased().contains("type mismatch") || message.contains("Type mismatch"),
+                          "Expected a type mismatch message. Got: \(message)")
         }
     }
-    
-    func testDecodingFailsWithMissingType() {
+
+    func test_decodeStepStarted_timestampWrongType_throwsDecodingFailed() {
         // Given
-        let json: [String: Any] = [
-            // type is intentionally missing
-            "stepName": "reasoning"
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
-            XCTFail("Failed to create JSON data")
-            return
+        let data = jsonData("""
+        {
+          "type": "STEP_STARTED",
+          "stepName": "reasoning",
+          "timestamp": "invalid"
         }
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(StepStartedEvent.self, from: data),
-            "Should throw error when type field is missing"
-        ) { error in
-            assertDecodingError(error)
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            guard case .decodingFailed(let message) = (error as? EventDecodingError) else {
+                return XCTFail("Expected .decodingFailed, got \(error)")
+            }
+            XCTAssertTrue(message.lowercased().contains("type mismatch") || message.contains("Type mismatch"),
+                          "Expected a type mismatch message. Got: \(message)")
         }
     }
-    
-    func testDecodingFailsWithMissingStepName() {
+
+    func test_decodeInvalidJSON_throwsInvalidJSON() {
         // Given
-        let json: [String: Any] = [
-            "type": "STEP_STARTED"
-            // stepName is intentionally missing
-        ]
-        let data = try! JSONSerialization.data(withJSONObject: json)
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(StepStartedEvent.self, from: data),
-            "Should throw error when stepName is missing"
-        ) { error in
-            assertDecodingError(error)
+        let data = jsonData(#"{ "type": "STEP_STARTED", "stepName": "r1", "#) // truncated JSON
+        let decoder = makeStrictDecoder()
+
+        // When / Then
+        XCTAssertThrowsError(try decoder.decode(data)) { error in
+            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
         }
     }
-    
-    func testDecodingFailsWithInvalidTimestampType() {
+
+    // MARK: - Feature: Model behaviors
+
+    func test_stepStartedEvent_eventTypeIsAlwaysStepStarted() {
         // Given
-        let json: [String: Any] = [
-            "type": "STEP_STARTED",
-            "stepName": "reasoning",
-            "timestamp": "invalid" // Should be Int64, not String
-        ]
-        guard let data = try? JSONSerialization.data(withJSONObject: json) else {
-            XCTFail("Failed to create JSON data")
-            return
-        }
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(StepStartedEvent.self, from: data),
-            "Should throw error when timestamp has wrong type"
-        ) { error in
-            assertDecodingError(error)
-        }
-    }
-    
-    func testDecodingFailsWithMalformedJSON() {
-        // Given
-        let malformedData = "{invalid json}".data(using: .utf8)!
-        let decoder = JSONDecoder()
-        
-        // When & Then
-        XCTAssertThrowsError(
-            try decoder.decode(StepStartedEvent.self, from: malformedData),
-            "Should throw error when JSON is malformed"
-        ) { error in
-            assertDecodingError(error)
-        }
-    }
-    
-    // MARK: - Round-Trip Tests
-    
-    func testRoundTripEncodingDecoding() throws {
-        // Given
-        let originalEvent = makeEvent(
-            stepName: "tool_calling",
-            timestamp: EventTestData.timestamp
-        )
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-        
-        // When
-        let encodedData = try encoder.encode(originalEvent)
-        let decodedEvent = try decoder.decode(StepStartedEvent.self, from: encodedData)
-        
+        let event = StepStartedEvent(stepName: "reasoning", timestamp: nil, rawEvent: nil)
+
         // Then
-        assertEventProperties(
-            decodedEvent,
-            expectedStepName: originalEvent.stepName,
-            expectedTimestamp: originalEvent.timestamp
-        )
-        XCTAssertEqual(
-            decodedEvent.eventType,
-            originalEvent.eventType,
-            "eventType should match after round-trip"
-        )
+        XCTAssertEqual(event.eventType, .stepStarted)
     }
-    
-    func testRoundTripEncodingDecodingWithoutTimestamp() throws {
+
+    func test_stepStartedEvent_equatable_sameFields_areEqual() {
         // Given
-        let originalEvent = makeEvent(stepName: "reasoning")
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-        
-        // When
-        let encodedData = try encoder.encode(originalEvent)
-        let decodedEvent = try decoder.decode(StepStartedEvent.self, from: encodedData)
-        
+        let a = StepStartedEvent(stepName: "reasoning", timestamp: 1, rawEvent: nil)
+        let b = StepStartedEvent(stepName: "reasoning", timestamp: 1, rawEvent: nil)
+
         // Then
-        assertEventProperties(
-            decodedEvent,
-            expectedStepName: originalEvent.stepName,
-            expectedTimestamp: nil,
-        )
-        XCTAssertEqual(
-            decodedEvent.eventType,
-            originalEvent.eventType,
-            "eventType should match after round-trip"
-        )
+        XCTAssertEqual(a, b)
     }
-    
-    func testRoundTripWithUnicodeStepName() throws {
+
+    func test_stepStartedEvent_withEmptyStepName_isValid() {
         // Given
-        let stepName = "推理-🚀-测试"
-        let originalEvent = makeEvent(stepName: stepName)
-        let encoder = JSONEncoder()
-        let decoder = JSONDecoder()
-        
-        // When
-        let encodedData = try encoder.encode(originalEvent)
-        let decodedEvent = try decoder.decode(StepStartedEvent.self, from: encodedData)
-        
+        let event = StepStartedEvent(stepName: "", timestamp: nil, rawEvent: nil)
+
         // Then
-        XCTAssertEqual(
-            decodedEvent.stepName,
-            originalEvent.stepName,
-            "Unicode stepName should survive round-trip"
+        XCTAssertEqual(event.stepName, "")
+        XCTAssertEqual(event.eventType, .stepStarted)
+    }
+
+    // MARK: - Helpers
+
+    private func makeStrictDecoder(
+        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
+    ) -> AGUIEventDecoder {
+        var config = AGUIEventDecoder.Configuration()
+        config.unknownEventStrategy = .throwError
+        return AGUIEventDecoder(
+            config: config,
+            makeDecoder: { JSONDecoder() },
+            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
         )
     }
-    
-    // MARK: - Event-Specific Factory Methods
-    
-    private func makeEvent(
-        stepName: String = "reasoning",
-        timestamp: Int64? = nil,
-    ) -> StepStartedEvent {
-        StepStartedEvent(
-            stepName: stepName,
-            timestamp: timestamp,
+
+    private func makeTolerantDecoder(
+        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
+    ) -> AGUIEventDecoder {
+        var config = AGUIEventDecoder.Configuration()
+        config.unknownEventStrategy = .returnUnknown
+        return AGUIEventDecoder(
+            config: config,
+            makeDecoder: { JSONDecoder() },
+            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
         )
     }
-    
-    // MARK: - Helper Methods
-    
-    private func assertEventProperties(
-        _ event: StepStartedEvent,
-        expectedStepName: String,
-        expectedTimestamp: Int64? = nil,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(
-            event.stepName,
-            expectedStepName,
-            "stepName should match expected value",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            event.timestamp,
-            expectedTimestamp,
-            "timestamp should match expected value",
-            file: file,
-            line: line
-        )
-    }
-    
-    private func assertJSONStructure(
-        _ json: [String: Any],
-        expectedType: String = "STEP_STARTED",
-        expectedStepName: String = "reasoning",
-        expectedTimestamp: Int64? = nil,
-        shouldOmitTimestamp: Bool = false,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertEqual(
-            json["type"] as? String,
-            expectedType,
-            "Event type should be \(expectedType)",
-            file: file,
-            line: line
-        )
-        XCTAssertEqual(
-            json["stepName"] as? String,
-            expectedStepName,
-            "stepName should match expected value",
-            file: file,
-            line: line
-        )
-        
-        if shouldOmitTimestamp {
-            XCTAssertNil(
-                json["timestamp"],
-                "timestamp should be omitted when nil",
-                file: file,
-                line: line
-            )
-        } else if let expectedTimestamp = expectedTimestamp {
-            XCTAssertEqual(
-                json["timestamp"] as? Int64,
-                expectedTimestamp,
-                "timestamp should match expected value",
-                file: file,
-                line: line
-            )
-        }
-        
-    }
-    
-    private func assertDecodingError(
-        _ error: Error,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        guard error is DecodingError else {
-            XCTFail(
-                "Expected DecodingError, got \(type(of: error))",
-                file: file,
-                line: line
-            )
-            return
-        }
+
+    private func jsonData(_ json: String) -> Data {
+        Data(json.utf8)
     }
 }
-
