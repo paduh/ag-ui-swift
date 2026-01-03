@@ -100,3 +100,7 @@ docs/*
 # SwiftLint
 .swiftlintcache
 
+# Local documentation (not for public repository)
+MEDIUM_ARTICLE.md
+docs-test/
+
