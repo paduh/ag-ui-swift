@@ -20,8 +20,11 @@ enum ToolCallEventRegistry {
             },
             .toolCallEnd: { data, decoder in
                 try decoder.decode(ToolCallEndEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .toolCallResult: { data, decoder in
+                try decoder.decode(ToolCallResultEventDTO.self, from: data).toDomain(rawEvent: data)
             }
-            // Add more: toolCallResult, toolCallChunk...
+            // Add more: toolCallChunk...
         ]
     }
 }
