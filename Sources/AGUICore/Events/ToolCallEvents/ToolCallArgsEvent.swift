@@ -78,4 +78,3 @@ extension ToolCallArgsEvent: CustomDebugStringConvertible {
         """
     }
 }
-

@@ -92,4 +92,3 @@ extension ToolCallResultEvent: CustomDebugStringConvertible {
         """
     }
 }
-

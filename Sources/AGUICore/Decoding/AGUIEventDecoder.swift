@@ -308,4 +308,3 @@ public struct AGUIEventDecoder {
         }
     }
 }
-
