@@ -33,6 +33,9 @@ extension AGUIEventDecoder {
             },
             .toolCallStart: { data, decoder in
                 try decoder.decode(ToolCallStartEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .toolCallArgs: { data, decoder in
+                try decoder.decode(ToolCallArgsEventDTO.self, from: data).toDomain(rawEvent: data)
             }
         ]
     }
