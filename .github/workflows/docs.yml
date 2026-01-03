@@ -45,15 +45,30 @@ jobs:
         mkdir -p docs
         
         # Generate docs for each target
+        # Note: Each target gets its own subdirectory and base path
         for target in AGUICore AGUIClient AGUITools AGUIAgentSDK; do
           echo "📚 Generating docs for $target..."
           swift package --allow-writing-to-directory ./docs/$target \
             generate-documentation --target $target \
             --disable-indexing \
             --transform-for-static-hosting \
-            --hosting-base-path ag-ui-swift/$target \
+            --hosting-base-path /ag-ui-swift/$target \
             --output-path ./docs/$target
+          
+          # Verify index.html was created
+          if [ ! -f "./docs/$target/index.html" ]; then
+            echo "⚠️  Warning: index.html not found for $target"
+          else
+            echo "✅ Successfully generated docs for $target"
+          fi
         done
+        
+        # Create .nojekyll to prevent Jekyll processing (important for GitHub Pages)
+        touch ./docs/.nojekyll
+        
+        # List generated directories for debugging
+        echo "📁 Generated documentation structure:"
+        ls -la ./docs/ | grep "^d" | awk '{print $NF}'
 
     - name: Fix filenames for artifact upload
       run: |

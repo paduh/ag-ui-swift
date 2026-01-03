@@ -46,6 +46,45 @@ API documentation is automatically generated and published to [GitHub Pages](htt
 
 For local documentation generation, see the [Documentation README](docs/README.md).
 
+### Local Testing Setup
+
+To test documentation generation locally before pushing:
+
+**1. Generate documentation:**
+```bash
+./test-docs-local.sh
+```
+
+This generates documentation for all targets in the `docs-test/` directory, matching the CI workflow.
+
+**2. Verify structure:**
+```bash
+./verify-docs-structure.sh
+```
+
+**3. Serve locally:**
+
+Choose one of these methods:
+
+```bash
+# Python 3 (Recommended)
+python3 -m http.server 8000 --directory docs-test
+
+# Node.js
+npx serve docs-test
+
+# PHP
+php -S localhost:8000 -t docs-test
+```
+
+Then open `http://localhost:8000` in your browser.
+
+**Note:** When testing locally, the base path `/ag-ui-swift/$target` won't match exactly because you're serving from `localhost:8000`. However, you can verify:
+- All files are generated correctly
+- The structure matches GitHub Pages expectations
+- Links between pages work
+- The landing page navigation functions properly
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
