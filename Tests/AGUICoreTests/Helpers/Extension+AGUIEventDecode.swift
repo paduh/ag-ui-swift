@@ -24,6 +24,9 @@ extension AGUIEventDecoder {
             },
             .textMessageStart: { data, decoder in
                 try decoder.decode(TextMessageStartEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .textMessageContent: { data, decoder in
+                try decoder.decode(TextMessageContentEventDTO.self, from: data).toDomain(rawEvent: data)
             }
         ]
     }
