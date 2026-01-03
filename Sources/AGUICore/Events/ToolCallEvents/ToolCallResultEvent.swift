@@ -73,7 +73,9 @@ public struct ToolCallResultEvent: AGUIEvent, Equatable, Hashable, Sendable {
 // MARK: - CustomStringConvertible
 extension ToolCallResultEvent: CustomStringConvertible {
     public var description: String {
-        "ToolCallResultEvent(messageId: \(messageId), toolCallId: \(toolCallId), content: \"\(content)\", role: \(role ?? "nil"), timestamp: \(timestamp?.description ?? "nil"))"
+        "ToolCallResultEvent(messageId: \(messageId), toolCallId: \(toolCallId), " +
+        "content: \"\(content)\", role: \(role ?? "nil"), " +
+        "timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
 

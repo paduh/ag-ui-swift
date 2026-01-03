@@ -12,4 +12,3 @@ struct ToolCallEndEventDTO: Decodable {
         )
     }
 }
-

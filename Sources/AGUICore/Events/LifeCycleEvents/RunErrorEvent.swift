@@ -77,7 +77,8 @@ public struct RunErrorEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
 extension RunErrorEvent: CustomStringConvertible {
     public var description: String {
-        "RunErrorEvent(threadId: \(threadId), runId: \(runId), error: \(error.code), timestamp: \(timestamp?.description ?? "nil"))"
+        "RunErrorEvent(threadId: \(threadId), runId: \(runId), " +
+        "error: \(error.code), timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
 

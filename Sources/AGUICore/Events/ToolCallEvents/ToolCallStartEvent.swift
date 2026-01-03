@@ -67,7 +67,9 @@ public struct ToolCallStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
 // MARK: - CustomStringConvertible
 extension ToolCallStartEvent: CustomStringConvertible {
     public var description: String {
-        "ToolCallStartEvent(toolCallId: \(toolCallId), toolCallName: \(toolCallName), parentMessageId: \(parentMessageId ?? "nil"), timestamp: \(timestamp?.description ?? "nil"))"
+        "ToolCallStartEvent(toolCallId: \(toolCallId), toolCallName: \(toolCallName), " +
+        "parentMessageId: \(parentMessageId ?? "nil"), " +
+        "timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
 

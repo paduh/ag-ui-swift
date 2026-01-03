@@ -8,7 +8,7 @@ struct TypeDiscriminator: Decodable {
     enum CodingKeys: String, CodingKey { case type }
 
     init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        self.typeRaw = try c.decode(String.self, forKey: .type)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.typeRaw = try container.decode(String.self, forKey: .type)
     }
 }

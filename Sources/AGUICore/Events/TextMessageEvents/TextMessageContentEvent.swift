@@ -62,7 +62,8 @@ public struct TextMessageContentEvent: AGUIEvent, Equatable, Hashable, Sendable 
 // MARK: - CustomStringConvertible
 extension TextMessageContentEvent: CustomStringConvertible {
     public var description: String {
-        "TextMessageContentEvent(messageId: \(messageId), delta: \"\(delta)\", timestamp: \(timestamp?.description ?? "nil"))"
+        "TextMessageContentEvent(messageId: \(messageId), delta: \"\(delta)\", " +
+        "timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
 

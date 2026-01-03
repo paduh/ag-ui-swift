@@ -27,14 +27,16 @@ public enum EventDecodingError: Error, LocalizedError, Equatable {
         case .decodingFailed(let message):
             return "Event decoding failed: \(message)"
         case .unsupportedEventType(let type):
-            return "Unsupported event type: '\(type.rawValue)'. This SDK knows about it but doesn't implement decoding for it."
+            return "Unsupported event type: '\(type.rawValue)'. " +
+                "This SDK knows about it but doesn't implement decoding for it."
         }
     }
 
     public var recoverySuggestion: String? {
         switch self {
         case .unknownEventType:
-            return "Check if you're using the latest version of AGUISwift, or inspect the raw JSON to see if it's a custom event type."
+            return "Check if you're using the latest version of AGUISwift, " +
+                "or inspect the raw JSON to see if it's a custom event type."
         case .invalidJSON:
             return "Verify that the JSON data is well-formed and complete."
         case .missingTypeField:

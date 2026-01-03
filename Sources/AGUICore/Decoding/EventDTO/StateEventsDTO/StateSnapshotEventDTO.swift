@@ -27,7 +27,7 @@ struct StateSnapshotEventDTO {
         let snapshotData: Data
         if snapshotValue is NSNull {
             // NSNull needs special handling - encode as null JSON
-            snapshotData = "null".data(using: .utf8)!
+            snapshotData = Data("null".utf8)
         } else if snapshotValue is [Any] || snapshotValue is [String: Any] {
             // Collections can use JSONSerialization
             snapshotData = try JSONSerialization.data(withJSONObject: snapshotValue, options: [])

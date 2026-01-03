@@ -12,9 +12,9 @@ enum RegistryComposer {
 
     static func compose(_ registries: [EventType: DecodeHandler]...) -> [EventType: DecodeHandler] {
         registries.reduce(into: [:]) { result, next in
-            for (k, v) in next {
+            for (key, value) in next {
                 // If you want "last one wins" override behavior:
-                result[k] = v
+                result[key] = value
             }
         }
     }

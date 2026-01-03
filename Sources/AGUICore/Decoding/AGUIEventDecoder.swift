@@ -216,39 +216,62 @@ public struct AGUIEventDecoder {
     public func decode(_ data: Data) throws -> any AGUIEvent {
         let decoder = makeDecoder()
 
-        let disc: TypeDiscriminator
-        do {
-            disc = try decoder.decode(TypeDiscriminator.self, from: data)
-        } catch let e as DecodingError {
-            throw mapDecodingError(e)
-        } catch {
-            throw EventDecodingError.invalidJSON
-        }
+        let disc = try decodeTypeDiscriminator(from: data, decoder: decoder)
 
         guard let type = EventType(rawValue: disc.typeRaw) else {
-            switch config.unknownEventStrategy {
-            case .throwError:
-                throw EventDecodingError.unknownEventType(disc.typeRaw)
-            case .returnUnknown:
-                return UnknownEvent(typeRaw: disc.typeRaw, rawEvent: data)
-            }
+            return try handleUnknownEventType(typeRaw: disc.typeRaw, rawEvent: data)
         }
 
         guard let handler = registry[type] else {
-            switch config.unknownEventStrategy {
-            case .throwError:
-                throw EventDecodingError.unsupportedEventType(type)
-            case .returnUnknown:
-                return UnknownEvent(typeRaw: disc.typeRaw, rawEvent: data)
-            }
+            return try handleMissingHandler(for: type, typeRaw: disc.typeRaw, rawEvent: data)
         }
 
+        return try executeHandler(handler, data: data, decoder: decoder)
+    }
+
+    private func decodeTypeDiscriminator(from data: Data, decoder: JSONDecoder) throws -> TypeDiscriminator {
+        do {
+            return try decoder.decode(TypeDiscriminator.self, from: data)
+        } catch let error as DecodingError {
+            throw mapDecodingError(error)
+        } catch {
+            throw EventDecodingError.invalidJSON
+        }
+    }
+
+    private func handleUnknownEventType(typeRaw: String, rawEvent: Data) throws -> any AGUIEvent {
+        switch config.unknownEventStrategy {
+        case .throwError:
+            throw EventDecodingError.unknownEventType(typeRaw)
+        case .returnUnknown:
+            return UnknownEvent(typeRaw: typeRaw, rawEvent: rawEvent)
+        }
+    }
+
+    private func handleMissingHandler(
+        for type: EventType,
+        typeRaw: String,
+        rawEvent: Data
+    ) throws -> any AGUIEvent {
+        switch config.unknownEventStrategy {
+        case .throwError:
+            throw EventDecodingError.unsupportedEventType(type)
+        case .returnUnknown:
+            return UnknownEvent(typeRaw: typeRaw, rawEvent: rawEvent)
+        }
+    }
+
+    private func executeHandler(
+        _ handler: DecodeHandler,
+        data: Data,
+        decoder: JSONDecoder
+    ) throws -> any AGUIEvent {
         do {
             return try handler(data, decoder)
-        } catch let e as EventDecodingError {
-            throw e
-        } catch let e as DecodingError {
-            throw mapDecodingError(e)
+        } catch let error as EventDecodingError {
+            throw error
+        } catch let error as DecodingError {
+            throw mapDecodingError(error)
         } catch {
             throw EventDecodingError.decodingFailed(error.localizedDescription)
         }
@@ -288,8 +311,8 @@ public struct AGUIEventDecoder {
 
     private func mapDecodingError(_ error: DecodingError) -> EventDecodingError {
         func path(_ codingPath: [CodingKey]) -> String {
-            let p = codingPath.map(\.stringValue).joined(separator: ".")
-            return p.isEmpty ? "root" : p
+            let pathString = codingPath.map(\.stringValue).joined(separator: ".")
+            return pathString.isEmpty ? "root" : pathString
         }
 
         switch error {
@@ -299,10 +322,10 @@ public struct AGUIEventDecoder {
             return .invalidJSON
         case .keyNotFound(let key, let ctx):
             return .decodingFailed("Missing key '\(key.stringValue)' at \(path(ctx.codingPath))")
-        case .typeMismatch(let t, let ctx):
-            return .decodingFailed("Type mismatch '\(t)' at \(path(ctx.codingPath))")
-        case .valueNotFound(let t, let ctx):
-            return .decodingFailed("Missing value '\(t)' at \(path(ctx.codingPath))")
+        case .typeMismatch(let type, let ctx):
+            return .decodingFailed("Type mismatch '\(type)' at \(path(ctx.codingPath))")
+        case .valueNotFound(let type, let ctx):
+            return .decodingFailed("Missing value '\(type)' at \(path(ctx.codingPath))")
         @unknown default:
             return .decodingFailed(String(describing: error))
         }

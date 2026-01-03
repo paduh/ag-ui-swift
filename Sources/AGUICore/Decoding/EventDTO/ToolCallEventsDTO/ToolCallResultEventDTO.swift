@@ -18,4 +18,3 @@ struct ToolCallResultEventDTO: Decodable {
         )
     }
 }
-

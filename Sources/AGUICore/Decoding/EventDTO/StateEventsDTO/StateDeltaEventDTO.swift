@@ -40,7 +40,7 @@ struct StateDeltaEventDTO {
     private static func serializeDelta(_ deltaValue: Any) throws -> Data {
         if deltaValue is NSNull {
             // NSNull needs special handling - encode as null JSON
-            return "null".data(using: .utf8)!
+            return Data("null".utf8)
         } else if deltaValue is [Any] {
             // Array can use JSONSerialization
             return try JSONSerialization.data(withJSONObject: deltaValue, options: [])

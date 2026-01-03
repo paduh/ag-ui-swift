@@ -61,7 +61,8 @@ public struct ToolCallArgsEvent: AGUIEvent, Equatable, Hashable, Sendable {
 // MARK: - CustomStringConvertible
 extension ToolCallArgsEvent: CustomStringConvertible {
     public var description: String {
-        "ToolCallArgsEvent(toolCallId: \(toolCallId), delta: \"\(delta)\", timestamp: \(timestamp?.description ?? "nil"))"
+        "ToolCallArgsEvent(toolCallId: \(toolCallId), delta: \"\(delta)\", " +
+        "timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
 

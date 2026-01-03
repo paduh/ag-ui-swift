@@ -22,4 +22,3 @@ enum StateEventRegistry {
         ]
     }
 }
-
