@@ -70,19 +70,6 @@ jobs:
         echo "📁 Generated documentation structure:"
         ls -la ./docs/ | grep "^d" | awk '{print $NF}'
 
-    - name: Fix filenames for artifact upload
-      run: |
-        # Replace colons with hyphens in filenames
-        find ./docs -depth -name "*:*" | while read -r file; do
-          dir=$(dirname "$file")
-          base=$(basename "$file")
-          newbase=$(echo "$base" | tr ':' '-')
-          mv "$file" "$dir/$newbase"
-        done
-        
-        # Update JSON references (macOS sed syntax - build runs on macos-latest)
-        find ./docs -name "*.json" -type f -exec sed -i '' 's/:/\\-/g' {} +
-
     - name: Create landing page
       run: |
         cat > ./docs/index.html << 'EOF'
