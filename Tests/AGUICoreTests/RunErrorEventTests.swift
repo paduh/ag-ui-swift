@@ -418,7 +418,7 @@ final class RunErrorEventTests: XCTestCase {
         return AGUIEventDecoder(
             config: config,
             makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
+            registry: registry ?? AGUIEventDecoder.defaultRegistry()
         )
     }
 
@@ -430,7 +430,7 @@ final class RunErrorEventTests: XCTestCase {
         return AGUIEventDecoder(
             config: config,
             makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
+            registry: registry ?? AGUIEventDecoder.defaultRegistry()
         )
     }
 

@@ -424,7 +424,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         return AGUIEventDecoder(
             config: config,
             makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
+            registry: registry ?? AGUIEventDecoder.defaultRegistry()
         )
     }
 
@@ -436,7 +436,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         return AGUIEventDecoder(
             config: config,
             makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistryForTests
+            registry: registry ?? AGUIEventDecoder.defaultRegistry()
         )
     }
 
