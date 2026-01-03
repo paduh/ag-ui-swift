@@ -129,3 +129,4 @@ extension StateDeltaEvent: CustomDebugStringConvertible {
         """
     }
 }
+
