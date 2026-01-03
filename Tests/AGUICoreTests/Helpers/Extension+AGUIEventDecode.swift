@@ -30,6 +30,9 @@ extension AGUIEventDecoder {
             },
             .textMessageEnd: { data, decoder in
                 try decoder.decode(TextMessageEndEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .toolCallStart: { data, decoder in
+                try decoder.decode(ToolCallStartEventDTO.self, from: data).toDomain(rawEvent: data)
             }
         ]
     }

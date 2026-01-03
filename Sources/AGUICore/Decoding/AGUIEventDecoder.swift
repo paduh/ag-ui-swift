@@ -279,7 +279,8 @@ public struct AGUIEventDecoder {
         RegistryComposer.compose(
             LifecycleEventRegistry.registry(),
             TextMessageEventRegistry.registry(),
-            // Add more: StateRegistry, ToolRegistry...
+            ToolCallEventRegistry.registry(),
+            // Add more: StateRegistry...
         )
     }
 
