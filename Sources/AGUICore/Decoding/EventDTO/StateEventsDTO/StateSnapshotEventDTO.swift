@@ -6,35 +6,22 @@ struct StateSnapshotEventDTO {
 
     static func decode(from data: Data, decoder: JSONDecoder) throws -> StateSnapshotEventDTO {
         // Parse the entire JSON to extract the snapshot field
-        let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as! [String: Any]
-        
+        guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(codingPath: [], debugDescription: "Expected JSON object at root")
+            )
+        }
+
         guard let snapshotValue = jsonObject["snapshot"] else {
             throw DecodingError.keyNotFound(
                 CodingKeys.snapshot,
                 DecodingError.Context(codingPath: [], debugDescription: "Missing snapshot field")
             )
         }
-        
-        // Extract timestamp using standard decoding
-        let timestamp: Int64?
-        if let timestampValue = jsonObject["timestamp"] {
-            if timestampValue is NSNull {
-                timestamp = nil
-            } else if let timestampValue = timestampValue as? Int64 {
-                timestamp = timestampValue
-            } else if let timestampValue = timestampValue as? Int {
-                timestamp = Int64(timestampValue)
-            } else {
-                // Wrong type for timestamp - this will be caught by the test
-                throw DecodingError.typeMismatch(
-                    Int64.self,
-                    DecodingError.Context(codingPath: [CodingKeys.timestamp], debugDescription: "Expected Int64 for timestamp, got \(type(of: timestampValue))")
-                )
-            }
-        } else {
-            timestamp = nil
-        }
-        
+
+        // Extract timestamp using shared helper
+        let timestamp = try EventDecodingHelpers.extractTimestamp(from: jsonObject)
+
         // Convert snapshot value to JSON data
         // Use JSONEncoder for primitives, JSONSerialization for collections
         let snapshotData: Data
@@ -49,7 +36,7 @@ struct StateSnapshotEventDTO {
             let encoder = JSONEncoder()
             snapshotData = try encoder.encode(JSONPrimitiveWrapper(value: snapshotValue))
         }
-        
+
         return StateSnapshotEventDTO(snapshot: snapshotData, timestamp: timestamp)
     }
 

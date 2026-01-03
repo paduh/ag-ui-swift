@@ -14,8 +14,11 @@ enum StateEventRegistry {
         [
             .stateSnapshot: { data, decoder in
                 try StateSnapshotEventDTO.decode(from: data, decoder: decoder).toDomain(rawEvent: data)
+            },
+            .stateDelta: { data, decoder in
+                try StateDeltaEventDTO.decode(from: data, decoder: decoder).toDomain(rawEvent: data)
             }
-            // Add more: stateDelta, messagesSnapshot...
+            // Add more: messagesSnapshot...
         ]
     }
 }
