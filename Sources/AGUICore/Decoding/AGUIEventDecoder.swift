@@ -280,7 +280,7 @@ public struct AGUIEventDecoder {
             LifecycleEventRegistry.registry(),
             TextMessageEventRegistry.registry(),
             ToolCallEventRegistry.registry(),
-            // Add more: StateRegistry...
+            StateEventRegistry.registry()
         )
     }
 
