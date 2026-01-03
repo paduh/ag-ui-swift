@@ -21,6 +21,9 @@ extension AGUIEventDecoder {
             },
             .stepStarted: { data, decoder in
                 try decoder.decode(StepStartedEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .textMessageStart: { data, decoder in
+                try decoder.decode(TextMessageStartEventDTO.self, from: data).toDomain(rawEvent: data)
             }
         ]
     }

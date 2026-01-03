@@ -278,7 +278,8 @@ public struct AGUIEventDecoder {
     public static func defaultRegistry() -> [EventType: DecodeHandler] {
         RegistryComposer.compose(
             LifecycleEventRegistry.registry(),
-            // Add more: StateRegistry, TextRegistry, ToolRegistry...
+            TextMessageEventRegistry.registry(),
+            // Add more: StateRegistry, ToolRegistry...
         )
     }
 
