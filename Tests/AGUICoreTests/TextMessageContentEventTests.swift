@@ -1,7 +1,22 @@
 import XCTest
 @testable import AGUICore
 
-final class TextMessageContentEventTests: XCTestCase {
+final class TextMessageContentEventTests: XCTestCase,
+                                   AGUIEventDecoderTestHelpers,
+                                   EventDecodingErrorTests {
+
+    // MARK: - EventDecodingErrorTests Protocol Requirements
+
+    var validEventFieldsWithoutType: [String: Any] {
+        [
+            "messageId": EventTestData.messageId,
+            "delta": "Hello, world!"
+        ]
+    }
+
+    var eventTypeString: String { "TEXT_MESSAGE_CONTENT" }
+    var expectedEventType: EventType { .textMessageContent }
+    var unknownEventTypeString: String { "TEXT_MESSAGE_PAUSED" }
 
     // MARK: - Feature: Decode TEXT_MESSAGE_CONTENT
 
@@ -10,7 +25,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": "Hello, world!"
         }
         """)
@@ -25,7 +40,7 @@ final class TextMessageContentEventTests: XCTestCase {
             return XCTFail("Expected TextMessageContentEvent, got \(type(of: event))")
         }
         XCTAssertEqual(textMessageContent.eventType, .textMessageContent)
-        XCTAssertEqual(textMessageContent.messageId, "msg-123")
+        XCTAssertEqual(textMessageContent.messageId, EventTestData.messageId)
         XCTAssertEqual(textMessageContent.delta, "Hello, world!")
         XCTAssertNil(textMessageContent.timestamp)
     }
@@ -35,9 +50,9 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": "Hello, world!",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -47,7 +62,7 @@ final class TextMessageContentEventTests: XCTestCase {
 
         // Then
         let textMessageContent = try XCTUnwrap(event as? TextMessageContentEvent)
-        XCTAssertEqual(textMessageContent.timestamp, 1704067200000)
+        XCTAssertEqual(textMessageContent.timestamp, EventTestData.timestamp)
     }
 
     func test_decodeTextMessageContent_preservesRawEventBytes() throws {
@@ -55,9 +70,9 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": "Hello, world!",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -75,7 +90,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": "Hello, world!",
           "extraField": "ignored",
           "nested": { "x": 1 }
@@ -88,7 +103,7 @@ final class TextMessageContentEventTests: XCTestCase {
 
         // Then
         let textMessageContent = try XCTUnwrap(event as? TextMessageContentEvent)
-        XCTAssertEqual(textMessageContent.messageId, "msg-123")
+        XCTAssertEqual(textMessageContent.messageId, EventTestData.messageId)
         XCTAssertEqual(textMessageContent.delta, "Hello, world!")
     }
 
@@ -97,7 +112,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": "Hello, 🌍! 你好"
         }
         """)
@@ -116,7 +131,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": "Line 1\\nLine 2\\nLine 3"
         }
         """)
@@ -137,7 +152,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": ""
         }
         """)
@@ -151,102 +166,7 @@ final class TextMessageContentEventTests: XCTestCase {
         XCTAssertEqual(textMessageContent.delta, "")
     }
 
-    // MARK: - Feature: Error handling
-
-    func test_decodeMissingType_throwsMissingTypeField() {
-        // Given
-        let data = jsonData("""
-        {
-          "messageId": "msg-123",
-          "delta": "Hello, world!"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
-        }
-    }
-
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TEXT_MESSAGE_PAUSED",
-          "messageId": "msg-123",
-          "delta": "Hello, world!"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            guard case .unknownEventType(let type) = error as? EventDecodingError else {
-                return XCTFail("Expected unknownEventType, got \(error)")
-            }
-            XCTAssertEqual(type, "TEXT_MESSAGE_PAUSED")
-        }
-    }
-
-    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TEXT_MESSAGE_PAUSED",
-          "messageId": "msg-123",
-          "delta": "Hello, world!"
-        }
-        """)
-        let decoder = makeTolerantDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "TEXT_MESSAGE_PAUSED")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
-          "delta": "Hello, world!"
-        }
-        """)
-
-        // registry intentionally empty -> handler missing
-        let decoder = makeStrictDecoder(registry: [:])
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.textMessageContent))
-        }
-    }
-
-    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
-          "delta": "Hello, world!"
-        }
-        """)
-        let decoder = makeTolerantDecoder(registry: [:])
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "TEXT_MESSAGE_CONTENT")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
+    // MARK: - Feature: Error handling (event-specific)
 
     func test_decodeTextMessageContent_missingMessageId_throwsDecodingFailed() {
         // Given
@@ -272,7 +192,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123"
+          "messageId": "\(EventTestData.messageId)"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -311,7 +231,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": 123
         }
         """)
@@ -331,7 +251,7 @@ final class TextMessageContentEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TEXT_MESSAGE_CONTENT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "delta": "Hello, world!",
           "timestamp": "invalid"
         }
@@ -347,22 +267,11 @@ final class TextMessageContentEventTests: XCTestCase {
         }
     }
 
-    func test_decodeInvalidJSON_throwsInvalidJSON() {
-        // Given
-        let data = Data("invalid json".utf8)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
-        }
-    }
-
     // MARK: - Feature: Model behaviors
 
     func test_textMessageContentEvent_eventTypeIsAlwaysTextMessageContent() {
         // Given
-        let event = TextMessageContentEvent(messageId: "msg-123", delta: "Hello", timestamp: nil, rawEvent: nil)
+        let event = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "Hello", timestamp: nil, rawEvent: nil)
 
         // Then
         XCTAssertEqual(event.eventType, .textMessageContent)
@@ -370,8 +279,8 @@ final class TextMessageContentEventTests: XCTestCase {
 
     func test_textMessageContentEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = TextMessageContentEvent(messageId: "msg-123", delta: "Hello", timestamp: 1, rawEvent: nil)
-        let b = TextMessageContentEvent(messageId: "msg-123", delta: "Hello", timestamp: 1, rawEvent: nil)
+        let a = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "Hello", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "Hello", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertEqual(a, b)
@@ -379,8 +288,8 @@ final class TextMessageContentEventTests: XCTestCase {
 
     func test_textMessageContentEvent_equatable_differentMessageIds_areNotEqual() {
         // Given
-        let a = TextMessageContentEvent(messageId: "msg-123", delta: "Hello", timestamp: 1, rawEvent: nil)
-        let b = TextMessageContentEvent(messageId: "msg-456", delta: "Hello", timestamp: 1, rawEvent: nil)
+        let a = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "Hello", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = TextMessageContentEvent(messageId: EventTestData.messageId2, delta: "Hello", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -388,8 +297,8 @@ final class TextMessageContentEventTests: XCTestCase {
 
     func test_textMessageContentEvent_equatable_differentDeltas_areNotEqual() {
         // Given
-        let a = TextMessageContentEvent(messageId: "msg-123", delta: "Hello", timestamp: 1, rawEvent: nil)
-        let b = TextMessageContentEvent(messageId: "msg-123", delta: "World", timestamp: 1, rawEvent: nil)
+        let a = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "Hello", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "World", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -397,8 +306,8 @@ final class TextMessageContentEventTests: XCTestCase {
 
     func test_textMessageContentEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = TextMessageContentEvent(messageId: "msg-123", delta: "Hello", timestamp: 1, rawEvent: nil)
-        let b = TextMessageContentEvent(messageId: "msg-123", delta: "Hello", timestamp: 2, rawEvent: nil)
+        let a = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "Hello", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "Hello", timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -407,41 +316,10 @@ final class TextMessageContentEventTests: XCTestCase {
     func test_textMessageContentEvent_withEmptyDelta_isValid() {
         // Given
         // Note: Protocol says delta should be non-empty, but we allow it for flexibility
-        let event = TextMessageContentEvent(messageId: "msg-123", delta: "", timestamp: nil, rawEvent: nil)
+        let event = TextMessageContentEvent(messageId: EventTestData.messageId, delta: "", timestamp: nil, rawEvent: nil)
 
         // Then
         XCTAssertEqual(event.delta, "")
         XCTAssertEqual(event.eventType, .textMessageContent)
     }
-
-    // MARK: - Helpers
-
-    private func makeStrictDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .throwError
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func makeTolerantDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .returnUnknown
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func jsonData(_ json: String) -> Data {
-        Data(json.utf8)
-    }
 }
-

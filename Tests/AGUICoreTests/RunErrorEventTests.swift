@@ -1,7 +1,26 @@
 import XCTest
 @testable import AGUICore
 
-final class RunErrorEventTests: XCTestCase {
+final class RunErrorEventTests: XCTestCase,
+                                 AGUIEventDecoderTestHelpers,
+                                 EventDecodingErrorTests {
+
+    // MARK: - EventDecodingErrorTests Protocol Requirements
+
+    var validEventFieldsWithoutType: [String: Any] {
+        [
+            "threadId": EventTestData.threadId,
+            "runId": EventTestData.runId,
+            "error": [
+                "code": "ERROR_CODE",
+                "message": "An error occurred"
+            ]
+        ]
+    }
+
+    var eventTypeString: String { "RUN_ERROR" }
+    var expectedEventType: EventType { .runError }
+    var unknownEventTypeString: String { "RUN_CANCELLED" }
 
     // MARK: - Feature: Decode RUN_ERROR
 
@@ -10,8 +29,8 @@ final class RunErrorEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_ERROR",
-          "threadId": "thread-123",
-          "runId": "run-456",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
           "error": {
             "code": "ERROR_CODE",
             "message": "An error occurred"
@@ -29,8 +48,8 @@ final class RunErrorEventTests: XCTestCase {
             return XCTFail("Expected RunErrorEvent, got \(type(of: event))")
         }
         XCTAssertEqual(runError.eventType, .runError)
-        XCTAssertEqual(runError.threadId, "thread-123")
-        XCTAssertEqual(runError.runId, "run-456")
+        XCTAssertEqual(runError.threadId, EventTestData.threadId)
+        XCTAssertEqual(runError.runId, EventTestData.runId)
         XCTAssertEqual(runError.error.code, "ERROR_CODE")
         XCTAssertEqual(runError.error.message, "An error occurred")
         XCTAssertNil(runError.error.details)
@@ -42,13 +61,13 @@ final class RunErrorEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_ERROR",
-          "threadId": "thread-123",
-          "runId": "run-456",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
           "error": {
             "code": "ERROR_CODE",
             "message": "An error occurred"
           },
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -58,7 +77,7 @@ final class RunErrorEventTests: XCTestCase {
 
         // Then
         let runError = try XCTUnwrap(event as? RunErrorEvent)
-        XCTAssertEqual(runError.timestamp, 1704067200000)
+        XCTAssertEqual(runError.timestamp, EventTestData.timestamp)
     }
 
     func test_decodeRunError_withErrorDetails_populatesDetails() throws {
@@ -66,8 +85,8 @@ final class RunErrorEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_ERROR",
-          "threadId": "thread-123",
-          "runId": "run-456",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
           "error": {
             "code": "ERROR_CODE_123",
             "message": "An error occurred",
@@ -94,13 +113,13 @@ final class RunErrorEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_ERROR",
-          "threadId": "thread-123",
-          "runId": "run-456",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
           "error": {
             "code": "ERROR_CODE",
             "message": "An error occurred"
           },
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -118,8 +137,8 @@ final class RunErrorEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_ERROR",
-          "threadId": "thread-123",
-          "runId": "run-456",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
           "error": {
             "code": "ERROR_CODE",
             "message": "An error occurred"
@@ -135,124 +154,12 @@ final class RunErrorEventTests: XCTestCase {
 
         // Then
         let runError = try XCTUnwrap(event as? RunErrorEvent)
-        XCTAssertEqual(runError.threadId, "thread-123")
-        XCTAssertEqual(runError.runId, "run-456")
+        XCTAssertEqual(runError.threadId, EventTestData.threadId)
+        XCTAssertEqual(runError.runId, EventTestData.runId)
         XCTAssertEqual(runError.error.code, "ERROR_CODE")
     }
 
-    // MARK: - Feature: Error handling
-
-    func test_decodeMissingType_throwsMissingTypeField() {
-        // Given
-        let data = jsonData("""
-        {
-          "threadId": "thread-123",
-          "runId": "run-456",
-          "error": {
-            "code": "ERROR_CODE",
-            "message": "An error occurred"
-          }
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
-        }
-    }
-
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_PAUSED",
-          "threadId": "thread-123",
-          "runId": "run-456",
-          "error": {
-            "code": "ERROR_CODE",
-            "message": "An error occurred"
-          }
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unknownEventType("RUN_PAUSED"))
-        }
-    }
-
-    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_PAUSED",
-          "threadId": "thread-123",
-          "runId": "run-456",
-          "error": {
-            "code": "ERROR_CODE",
-            "message": "An error occurred"
-          }
-        }
-        """)
-        let decoder = makeTolerantDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "RUN_PAUSED")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_ERROR",
-          "threadId": "thread-123",
-          "runId": "run-456",
-          "error": {
-            "code": "ERROR_CODE",
-            "message": "An error occurred"
-          }
-        }
-        """)
-
-        // registry intentionally empty -> handler missing
-        let decoder = makeStrictDecoder(registry: [:])
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.runError))
-        }
-    }
-
-    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_ERROR",
-          "threadId": "thread-123",
-          "runId": "run-456",
-          "error": {
-            "code": "ERROR_CODE",
-            "message": "An error occurred"
-          }
-        }
-        """)
-        let decoder = makeTolerantDecoder(registry: [:])
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "RUN_ERROR")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
+    // MARK: - Feature: Error handling (event-specific)
 
     func test_decodeRunError_missingThreadId_throwsDecodingFailed() {
         // Given
@@ -367,17 +274,6 @@ final class RunErrorEventTests: XCTestCase {
         }
     }
 
-    func test_decodeInvalidJSON_throwsInvalidJSON() {
-        // Given
-        let data = jsonData(#"{ "type": "RUN_ERROR", "threadId": "t1", "#) // truncated JSON
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
-        }
-    }
-
     // MARK: - Feature: Model behaviors
 
     func test_runErrorEvent_eventTypeIsAlwaysRunError() {
@@ -406,35 +302,5 @@ final class RunErrorEventTests: XCTestCase {
 
         // Then
         XCTAssertEqual(a, b)
-    }
-
-    // MARK: - Helpers
-
-    private func makeStrictDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .throwError
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func makeTolerantDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .returnUnknown
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func jsonData(_ json: String) -> Data {
-        Data(json.utf8)
     }
 }

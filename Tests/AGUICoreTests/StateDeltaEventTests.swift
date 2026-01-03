@@ -1,7 +1,23 @@
 import XCTest
 @testable import AGUICore
 
-final class StateDeltaEventTests: XCTestCase {
+final class StateDeltaEventTests: XCTestCase,
+                                   AGUIEventDecoderTestHelpers,
+                                   EventDecodingErrorTests {
+
+    // MARK: - EventDecodingErrorTests Protocol Requirements
+
+    var validEventFieldsWithoutType: [String: Any] {
+        [
+            "delta": [
+                ["op": "add", "path": "/foo", "value": "bar"]
+            ]
+        ]
+    }
+
+    var eventTypeString: String { "STATE_DELTA" }
+    var expectedEventType: EventType { .stateDelta }
+    var unknownEventTypeString: String { "STATE_UPDATE" }
 
     // MARK: - Feature: Decode STATE_DELTA
 
@@ -166,7 +182,7 @@ final class StateDeltaEventTests: XCTestCase {
           "delta": [
             { "op": "add", "path": "/foo", "value": "bar" }
           ],
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -176,7 +192,7 @@ final class StateDeltaEventTests: XCTestCase {
 
         // Then
         let stateDelta = try XCTUnwrap(event as? StateDeltaEvent)
-        XCTAssertEqual(stateDelta.timestamp, 1704067200000)
+        XCTAssertEqual(stateDelta.timestamp, EventTestData.timestamp)
     }
 
     func test_decodeStateDelta_preservesRawEventBytes() throws {
@@ -187,7 +203,7 @@ final class StateDeltaEventTests: XCTestCase {
           "delta": [
             { "op": "add", "path": "/foo", "value": "bar" }
           ],
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -252,112 +268,12 @@ final class StateDeltaEventTests: XCTestCase {
 
     // MARK: - Feature: Error handling
 
-    func test_decodeMissingType_throwsMissingTypeField() {
-        // Given
-        let data = jsonData("""
-        {
-          "delta": [
-            { "op": "add", "path": "/foo", "value": "bar" }
-          ]
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
-        }
-    }
-
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "STATE_UPDATE",
-          "delta": [
-            { "op": "add", "path": "/foo", "value": "bar" }
-          ]
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            guard case .unknownEventType(let type) = error as? EventDecodingError else {
-                return XCTFail("Expected unknownEventType, got \(error)")
-            }
-            XCTAssertEqual(type, "STATE_UPDATE")
-        }
-    }
-
-    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "STATE_UPDATE",
-          "delta": [
-            { "op": "add", "path": "/foo", "value": "bar" }
-          ]
-        }
-        """)
-        let decoder = makeTolerantDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "STATE_UPDATE")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "STATE_DELTA",
-          "delta": [
-            { "op": "add", "path": "/foo", "value": "bar" }
-          ]
-        }
-        """)
-
-        // registry intentionally empty -> handler missing
-        let decoder = makeStrictDecoder(registry: [:])
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.stateDelta))
-        }
-    }
-
-    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "STATE_DELTA",
-          "delta": [
-            { "op": "add", "path": "/foo", "value": "bar" }
-          ]
-        }
-        """)
-        let decoder = makeTolerantDecoder(registry: [:])
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "STATE_DELTA")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
     func test_decodeStateDelta_missingDelta_throwsDecodingFailed() {
         // Given
         let data = jsonData("""
         {
           "type": "STATE_DELTA",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -412,17 +328,6 @@ final class StateDeltaEventTests: XCTestCase {
         }
     }
 
-    func test_decodeInvalidJSON_throwsInvalidJSON() {
-        // Given
-        let data = Data("invalid json".utf8)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
-        }
-    }
-
     // MARK: - Feature: Model behaviors
 
     func test_stateDeltaEvent_eventTypeIsAlwaysStateDelta() {
@@ -437,8 +342,8 @@ final class StateDeltaEventTests: XCTestCase {
     func test_stateDeltaEvent_equatable_sameDeltas_areEqual() throws {
         // Given
         let deltaData = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData, timestamp: 1, rawEvent: nil)
-        let b = StateDeltaEvent(delta: deltaData, timestamp: 1, rawEvent: nil)
+        let a = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertEqual(a, b)
@@ -448,8 +353,8 @@ final class StateDeltaEventTests: XCTestCase {
         // Given
         let deltaData1 = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
         let deltaData2 = try! JSONSerialization.data(withJSONObject: [["op": "remove", "path": "/foo"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData1, timestamp: 1, rawEvent: nil)
-        let b = StateDeltaEvent(delta: deltaData2, timestamp: 1, rawEvent: nil)
+        let a = StateDeltaEvent(delta: deltaData1, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = StateDeltaEvent(delta: deltaData2, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -458,8 +363,8 @@ final class StateDeltaEventTests: XCTestCase {
     func test_stateDeltaEvent_equatable_differentTimestamps_areNotEqual() throws {
         // Given
         let deltaData = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData, timestamp: 1, rawEvent: nil)
-        let b = StateDeltaEvent(delta: deltaData, timestamp: 2, rawEvent: nil)
+        let a = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -468,7 +373,7 @@ final class StateDeltaEventTests: XCTestCase {
     func test_stateDeltaEvent_equatable_oneWithTimestampOneWithout_areNotEqual() throws {
         // Given
         let deltaData = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData, timestamp: 1, rawEvent: nil)
+        let a = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
         let b = StateDeltaEvent(delta: deltaData, timestamp: nil, rawEvent: nil)
 
         // Then
@@ -563,23 +468,4 @@ final class StateDeltaEventTests: XCTestCase {
             XCTAssertTrue(error is DecodingError)
         }
     }
-
-    // MARK: - Helper Methods
-
-    private func makeStrictDecoder(registry: [EventType: AGUIEventDecoder.DecodeHandler] = AGUIEventDecoder.defaultRegistry()) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .throwError
-        return AGUIEventDecoder(config: config, registry: registry)
-    }
-
-    private func makeTolerantDecoder(registry: [EventType: AGUIEventDecoder.DecodeHandler] = AGUIEventDecoder.defaultRegistry()) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .returnUnknown
-        return AGUIEventDecoder(config: config, registry: registry)
-    }
-
-    private func jsonData(_ jsonString: String) -> Data {
-        jsonString.data(using: .utf8)!
-    }
 }
-

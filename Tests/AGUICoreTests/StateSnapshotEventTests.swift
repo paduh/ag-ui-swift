@@ -1,7 +1,21 @@
 import XCTest
 @testable import AGUICore
 
-final class StateSnapshotEventTests: XCTestCase {
+final class StateSnapshotEventTests: XCTestCase,
+                                      AGUIEventDecoderTestHelpers,
+                                      EventDecodingErrorTests {
+
+    // MARK: - EventDecodingErrorTests Protocol Requirements
+
+    var validEventFieldsWithoutType: [String: Any] {
+        [
+            "snapshot": ["key": "value"]
+        ]
+    }
+
+    var eventTypeString: String { "STATE_SNAPSHOT" }
+    var expectedEventType: EventType { .stateSnapshot }
+    var unknownEventTypeString: String { "UNKNOWN_STATE_EVENT" }
 
     // MARK: - Feature: Decode STATE_SNAPSHOT
 
@@ -139,7 +153,7 @@ final class StateSnapshotEventTests: XCTestCase {
         {
           "type": "STATE_SNAPSHOT",
           "snapshot": { "value": 123 },
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -149,7 +163,7 @@ final class StateSnapshotEventTests: XCTestCase {
 
         // Then
         let stateSnapshot = try XCTUnwrap(event as? StateSnapshotEvent)
-        XCTAssertEqual(stateSnapshot.timestamp, 1704067200000)
+        XCTAssertEqual(stateSnapshot.timestamp, EventTestData.timestamp)
     }
 
     func test_decodeStateSnapshot_preservesRawEventBytes() throws {
@@ -158,7 +172,7 @@ final class StateSnapshotEventTests: XCTestCase {
         {
           "type": "STATE_SNAPSHOT",
           "snapshot": { "key": "value" },
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -287,102 +301,12 @@ final class StateSnapshotEventTests: XCTestCase {
 
     // MARK: - Feature: Error handling
 
-    func test_decodeMissingType_throwsMissingTypeField() {
-        // Given
-        let data = jsonData("""
-        {
-          "snapshot": { "key": "value" }
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
-        }
-    }
-
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "UNKNOWN_STATE_EVENT",
-          "snapshot": { "key": "value" }
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            guard case .unknownEventType(let type) = error as? EventDecodingError else {
-                return XCTFail("Expected unknownEventType, got \(error)")
-            }
-            XCTAssertEqual(type, "UNKNOWN_STATE_EVENT")
-        }
-    }
-
-    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "UNKNOWN_STATE_EVENT",
-          "snapshot": { "key": "value" }
-        }
-        """)
-        let decoder = makeTolerantDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "UNKNOWN_STATE_EVENT")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "STATE_SNAPSHOT",
-          "snapshot": { "key": "value" }
-        }
-        """)
-
-        // registry intentionally empty -> handler missing
-        let decoder = makeStrictDecoder(registry: [:])
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.stateSnapshot))
-        }
-    }
-
-    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "STATE_SNAPSHOT",
-          "snapshot": { "key": "value" }
-        }
-        """)
-        let decoder = makeTolerantDecoder(registry: [:])
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "STATE_SNAPSHOT")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
     func test_decodeStateSnapshot_missingSnapshot_throwsDecodingFailed() {
         // Given
         let data = jsonData("""
         {
           "type": "STATE_SNAPSHOT",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -416,17 +340,6 @@ final class StateSnapshotEventTests: XCTestCase {
         }
     }
 
-    func test_decodeInvalidJSON_throwsInvalidJSON() {
-        // Given
-        let data = Data("invalid json".utf8)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
-        }
-    }
-
     // MARK: - Feature: Model behaviors
 
     func test_stateSnapshotEvent_eventTypeIsAlwaysStateSnapshot() {
@@ -441,8 +354,8 @@ final class StateSnapshotEventTests: XCTestCase {
     func test_stateSnapshotEvent_equatable_sameSnapshots_areEqual() throws {
         // Given
         let snapshotData = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: 1, rawEvent: nil)
-        let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: 1, rawEvent: nil)
+        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertEqual(a, b)
@@ -452,8 +365,8 @@ final class StateSnapshotEventTests: XCTestCase {
         // Given
         let snapshotData1 = try! JSONSerialization.data(withJSONObject: ["key": "value1"], options: [])
         let snapshotData2 = try! JSONSerialization.data(withJSONObject: ["key": "value2"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData1, timestamp: 1, rawEvent: nil)
-        let b = StateSnapshotEvent(snapshot: snapshotData2, timestamp: 1, rawEvent: nil)
+        let a = StateSnapshotEvent(snapshot: snapshotData1, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = StateSnapshotEvent(snapshot: snapshotData2, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -462,8 +375,8 @@ final class StateSnapshotEventTests: XCTestCase {
     func test_stateSnapshotEvent_equatable_differentTimestamps_areNotEqual() throws {
         // Given
         let snapshotData = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: 1, rawEvent: nil)
-        let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: 2, rawEvent: nil)
+        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -472,7 +385,7 @@ final class StateSnapshotEventTests: XCTestCase {
     func test_stateSnapshotEvent_equatable_oneWithTimestampOneWithout_areNotEqual() throws {
         // Given
         let snapshotData = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: 1, rawEvent: nil)
+        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
         let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: nil, rawEvent: nil)
 
         // Then
@@ -543,23 +456,4 @@ final class StateSnapshotEventTests: XCTestCase {
             XCTAssertTrue(error is DecodingError)
         }
     }
-
-    // MARK: - Helper Methods
-
-    private func makeStrictDecoder(registry: [EventType: AGUIEventDecoder.DecodeHandler] = AGUIEventDecoder.defaultRegistry()) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .throwError
-        return AGUIEventDecoder(config: config, registry: registry)
-    }
-
-    private func makeTolerantDecoder(registry: [EventType: AGUIEventDecoder.DecodeHandler] = AGUIEventDecoder.defaultRegistry()) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .returnUnknown
-        return AGUIEventDecoder(config: config, registry: registry)
-    }
-
-    private func jsonData(_ jsonString: String) -> Data {
-        jsonString.data(using: .utf8)!
-    }
 }
-

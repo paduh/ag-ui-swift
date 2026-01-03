@@ -1,7 +1,22 @@
 import XCTest
 @testable import AGUICore
 
-final class ToolCallArgsEventTests: XCTestCase {
+final class ToolCallArgsEventTests: XCTestCase,
+                                     AGUIEventDecoderTestHelpers,
+                                     EventDecodingErrorTests {
+
+    // MARK: - EventDecodingErrorTests Protocol Requirements
+
+    var validEventFieldsWithoutType: [String: Any] {
+        [
+            "toolCallId": EventTestData.toolCallId,
+            "delta": "{\"location\": \"San Francisco\"}"
+        ]
+    }
+
+    var eventTypeString: String { "TOOL_CALL_ARGS" }
+    var expectedEventType: EventType { .toolCallArgs }
+    var unknownEventTypeString: String { "TOOL_CALL_PAUSED" }
 
     // MARK: - Feature: Decode TOOL_CALL_ARGS
 
@@ -10,7 +25,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": "{\\"location\\": \\"San Francisco\\"}"
         }
         """)
@@ -25,7 +40,7 @@ final class ToolCallArgsEventTests: XCTestCase {
             return XCTFail("Expected ToolCallArgsEvent, got \(type(of: event))")
         }
         XCTAssertEqual(toolCallArgs.eventType, .toolCallArgs)
-        XCTAssertEqual(toolCallArgs.toolCallId, "call-123")
+        XCTAssertEqual(toolCallArgs.toolCallId, EventTestData.toolCallId)
         XCTAssertEqual(toolCallArgs.delta, "{\"location\": \"San Francisco\"}")
         XCTAssertNil(toolCallArgs.timestamp)
     }
@@ -35,9 +50,9 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": "{\\"location\\": \\"San Francisco\\"}",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -47,7 +62,7 @@ final class ToolCallArgsEventTests: XCTestCase {
 
         // Then
         let toolCallArgs = try XCTUnwrap(event as? ToolCallArgsEvent)
-        XCTAssertEqual(toolCallArgs.timestamp, 1704067200000)
+        XCTAssertEqual(toolCallArgs.timestamp, EventTestData.timestamp)
     }
 
     func test_decodeToolCallArgs_preservesRawEventBytes() throws {
@@ -55,9 +70,9 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": "{\\"location\\": \\"San Francisco\\"}",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -75,7 +90,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": "{\\"location\\": \\"San Francisco\\"}",
           "extraField": "ignored",
           "nested": { "x": 1 }
@@ -88,7 +103,7 @@ final class ToolCallArgsEventTests: XCTestCase {
 
         // Then
         let toolCallArgs = try XCTUnwrap(event as? ToolCallArgsEvent)
-        XCTAssertEqual(toolCallArgs.toolCallId, "call-123")
+        XCTAssertEqual(toolCallArgs.toolCallId, EventTestData.toolCallId)
         XCTAssertEqual(toolCallArgs.delta, "{\"location\": \"San Francisco\"}")
     }
 
@@ -97,7 +112,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": "{\\"city\\": \\"北京\\"}"
         }
         """)
@@ -116,7 +131,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": "{\\n  \\"key\\": \\"value\\"\\n}"
         }
         """)
@@ -137,7 +152,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": ""
         }
         """)
@@ -152,101 +167,6 @@ final class ToolCallArgsEventTests: XCTestCase {
     }
 
     // MARK: - Feature: Error handling
-
-    func test_decodeMissingType_throwsMissingTypeField() {
-        // Given
-        let data = jsonData("""
-        {
-          "toolCallId": "call-123",
-          "delta": "{\\"location\\": \\"San Francisco\\"}"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
-        }
-    }
-
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_PAUSED",
-          "toolCallId": "call-123",
-          "delta": "{\\"location\\": \\"San Francisco\\"}"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            guard case .unknownEventType(let type) = error as? EventDecodingError else {
-                return XCTFail("Expected unknownEventType, got \(error)")
-            }
-            XCTAssertEqual(type, "TOOL_CALL_PAUSED")
-        }
-    }
-
-    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_PAUSED",
-          "toolCallId": "call-123",
-          "delta": "{\\"location\\": \\"San Francisco\\"}"
-        }
-        """)
-        let decoder = makeTolerantDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "TOOL_CALL_PAUSED")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
-          "delta": "{\\"location\\": \\"San Francisco\\"}"
-        }
-        """)
-
-        // registry intentionally empty -> handler missing
-        let decoder = makeStrictDecoder(registry: [:])
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.toolCallArgs))
-        }
-    }
-
-    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
-          "delta": "{\\"location\\": \\"San Francisco\\"}"
-        }
-        """)
-        let decoder = makeTolerantDecoder(registry: [:])
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "TOOL_CALL_ARGS")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
 
     func test_decodeToolCallArgs_missingToolCallId_throwsDecodingFailed() {
         // Given
@@ -311,7 +231,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": 123
         }
         """)
@@ -331,7 +251,7 @@ final class ToolCallArgsEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_ARGS",
-          "toolCallId": "call-123",
+          "toolCallId": "\(EventTestData.toolCallId)",
           "delta": "{\\"location\\": \\"San Francisco\\"}",
           "timestamp": "invalid"
         }
@@ -347,22 +267,11 @@ final class ToolCallArgsEventTests: XCTestCase {
         }
     }
 
-    func test_decodeInvalidJSON_throwsInvalidJSON() {
-        // Given
-        let data = Data("invalid json".utf8)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
-        }
-    }
-
     // MARK: - Feature: Model behaviors
 
     func test_toolCallArgsEvent_eventTypeIsAlwaysToolCallArgs() {
         // Given
-        let event = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value\"}", timestamp: nil, rawEvent: nil)
+        let event = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: nil, rawEvent: nil)
 
         // Then
         XCTAssertEqual(event.eventType, .toolCallArgs)
@@ -370,8 +279,8 @@ final class ToolCallArgsEventTests: XCTestCase {
 
     func test_toolCallArgsEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value\"}", timestamp: 1, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value\"}", timestamp: 1, rawEvent: nil)
+        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertEqual(a, b)
@@ -379,8 +288,8 @@ final class ToolCallArgsEventTests: XCTestCase {
 
     func test_toolCallArgsEvent_equatable_differentToolCallIds_areNotEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value\"}", timestamp: 1, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: "call-456", delta: "{\"key\": \"value\"}", timestamp: 1, rawEvent: nil)
+        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallArgsEvent(toolCallId: "call-456", delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -388,8 +297,8 @@ final class ToolCallArgsEventTests: XCTestCase {
 
     func test_toolCallArgsEvent_equatable_differentDeltas_areNotEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value1\"}", timestamp: 1, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value2\"}", timestamp: 1, rawEvent: nil)
+        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value1\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value2\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -397,8 +306,8 @@ final class ToolCallArgsEventTests: XCTestCase {
 
     func test_toolCallArgsEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value\"}", timestamp: 1, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: "call-123", delta: "{\"key\": \"value\"}", timestamp: 2, rawEvent: nil)
+        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -407,41 +316,10 @@ final class ToolCallArgsEventTests: XCTestCase {
     func test_toolCallArgsEvent_withEmptyDelta_isValid() {
         // Given
         // Note: Protocol says delta should be non-empty, but we allow it for flexibility
-        let event = ToolCallArgsEvent(toolCallId: "call-123", delta: "", timestamp: nil, rawEvent: nil)
+        let event = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "", timestamp: nil, rawEvent: nil)
 
         // Then
         XCTAssertEqual(event.delta, "")
         XCTAssertEqual(event.eventType, .toolCallArgs)
     }
-
-    // MARK: - Helpers
-
-    private func makeStrictDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .throwError
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func makeTolerantDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .returnUnknown
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func jsonData(_ json: String) -> Data {
-        Data(json.utf8)
-    }
 }
-

@@ -1,7 +1,22 @@
 import XCTest
 @testable import AGUICore
 
-final class RunFinishedEventTests: XCTestCase {
+final class RunFinishedEventTests: XCTestCase,
+                                    AGUIEventDecoderTestHelpers,
+                                    EventDecodingErrorTests {
+
+    // MARK: - EventDecodingErrorTests Protocol Requirements
+
+    var validEventFieldsWithoutType: [String: Any] {
+        [
+            "threadId": EventTestData.threadId,
+            "runId": EventTestData.runId
+        ]
+    }
+
+    var eventTypeString: String { "RUN_FINISHED" }
+    var expectedEventType: EventType { .runFinished }
+    var unknownEventTypeString: String { "RUN_PAUSED" }
 
     // MARK: - Feature: Decode RUN_FINISHED
 
@@ -10,8 +25,8 @@ final class RunFinishedEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
-          "threadId": "thread-123",
-          "runId": "run-456"
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)"
         }
         """)
 
@@ -25,8 +40,8 @@ final class RunFinishedEventTests: XCTestCase {
             return XCTFail("Expected RunFinishedEvent, got \(type(of: event))")
         }
         XCTAssertEqual(runFinished.eventType, .runFinished)
-        XCTAssertEqual(runFinished.threadId, "thread-123")
-        XCTAssertEqual(runFinished.runId, "run-456")
+        XCTAssertEqual(runFinished.threadId, EventTestData.threadId)
+        XCTAssertEqual(runFinished.runId, EventTestData.runId)
         XCTAssertNil(runFinished.timestamp)
     }
 
@@ -35,9 +50,9 @@ final class RunFinishedEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
-          "threadId": "thread-123",
-          "runId": "run-456",
-          "timestamp": 1704067200000
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -47,7 +62,7 @@ final class RunFinishedEventTests: XCTestCase {
 
         // Then
         let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
-        XCTAssertEqual(runFinished.timestamp, 1704067200000)
+        XCTAssertEqual(runFinished.timestamp, EventTestData.timestamp)
     }
 
     func test_decodeRunFinished_preservesRawEventBytes() throws {
@@ -55,9 +70,9 @@ final class RunFinishedEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
-          "threadId": "thread-123",
-          "runId": "run-456",
-          "timestamp": 1704067200000
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -75,8 +90,8 @@ final class RunFinishedEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
-          "threadId": "thread-123",
-          "runId": "run-456",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
           "extraField": "ignored",
           "nested": { "x": 1 }
         }
@@ -88,103 +103,11 @@ final class RunFinishedEventTests: XCTestCase {
 
         // Then
         let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
-        XCTAssertEqual(runFinished.threadId, "thread-123")
-        XCTAssertEqual(runFinished.runId, "run-456")
+        XCTAssertEqual(runFinished.threadId, EventTestData.threadId)
+        XCTAssertEqual(runFinished.runId, EventTestData.runId)
     }
 
-    // MARK: - Feature: Error handling
-
-    func test_decodeMissingType_throwsMissingTypeField() {
-        // Given
-        let data = jsonData("""
-        {
-          "threadId": "thread-123",
-          "runId": "run-456"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
-        }
-    }
-
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_PAUSED",
-          "threadId": "thread-123",
-          "runId": "run-456"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unknownEventType("RUN_PAUSED"))
-        }
-    }
-
-    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_PAUSED",
-          "threadId": "thread-123",
-          "runId": "run-456"
-        }
-        """)
-        let decoder = makeTolerantDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "RUN_PAUSED")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_FINISHED",
-          "threadId": "thread-123",
-          "runId": "run-456"
-        }
-        """)
-
-        // registry intentionally empty -> handler missing
-        let decoder = makeStrictDecoder(registry: [:])
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.runFinished))
-        }
-    }
-
-    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_FINISHED",
-          "threadId": "thread-123",
-          "runId": "run-456"
-        }
-        """)
-        let decoder = makeTolerantDecoder(registry: [:])
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "RUN_FINISHED")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
+    // MARK: - Feature: Error handling (event-specific)
 
     func test_decodeRunFinished_missingThreadId_throwsDecodingFailed() {
         // Given
@@ -226,17 +149,6 @@ final class RunFinishedEventTests: XCTestCase {
         }
     }
 
-    func test_decodeInvalidJSON_throwsInvalidJSON() {
-        // Given
-        let data = jsonData(#"{ "type": "RUN_FINISHED", "threadId": "t1", "#) // truncated JSON
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
-        }
-    }
-
     // MARK: - Feature: Model behaviors
 
     func test_runFinishedEvent_eventTypeIsAlwaysRunFinished() {
@@ -254,35 +166,5 @@ final class RunFinishedEventTests: XCTestCase {
 
         // Then
         XCTAssertEqual(a, b)
-    }
-
-    // MARK: - Helpers
-
-    private func makeStrictDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .throwError
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func makeTolerantDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .returnUnknown
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func jsonData(_ json: String) -> Data {
-        Data(json.utf8)
     }
 }

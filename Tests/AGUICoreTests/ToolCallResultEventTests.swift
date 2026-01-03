@@ -1,7 +1,23 @@
 import XCTest
 @testable import AGUICore
 
-final class ToolCallResultEventTests: XCTestCase {
+final class ToolCallResultEventTests: XCTestCase,
+                                      AGUIEventDecoderTestHelpers,
+                                      EventDecodingErrorTests {
+
+    // MARK: - EventDecodingErrorTests Protocol Requirements
+
+    var validEventFieldsWithoutType: [String: Any] {
+        [
+            "messageId": EventTestData.messageId,
+            "toolCallId": "call-456",
+            "content": "Temperature: 72°F"
+        ]
+    }
+
+    var eventTypeString: String { "TOOL_CALL_RESULT" }
+    var expectedEventType: EventType { .toolCallResult }
+    var unknownEventTypeString: String { "TOOL_CALL_PAUSED" }
 
     // MARK: - Feature: Decode TOOL_CALL_RESULT
 
@@ -10,7 +26,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Temperature: 72°F"
         }
@@ -26,7 +42,7 @@ final class ToolCallResultEventTests: XCTestCase {
             return XCTFail("Expected ToolCallResultEvent, got \(type(of: event))")
         }
         XCTAssertEqual(toolCallResult.eventType, .toolCallResult)
-        XCTAssertEqual(toolCallResult.messageId, "msg-123")
+        XCTAssertEqual(toolCallResult.messageId, EventTestData.messageId)
         XCTAssertEqual(toolCallResult.toolCallId, "call-456")
         XCTAssertEqual(toolCallResult.content, "Temperature: 72°F")
         XCTAssertNil(toolCallResult.role)
@@ -38,7 +54,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Temperature: 72°F",
           "role": "tool"
@@ -59,10 +75,10 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Temperature: 72°F",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -72,7 +88,7 @@ final class ToolCallResultEventTests: XCTestCase {
 
         // Then
         let toolCallResult = try XCTUnwrap(event as? ToolCallResultEvent)
-        XCTAssertEqual(toolCallResult.timestamp, 1704067200000)
+        XCTAssertEqual(toolCallResult.timestamp, EventTestData.timestamp)
     }
 
     func test_decodeToolCallResult_preservesRawEventBytes() throws {
@@ -80,10 +96,10 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Temperature: 72°F",
-          "timestamp": 1704067200000
+          "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
@@ -101,7 +117,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Temperature: 72°F",
           "extraField": "ignored",
@@ -115,7 +131,7 @@ final class ToolCallResultEventTests: XCTestCase {
 
         // Then
         let toolCallResult = try XCTUnwrap(event as? ToolCallResultEvent)
-        XCTAssertEqual(toolCallResult.messageId, "msg-123")
+        XCTAssertEqual(toolCallResult.messageId, EventTestData.messageId)
         XCTAssertEqual(toolCallResult.toolCallId, "call-456")
         XCTAssertEqual(toolCallResult.content, "Temperature: 72°F")
     }
@@ -125,7 +141,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "温度: 22°C 🌡️"
         }
@@ -145,7 +161,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Line 1\\nLine 2\\nLine 3"
         }
@@ -165,7 +181,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": ""
         }
@@ -181,106 +197,6 @@ final class ToolCallResultEventTests: XCTestCase {
     }
 
     // MARK: - Feature: Error handling
-
-    func test_decodeMissingType_throwsMissingTypeField() {
-        // Given
-        let data = jsonData("""
-        {
-          "messageId": "msg-123",
-          "toolCallId": "call-456",
-          "content": "Temperature: 72°F"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField)
-        }
-    }
-
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_PAUSED",
-          "messageId": "msg-123",
-          "toolCallId": "call-456",
-          "content": "Temperature: 72°F"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            guard case .unknownEventType(let type) = error as? EventDecodingError else {
-                return XCTFail("Expected unknownEventType, got \(error)")
-            }
-            XCTAssertEqual(type, "TOOL_CALL_PAUSED")
-        }
-    }
-
-    func test_decodeUnknownType_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_PAUSED",
-          "messageId": "msg-123",
-          "toolCallId": "call-456",
-          "content": "Temperature: 72°F"
-        }
-        """)
-        let decoder = makeTolerantDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "TOOL_CALL_PAUSED")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
-
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
-          "toolCallId": "call-456",
-          "content": "Temperature: 72°F"
-        }
-        """)
-
-        // registry intentionally empty -> handler missing
-        let decoder = makeStrictDecoder(registry: [:])
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(.toolCallResult))
-        }
-    }
-
-    func test_decodeKnownTypeButNoHandler_inTolerantMode_returnsUnknownEvent() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
-          "toolCallId": "call-456",
-          "content": "Temperature: 72°F"
-        }
-        """)
-        let decoder = makeTolerantDecoder(registry: [:])
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent)
-        XCTAssertEqual(unknown.typeRaw, "TOOL_CALL_RESULT")
-        XCTAssertEqual(unknown.rawEvent, data)
-    }
 
     func test_decodeToolCallResult_missingMessageId_throwsDecodingFailed() {
         // Given
@@ -307,7 +223,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "content": "Temperature: 72°F"
         }
         """)
@@ -327,7 +243,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456"
         }
         """)
@@ -368,7 +284,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": 456,
           "content": "Temperature: 72°F"
         }
@@ -389,7 +305,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": 123
         }
@@ -410,7 +326,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Temperature: 72°F",
           "role": 123
@@ -432,7 +348,7 @@ final class ToolCallResultEventTests: XCTestCase {
         let data = jsonData("""
         {
           "type": "TOOL_CALL_RESULT",
-          "messageId": "msg-123",
+          "messageId": "\(EventTestData.messageId)",
           "toolCallId": "call-456",
           "content": "Temperature: 72°F",
           "timestamp": "invalid"
@@ -449,22 +365,11 @@ final class ToolCallResultEventTests: XCTestCase {
         }
     }
 
-    func test_decodeInvalidJSON_throwsInvalidJSON() {
-        // Given
-        let data = Data("invalid json".utf8)
-        let decoder = makeStrictDecoder()
-
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON)
-        }
-    }
-
     // MARK: - Feature: Model behaviors
 
     func test_toolCallResultEvent_eventTypeIsAlwaysToolCallResult() {
         // Given
-        let event = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", timestamp: nil, rawEvent: nil)
+        let event = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: nil, rawEvent: nil)
 
         // Then
         XCTAssertEqual(event.eventType, .toolCallResult)
@@ -472,8 +377,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: "tool", timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: "tool", timestamp: 1, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertEqual(a, b)
@@ -481,8 +386,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_differentMessageIds_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-789", toolCallId: "call-456", content: "Result", timestamp: 1, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: "msg-789", toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -490,8 +395,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_differentToolCallIds_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-789", content: "Result", timestamp: 1, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-789", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -499,8 +404,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_differentContent_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result1", timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result2", timestamp: 1, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result1", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result2", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -508,8 +413,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_differentRoles_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: "tool", timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: "assistant", timestamp: 1, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -517,8 +422,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_oneNilRole_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: "tool", timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: nil, timestamp: 1, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -526,8 +431,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_bothNilRoles_areEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: nil, timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", role: nil, timestamp: 1, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
         XCTAssertEqual(a, b)
@@ -535,8 +440,8 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", timestamp: 1, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "Result", timestamp: 2, rawEvent: nil)
+        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
         XCTAssertNotEqual(a, b)
@@ -544,41 +449,10 @@ final class ToolCallResultEventTests: XCTestCase {
 
     func test_toolCallResultEvent_withEmptyContent_isValid() {
         // Given
-        let event = ToolCallResultEvent(messageId: "msg-123", toolCallId: "call-456", content: "", timestamp: nil, rawEvent: nil)
+        let event = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "", timestamp: nil, rawEvent: nil)
 
         // Then
         XCTAssertEqual(event.content, "")
         XCTAssertEqual(event.eventType, .toolCallResult)
     }
-
-    // MARK: - Helpers
-
-    private func makeStrictDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .throwError
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func makeTolerantDecoder(
-        registry: [EventType: AGUIEventDecoder.DecodeHandler]? = nil
-    ) -> AGUIEventDecoder {
-        var config = AGUIEventDecoder.Configuration()
-        config.unknownEventStrategy = .returnUnknown
-        return AGUIEventDecoder(
-            config: config,
-            makeDecoder: { JSONDecoder() },
-            registry: registry ?? AGUIEventDecoder.defaultRegistry()
-        )
-    }
-
-    private func jsonData(_ json: String) -> Data {
-        Data(json.utf8)
-    }
 }
-
