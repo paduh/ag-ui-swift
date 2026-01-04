@@ -232,4 +232,3 @@ final class ToolCallChunkEventTests: XCTestCase,
         XCTAssertEqual(event1, event2)
     }
 }
-

@@ -175,4 +175,3 @@ final class ActivityDeltaEventTests: XCTestCase,
         XCTAssertNotEqual(event1, event2)
     }
 }
-

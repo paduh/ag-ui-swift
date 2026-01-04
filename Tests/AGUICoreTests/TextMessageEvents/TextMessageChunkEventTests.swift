@@ -212,4 +212,3 @@ final class TextMessageChunkEventTests: XCTestCase,
         XCTAssertEqual(event1, event2)
     }
 }
-

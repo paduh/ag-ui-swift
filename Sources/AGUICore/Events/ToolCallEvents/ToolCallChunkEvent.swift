@@ -117,4 +117,3 @@ extension ToolCallChunkEvent: CustomDebugStringConvertible {
         """
     }
 }
-
