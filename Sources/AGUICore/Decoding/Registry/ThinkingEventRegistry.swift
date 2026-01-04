@@ -13,6 +13,9 @@ enum ThinkingEventRegistry {
             },
             .thinkingTextMessageStart: { data, decoder in
                 try decoder.decode(ThinkingTextMessageStartEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .thinkingTextMessageContent: { data, decoder in
+                try decoder.decode(ThinkingTextMessageContentEventDTO.self, from: data).toDomain(rawEvent: data)
             }
         ]
     }
