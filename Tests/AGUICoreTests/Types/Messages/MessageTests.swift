@@ -68,108 +68,18 @@ final class MessageTests: XCTestCase {
         }
     }
 
-    // MARK: - Codable Round-trip Tests
+    // MARK: - Protocol Behavior Tests
 
-    func testMessageCodableRoundTrip() throws {
-        let original = MockMessage(
-            id: "msg-456",
-            role: .user,
-            content: "Test message",
-            name: "TestUser"
-        )
+    // Note: Message protocol no longer requires Codable conformance.
+    // Serialization is handled through message-specific DTOs and MessageDecoder.
+    // The following tests verify basic protocol requirements.
 
-        let encoder = JSONEncoder()
-        let encoded = try encoder.encode(original)
-
-        let decoder = JSONDecoder()
-        let decoded = try decoder.decode(MockMessage.self, from: encoded)
-
-        XCTAssertEqual(decoded.id, original.id)
-        XCTAssertEqual(decoded.role, original.role)
-        XCTAssertEqual(decoded.content, original.content)
-        XCTAssertEqual(decoded.name, original.name)
-    }
-
-    func testMessageEncodingFormat() throws {
-        let message = MockMessage(
-            id: "msg-789",
-            role: .system,
-            content: "System message",
-            name: nil
-        )
-
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let encoded = try encoder.encode(message)
-        let json = String(data: encoded, encoding: .utf8)
-
-        // Verify JSON structure contains required fields
-        XCTAssertNotNil(json)
-        XCTAssertTrue(json?.contains("\"id\"") ?? false)
-        XCTAssertTrue(json?.contains("\"role\"") ?? false)
-        XCTAssertTrue(json?.contains("\"content\"") ?? false)
-        XCTAssertTrue(json?.contains("\"msg-789\"") ?? false)
-        XCTAssertTrue(json?.contains("\"system\"") ?? false)
-    }
-
-    func testMessageDecodingWithMissingOptionalFields() throws {
-        let json = """
-        {
-            "id": "msg-minimal",
-            "role": "user"
-        }
-        """
-
-        let decoder = JSONDecoder()
-        let message = try decoder.decode(MockMessage.self, from: Data(json.utf8))
-
-        XCTAssertEqual(message.id, "msg-minimal")
-        XCTAssertEqual(message.role, .user)
-        XCTAssertNil(message.content)
-        XCTAssertNil(message.name)
-    }
-
-    func testMessageDecodingFailsWithoutId() {
-        let json = """
-        {
-            "role": "user",
-            "content": "Test"
-        }
-        """
-
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(MockMessage.self, from: Data(json.utf8))) { error in
-            XCTAssertTrue(error is DecodingError)
-        }
-    }
-
-    func testMessageDecodingFailsWithoutRole() {
-        let json = """
-        {
-            "id": "msg-123",
-            "content": "Test"
-        }
-        """
-
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(MockMessage.self, from: Data(json.utf8))) { error in
-            XCTAssertTrue(error is DecodingError)
-        }
-    }
-
-    // MARK: - Multiple Role Types Tests
-
-    func testMessageSupportsAllRoleTypes() throws {
+    func testMessageSupportsAllRoleTypes() {
         let roles: [Role] = [.developer, .system, .assistant, .user, .tool, .activity]
 
         for role in roles {
             let message = MockMessage(id: "msg-\(role)", role: role)
             XCTAssertEqual(message.role, role, "Message should support role: \(role)")
-
-            // Verify encoding/decoding preserves role
-            let encoded = try JSONEncoder().encode(message)
-            let decoded = try JSONDecoder().decode(MockMessage.self, from: encoded)
-            XCTAssertEqual(decoded.role, role, "Round-trip should preserve role: \(role)")
         }
     }
 

@@ -76,55 +76,13 @@ final class ActivityMessageTests: XCTestCase {
         XCTAssertEqual(message.role, .activity)
     }
 
-    // MARK: - Encoding Tests
+    // MARK: - Serialization Tests (via DTO)
 
-    func testEncodingBasicActivity() throws {
-        let content = Data("""
-        {"status": "running"}
-        """.utf8)
+    // Note: ActivityMessage no longer directly supports Codable.
+    // Serialization is handled through ActivityMessageDTO and MessageDecoder.
+    // These tests verify that the DTO layer works correctly.
 
-        let message = ActivityMessage(
-            id: "activity-encode-1",
-            activityType: "progress",
-            activityContent: content
-        )
-
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let encoded = try encoder.encode(message)
-        let json = String(data: encoded, encoding: .utf8)
-
-        XCTAssertNotNil(json)
-        XCTAssertTrue(json?.contains("\"id\"") ?? false)
-        XCTAssertTrue(json?.contains("\"role\"") ?? false)
-        XCTAssertTrue(json?.contains("\"activity\"") ?? false)
-        XCTAssertTrue(json?.contains("\"activityType\"") ?? false)
-        XCTAssertTrue(json?.contains("\"activityContent\"") ?? false)
-    }
-
-    func testEncodedStructure() throws {
-        let content = Data("""
-        {"value": 42}
-        """.utf8)
-
-        let message = ActivityMessage(
-            id: "activity-encode-2",
-            activityType: "metric",
-            activityContent: content
-        )
-
-        let encoded = try JSONEncoder().encode(message)
-        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
-
-        XCTAssertEqual(json?["role"] as? String, "activity")
-        XCTAssertEqual(json?["id"] as? String, "activity-encode-2")
-        XCTAssertEqual(json?["activityType"] as? String, "metric")
-
-        let activityContent = json?["activityContent"] as? [String: Any]
-        XCTAssertEqual(activityContent?["value"] as? Int, 42)
-    }
-
-    // MARK: - Decoding Tests
+    // MARK: - Decoding Tests (via MessageDecoder)
 
     func testDecodingBasicActivity() throws {
         let json = """
@@ -138,16 +96,18 @@ final class ActivityMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let message = try decoder.decode(ActivityMessage.self, from: Data(json.utf8))
+        let decoder = MessageDecoder()
+        let message = try decoder.decode(Data(json.utf8))
 
-        XCTAssertEqual(message.id, "activity-decode-1")
-        XCTAssertEqual(message.role, .activity)
-        XCTAssertEqual(message.activityType, "progress")
-        XCTAssertNil(message.content)
-        XCTAssertNil(message.name)
+        XCTAssertTrue(message is ActivityMessage)
+        let activityMessage = message as! ActivityMessage
+        XCTAssertEqual(activityMessage.id, "activity-decode-1")
+        XCTAssertEqual(activityMessage.role, .activity)
+        XCTAssertEqual(activityMessage.activityType, "progress")
+        XCTAssertNil(activityMessage.content)
+        XCTAssertNil(activityMessage.name)
 
-        let activityContent = try JSONSerialization.jsonObject(with: message.activityContent) as? [String: Any]
+        let activityContent = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
         XCTAssertEqual(activityContent?["percent"] as? Int, 75)
     }
 
@@ -167,12 +127,14 @@ final class ActivityMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let message = try decoder.decode(ActivityMessage.self, from: Data(json.utf8))
+        let decoder = MessageDecoder()
+        let message = try decoder.decode(Data(json.utf8))
 
-        XCTAssertEqual(message.activityType, "visualization")
+        XCTAssertTrue(message is ActivityMessage)
+        let activityMessage = message as! ActivityMessage
+        XCTAssertEqual(activityMessage.activityType, "visualization")
 
-        let content = try JSONSerialization.jsonObject(with: message.activityContent) as? [String: Any]
+        let content = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
         XCTAssertEqual(content?["type"] as? String, "chart")
 
         let data = content?["data"] as? [String: Any]
@@ -189,9 +151,9 @@ final class ActivityMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(ActivityMessage.self, from: Data(json.utf8))) { error in
-            XCTAssertTrue(error is DecodingError)
+        let decoder = MessageDecoder()
+        XCTAssertThrowsError(try decoder.decode(Data(json.utf8))) { error in
+            XCTAssertTrue(error is MessageDecodingError || error is DecodingError)
         }
     }
 
@@ -204,9 +166,9 @@ final class ActivityMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(ActivityMessage.self, from: Data(json.utf8))) { error in
-            XCTAssertTrue(error is DecodingError)
+        let decoder = MessageDecoder()
+        XCTAssertThrowsError(try decoder.decode(Data(json.utf8))) { error in
+            XCTAssertTrue(error is MessageDecodingError || error is DecodingError)
         }
     }
 
@@ -219,15 +181,35 @@ final class ActivityMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(ActivityMessage.self, from: Data(json.utf8))) { error in
-            XCTAssertTrue(error is DecodingError)
+        let decoder = MessageDecoder()
+        XCTAssertThrowsError(try decoder.decode(Data(json.utf8))) { error in
+            XCTAssertTrue(error is MessageDecodingError || error is DecodingError)
         }
     }
 
-    // MARK: - Round-trip Tests
+    func testDecodingFailsWithWrongRole() {
+        let json = """
+        {
+            "id": "activity-1",
+            "role": "user",
+            "content": "Test message"
+        }
+        """
+
+        // With polymorphic MessageDecoder, wrong role returns different message type
+        let decoder = MessageDecoder()
+        let message = try? decoder.decode(Data(json.utf8))
+
+        // Should decode as UserMessage, not ActivityMessage
+        XCTAssertNotNil(message)
+        XCTAssertFalse(message is ActivityMessage)
+        XCTAssertTrue(message is UserMessage)
+    }
+
+    // MARK: - Round-trip Tests (via DTO layer)
 
     func testRoundTripBasicActivity() throws {
+        // Create original message
         let content = Data("""
         {"status": "complete"}
         """.utf8)
@@ -238,18 +220,28 @@ final class ActivityMessageTests: XCTestCase {
             activityContent: content
         )
 
-        let encoder = JSONEncoder()
-        let encoded = try encoder.encode(original)
+        // Encode via DTO (simulating what RunAgentInput does)
+        let activityContentDict = try JSONSerialization.jsonObject(with: content) as? [String: Any]
+        let dict: [String: Any] = [
+            "id": original.id,
+            "role": original.role.rawValue,
+            "activityType": original.activityType,
+            "activityContent": activityContentDict as Any
+        ]
+        let encoded = try JSONSerialization.data(withJSONObject: dict)
 
-        let decoder = JSONDecoder()
-        let decoded = try decoder.decode(ActivityMessage.self, from: encoded)
+        // Decode via MessageDecoder
+        let decoder = MessageDecoder()
+        let decoded = try decoder.decode(encoded)
 
-        XCTAssertEqual(decoded.id, original.id)
-        XCTAssertEqual(decoded.activityType, original.activityType)
-        XCTAssertEqual(decoded.role, original.role)
+        XCTAssertTrue(decoded is ActivityMessage)
+        let activityMessage = decoded as! ActivityMessage
+        XCTAssertEqual(activityMessage.id, original.id)
+        XCTAssertEqual(activityMessage.activityType, original.activityType)
+        XCTAssertEqual(activityMessage.role, original.role)
 
         let originalContent = try JSONSerialization.jsonObject(with: original.activityContent) as? [String: Any]
-        let decodedContent = try JSONSerialization.jsonObject(with: decoded.activityContent) as? [String: Any]
+        let decodedContent = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
         XCTAssertEqual(originalContent?["status"] as? String, decodedContent?["status"] as? String)
     }
 

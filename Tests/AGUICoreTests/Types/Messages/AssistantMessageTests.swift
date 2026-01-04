@@ -97,57 +97,13 @@ final class AssistantMessageTests: XCTestCase {
         XCTAssertEqual(message2.role, .assistant)
     }
 
-    // MARK: - Encoding Tests
+    // MARK: - Serialization Tests (via DTO)
 
-    func testEncodingWithContentOnly() throws {
-        let message = AssistantMessage(
-            id: "asst-encode-1",
-            content: "Simple response"
-        )
+    // Note: AssistantMessage no longer directly supports Codable.
+    // Serialization is handled through AssistantMessageDTO and MessageDecoder.
+    // These tests verify that the DTO layer works correctly.
 
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let encoded = try encoder.encode(message)
-        let json = String(data: encoded, encoding: .utf8)
-
-        XCTAssertNotNil(json)
-        XCTAssertTrue(json?.contains("\"id\"") ?? false)
-        XCTAssertTrue(json?.contains("\"role\"") ?? false)
-        XCTAssertTrue(json?.contains("\"content\"") ?? false)
-        XCTAssertTrue(json?.contains("\"assistant\"") ?? false)
-        XCTAssertTrue(json?.contains("\"Simple response\"") ?? false)
-    }
-
-    func testEncodingWithToolCalls() throws {
-        let toolCall = ToolCall(
-            id: "call_test",
-            function: FunctionCall(name: "test_func", arguments: "{}")
-        )
-
-        let message = AssistantMessage(
-            id: "asst-encode-2",
-            content: "Calling function",
-            toolCalls: [toolCall]
-        )
-
-        let encoded = try JSONEncoder().encode(message)
-        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
-
-        XCTAssertNotNil(json?["toolCalls"])
-        let toolCallsArray = json?["toolCalls"] as? [[String: Any]]
-        XCTAssertEqual(toolCallsArray?.count, 1)
-        XCTAssertEqual(toolCallsArray?.first?["id"] as? String, "call_test")
-    }
-
-    func testEncodedRoleIsAssistant() throws {
-        let message = AssistantMessage(id: "asst-role", content: "Test")
-        let encoded = try JSONEncoder().encode(message)
-        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
-
-        XCTAssertEqual(json?["role"] as? String, "assistant")
-    }
-
-    // MARK: - Decoding Tests
+    // MARK: - Decoding Tests (via MessageDecoder)
 
     func testDecodingWithContentOnly() throws {
         let json = """
@@ -158,13 +114,15 @@ final class AssistantMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let message = try decoder.decode(AssistantMessage.self, from: Data(json.utf8))
+        let decoder = MessageDecoder()
+        let message = try decoder.decode(Data(json.utf8))
 
-        XCTAssertEqual(message.id, "asst-decode-1")
-        XCTAssertEqual(message.role, .assistant)
-        XCTAssertEqual(message.content, "Hello there!")
-        XCTAssertNil(message.toolCalls)
+        XCTAssertTrue(message is AssistantMessage)
+        let asstMessage = message as! AssistantMessage
+        XCTAssertEqual(asstMessage.id, "asst-decode-1")
+        XCTAssertEqual(asstMessage.role, .assistant)
+        XCTAssertEqual(asstMessage.content, "Hello there!")
+        XCTAssertNil(asstMessage.toolCalls)
     }
 
     func testDecodingWithToolCalls() throws {
@@ -186,14 +144,16 @@ final class AssistantMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let message = try decoder.decode(AssistantMessage.self, from: Data(json.utf8))
+        let decoder = MessageDecoder()
+        let message = try decoder.decode(Data(json.utf8))
 
-        XCTAssertEqual(message.id, "asst-decode-2")
-        XCTAssertEqual(message.content, "Let me check that")
-        XCTAssertEqual(message.toolCalls?.count, 1)
-        XCTAssertEqual(message.toolCalls?.first?.id, "call_abc")
-        XCTAssertEqual(message.toolCalls?.first?.function.name, "get_data")
+        XCTAssertTrue(message is AssistantMessage)
+        let asstMessage = message as! AssistantMessage
+        XCTAssertEqual(asstMessage.id, "asst-decode-2")
+        XCTAssertEqual(asstMessage.content, "Let me check that")
+        XCTAssertEqual(asstMessage.toolCalls?.count, 1)
+        XCTAssertEqual(asstMessage.toolCalls?.first?.id, "call_abc")
+        XCTAssertEqual(asstMessage.toolCalls?.first?.function.name, "get_data")
     }
 
     func testDecodingWithNilContent() throws {
@@ -204,11 +164,13 @@ final class AssistantMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let message = try decoder.decode(AssistantMessage.self, from: Data(json.utf8))
+        let decoder = MessageDecoder()
+        let message = try decoder.decode(Data(json.utf8))
 
-        XCTAssertEqual(message.id, "asst-decode-3")
-        XCTAssertNil(message.content)
+        XCTAssertTrue(message is AssistantMessage)
+        let asstMessage = message as! AssistantMessage
+        XCTAssertEqual(asstMessage.id, "asst-decode-3")
+        XCTAssertNil(asstMessage.content)
     }
 
     func testDecodingWithMultipleToolCalls() throws {
@@ -231,12 +193,14 @@ final class AssistantMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let message = try decoder.decode(AssistantMessage.self, from: Data(json.utf8))
+        let decoder = MessageDecoder()
+        let message = try decoder.decode(Data(json.utf8))
 
-        XCTAssertEqual(message.toolCalls?.count, 2)
-        XCTAssertEqual(message.toolCalls?[0].id, "call_1")
-        XCTAssertEqual(message.toolCalls?[1].id, "call_2")
+        XCTAssertTrue(message is AssistantMessage)
+        let asstMessage = message as! AssistantMessage
+        XCTAssertEqual(asstMessage.toolCalls?.count, 2)
+        XCTAssertEqual(asstMessage.toolCalls?[0].id, "call_1")
+        XCTAssertEqual(asstMessage.toolCalls?[1].id, "call_2")
     }
 
     func testDecodingFailsWithoutId() {
@@ -247,33 +211,63 @@ final class AssistantMessageTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(AssistantMessage.self, from: Data(json.utf8))) { error in
-            XCTAssertTrue(error is DecodingError)
+        let decoder = MessageDecoder()
+        XCTAssertThrowsError(try decoder.decode(Data(json.utf8))) { error in
+            XCTAssertTrue(error is MessageDecodingError || error is DecodingError)
         }
     }
 
-    // MARK: - Round-trip Tests
+    func testDecodingFailsWithWrongRole() {
+        let json = """
+        {
+            "id": "asst-1",
+            "role": "user",
+            "content": "Test"
+        }
+        """
+
+        // With polymorphic MessageDecoder, wrong role returns different message type
+        let decoder = MessageDecoder()
+        let message = try? decoder.decode(Data(json.utf8))
+
+        // Should decode as UserMessage, not AssistantMessage
+        XCTAssertNotNil(message)
+        XCTAssertFalse(message is AssistantMessage)
+        XCTAssertTrue(message is UserMessage)
+    }
+
+    // MARK: - Round-trip Tests (via DTO layer)
 
     func testRoundTripWithContent() throws {
+        // Create original message
         let original = AssistantMessage(
             id: "asst-roundtrip-1",
             content: "This is a test response",
             name: "Assistant"
         )
 
-        let encoder = JSONEncoder()
-        let encoded = try encoder.encode(original)
+        // Encode via DTO (simulating what RunAgentInput does)
+        let dict: [String: Any] = [
+            "id": original.id,
+            "role": original.role.rawValue,
+            "content": original.content as Any,
+            "name": original.name as Any
+        ]
+        let encoded = try JSONSerialization.data(withJSONObject: dict)
 
-        let decoder = JSONDecoder()
-        let decoded = try decoder.decode(AssistantMessage.self, from: encoded)
+        // Decode via MessageDecoder
+        let decoder = MessageDecoder()
+        let decoded = try decoder.decode(encoded)
 
-        XCTAssertEqual(decoded.id, original.id)
-        XCTAssertEqual(decoded.content, original.content)
-        XCTAssertEqual(decoded.name, original.name)
+        XCTAssertTrue(decoded is AssistantMessage)
+        let asstMessage = decoded as! AssistantMessage
+        XCTAssertEqual(asstMessage.id, original.id)
+        XCTAssertEqual(asstMessage.content, original.content)
+        XCTAssertEqual(asstMessage.name, original.name)
     }
 
     func testRoundTripWithToolCalls() throws {
+        // Create original message
         let toolCalls = [
             ToolCall(id: "call_rt1", function: FunctionCall(name: "func1", arguments: "{\"a\":1}")),
             ToolCall(id: "call_rt2", function: FunctionCall(name: "func2", arguments: "{\"b\":2}"))
@@ -285,15 +279,35 @@ final class AssistantMessageTests: XCTestCase {
             toolCalls: toolCalls
         )
 
-        let encoder = JSONEncoder()
-        let encoded = try encoder.encode(original)
+        // Encode via DTO (simulating what RunAgentInput does)
+        let toolCallsArray = original.toolCalls?.map { toolCall in
+            [
+                "id": toolCall.id,
+                "type": "function",
+                "function": [
+                    "name": toolCall.function.name,
+                    "arguments": toolCall.function.arguments
+                ]
+            ] as [String: Any]
+        }
 
-        let decoder = JSONDecoder()
-        let decoded = try decoder.decode(AssistantMessage.self, from: encoded)
+        let dict: [String: Any] = [
+            "id": original.id,
+            "role": original.role.rawValue,
+            "content": original.content as Any,
+            "toolCalls": toolCallsArray as Any
+        ]
+        let encoded = try JSONSerialization.data(withJSONObject: dict)
 
-        XCTAssertEqual(decoded.id, original.id)
-        XCTAssertEqual(decoded.toolCalls?.count, original.toolCalls?.count)
-        XCTAssertEqual(decoded.toolCalls?[0].id, original.toolCalls?[0].id)
+        // Decode via MessageDecoder
+        let decoder = MessageDecoder()
+        let decoded = try decoder.decode(encoded)
+
+        XCTAssertTrue(decoded is AssistantMessage)
+        let asstMessage = decoded as! AssistantMessage
+        XCTAssertEqual(asstMessage.id, original.id)
+        XCTAssertEqual(asstMessage.toolCalls?.count, original.toolCalls?.count)
+        XCTAssertEqual(asstMessage.toolCalls?[0].id, original.toolCalls?[0].id)
     }
 
     // MARK: - Equatable Tests
