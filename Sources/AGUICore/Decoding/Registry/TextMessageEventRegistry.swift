@@ -16,8 +16,10 @@ enum TextMessageEventRegistry {
             },
             .textMessageEnd: { data, decoder in
                 try decoder.decode(TextMessageEndEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .textMessageChunk: { data, decoder in
+                try decoder.decode(TextMessageChunkEventDTO.self, from: data).toDomain(rawEvent: data)
             }
-            // Add more: textMessageChunk...
         ]
     }
 }
