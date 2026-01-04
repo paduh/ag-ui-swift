@@ -17,8 +17,10 @@ enum StateEventRegistry {
             },
             .stateDelta: { data, decoder in
                 try StateDeltaEventDTO.decode(from: data, decoder: decoder).toDomain(rawEvent: data)
+            },
+            .messagesSnapshot: { data, decoder in
+                try MessagesSnapshotEventDTO.decode(from: data, decoder: decoder).toDomain(rawEvent: data)
             }
-            // Add more: messagesSnapshot...
         ]
     }
 }
