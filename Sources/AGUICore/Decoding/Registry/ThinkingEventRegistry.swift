@@ -10,6 +10,9 @@ enum ThinkingEventRegistry {
             },
             .thinkingEnd: { data, decoder in
                 try decoder.decode(ThinkingEndEventDTO.self, from: data).toDomain(rawEvent: data)
+            },
+            .thinkingTextMessageStart: { data, decoder in
+                try decoder.decode(ThinkingTextMessageStartEventDTO.self, from: data).toDomain(rawEvent: data)
             }
         ]
     }
