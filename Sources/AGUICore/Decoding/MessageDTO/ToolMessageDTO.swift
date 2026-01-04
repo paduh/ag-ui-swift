@@ -1,0 +1,40 @@
+// ToolMessageDTO.swift
+// AGUISwift
+
+import Foundation
+
+/// Data Transfer Object for ToolMessage decoding.
+struct ToolMessageDTO {
+    let id: String
+    let toolCallId: String
+    let content: String?
+    let name: String?
+    let error: String?
+
+    static func decode(from data: Data, decoder: JSONDecoder = JSONDecoder()) throws -> ToolMessageDTO {
+        guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(codingPath: [], debugDescription: "Expected JSON object at root")
+            )
+        }
+
+        // Validate role
+        let role = try MessageDecodingHelpers.extractRole(from: jsonObject)
+        try MessageDecodingHelpers.validateRole(role, expected: .tool)
+
+        // Extract required fields
+        let id = try MessageDecodingHelpers.extractRequiredString(from: jsonObject, key: "id")
+        let toolCallId = try MessageDecodingHelpers.extractRequiredString(from: jsonObject, key: "toolCallId")
+
+        // Extract optional fields
+        let content = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "content")
+        let name = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "name")
+        let error = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "error")
+
+        return ToolMessageDTO(id: id, toolCallId: toolCallId, content: content, name: name, error: error)
+    }
+
+    func toDomain() -> ToolMessage {
+        ToolMessage(id: id, content: content ?? "", toolCallId: toolCallId, name: name, error: error)
+    }
+}
