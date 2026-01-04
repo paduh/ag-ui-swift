@@ -338,9 +338,9 @@ final class MessagesSnapshotEventTests: XCTestCase,
 
     // MARK: - Feature: Model behaviors
 
-    func test_messagesSnapshotEvent_eventTypeIsAlwaysMessagesSnapshot() {
+    func test_messagesSnapshotEvent_eventTypeIsAlwaysMessagesSnapshot() throws {
         // Given
-        let messagesData = try! JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
+        let messagesData = try JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
         let event = MessagesSnapshotEvent(messages: messagesData, timestamp: nil, rawEvent: nil)
 
         // Then
@@ -349,43 +349,43 @@ final class MessagesSnapshotEventTests: XCTestCase,
 
     func test_messagesSnapshotEvent_equatable_sameMessages_areEqual() throws {
         // Given
-        let messagesData = try! JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
-        let a = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let messagesData = try JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
+        let event1 = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_messagesSnapshotEvent_equatable_differentMessages_areNotEqual() throws {
         // Given
-        let messagesData1 = try! JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
-        let messagesData2 = try! JSONSerialization.data(withJSONObject: [["id": "msg-2"]], options: [])
-        let a = MessagesSnapshotEvent(messages: messagesData1, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = MessagesSnapshotEvent(messages: messagesData2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let messagesData1 = try JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
+        let messagesData2 = try JSONSerialization.data(withJSONObject: [["id": "msg-2"]], options: [])
+        let event1 = MessagesSnapshotEvent(messages: messagesData1, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = MessagesSnapshotEvent(messages: messagesData2, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_messagesSnapshotEvent_equatable_differentTimestamps_areNotEqual() throws {
         // Given
-        let messagesData = try! JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
-        let a = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let messagesData = try JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
+        let event1 = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_messagesSnapshotEvent_equatable_oneWithTimestampOneWithout_areNotEqual() throws {
         // Given
-        let messagesData = try! JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
-        let a = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = MessagesSnapshotEvent(messages: messagesData, timestamp: nil, rawEvent: nil)
+        let messagesData = try JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
+        let event1 = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = MessagesSnapshotEvent(messages: messagesData, timestamp: nil, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_messagesSnapshotEvent_parsedMessages_returnsCorrectValue() throws {
@@ -462,9 +462,9 @@ final class MessagesSnapshotEventTests: XCTestCase,
         }
     }
 
-    func test_messagesSnapshotEvent_description_containsKeyInformation() {
+    func test_messagesSnapshotEvent_description_containsKeyInformation() throws {
         // Given
-        let messagesData = try! JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
+        let messagesData = try JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
         let event = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
@@ -473,9 +473,9 @@ final class MessagesSnapshotEventTests: XCTestCase,
         XCTAssertTrue(description.contains("timestamp"))
     }
 
-    func test_messagesSnapshotEvent_debugDescription_containsDetailedInformation() {
+    func test_messagesSnapshotEvent_debugDescription_containsDetailedInformation() throws {
         // Given
-        let messagesData = try! JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
+        let messagesData = try JSONSerialization.data(withJSONObject: [["id": "msg-1"]], options: [])
         let event = MessagesSnapshotEvent(messages: messagesData, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
