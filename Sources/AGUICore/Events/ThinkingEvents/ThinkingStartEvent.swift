@@ -11,6 +11,11 @@ public struct ThinkingStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties
 
+    /// Optional title or description for the thinking step.
+    ///
+    /// Provides context about what the agent is thinking about or reasoning through.
+    public let title: String?
+
     /// Optional timestamp when the thinking started.
     ///
     /// Represented as milliseconds since Unix epoch.
@@ -27,12 +32,15 @@ public struct ThinkingStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// Creates a new `ThinkingStartEvent`.
     ///
     /// - Parameters:
+    ///   - title: Optional title/description for the thinking step
     ///   - timestamp: Optional timestamp in milliseconds since epoch
     ///   - rawEvent: Optional raw event data as received from the agent
     public init(
+        title: String? = nil,
         timestamp: Int64? = nil,
         rawEvent: Data? = nil
     ) {
+        self.title = title
         self.timestamp = timestamp
         self.rawEvent = rawEvent
     }
@@ -41,7 +49,8 @@ public struct ThinkingStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
 // MARK: - CustomStringConvertible
 extension ThinkingStartEvent: CustomStringConvertible {
     public var description: String {
-        "ThinkingStartEvent(timestamp: \(timestamp?.description ?? "nil"))"
+        let titleDesc = title.map { "\"\($0)\"" } ?? "nil"
+        return "ThinkingStartEvent(title: \(titleDesc), timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
 
@@ -50,6 +59,7 @@ extension ThinkingStartEvent: CustomDebugStringConvertible {
     public var debugDescription: String {
         """
         ThinkingStartEvent {
+            title: \(title.map { "\"\($0)\"" } ?? "nil")
             timestamp: \(timestamp.map(String.init) ?? "nil")
             eventType: \(eventType.rawValue)
         }
