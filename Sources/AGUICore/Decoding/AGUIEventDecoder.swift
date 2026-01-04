@@ -304,7 +304,8 @@ public struct AGUIEventDecoder {
             TextMessageEventRegistry.registry(),
             ToolCallEventRegistry.registry(),
             StateEventRegistry.registry(),
-            SpecialEventRegistry.registry()
+            SpecialEventRegistry.registry(),
+            ThinkingEventRegistry.registry()
         )
     }
 
