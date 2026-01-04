@@ -150,37 +150,43 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
+        // Decode simple string fields
         threadId = try container.decode(String.self, forKey: .threadId)
         runId = try container.decode(String.self, forKey: .runId)
         parentRunId = try container.decodeIfPresent(String.self, forKey: .parentRunId)
 
-        // Decode state as JSON object
+        // Decode state as arbitrary JSON object and convert to Data
         if container.contains(.state) {
             let stateContainer = try container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .state)
-            let jsonObject = try stateContainer.decodeJSONObject()
-            state = try JSONSerialization.data(withJSONObject: jsonObject)
+            let stateObject = try stateContainer.decodeJSONObject()
+            state = try JSONSerialization.data(withJSONObject: stateObject)
         } else {
             state = Data("{}".utf8)
         }
 
-        // Decode messages as polymorphic array
-        if let messageWrappers = try? container.decode([MessageWrapper].self, forKey: .messages) {
-            messages = messageWrappers.map(\.message)
+        // Decode messages array using MessageDecoder for polymorphic deserialization
+        if container.contains(.messages) {
+            var messagesContainer = try container.nestedUnkeyedContainer(forKey: .messages)
+            let messagesArray = try messagesContainer.decodeJSONArray()
+
+            let messageDecoder = MessageDecoder()
+            messages = try messagesArray.map { messageObj in
+                let messageData = try JSONSerialization.data(withJSONObject: messageObj)
+                return try messageDecoder.decode(messageData)
+            }
         } else {
             messages = []
         }
 
-        // Decode tools
+        // Decode tools and context arrays (these already conform to Codable)
         tools = try container.decodeIfPresent([Tool].self, forKey: .tools) ?? []
-
-        // Decode context
         context = try container.decodeIfPresent([Context].self, forKey: .context) ?? []
 
-        // Decode forwardedProps as JSON object
+        // Decode forwardedProps as arbitrary JSON object and convert to Data
         if container.contains(.forwardedProps) {
             let propsContainer = try container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .forwardedProps)
-            let jsonObject = try propsContainer.decodeJSONObject()
-            forwardedProps = try JSONSerialization.data(withJSONObject: jsonObject)
+            let propsObject = try propsContainer.decodeJSONObject()
+            forwardedProps = try JSONSerialization.data(withJSONObject: propsObject)
         } else {
             forwardedProps = Data("{}".utf8)
         }
@@ -189,26 +195,31 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
+        // Encode simple string fields
         try container.encode(threadId, forKey: .threadId)
         try container.encode(runId, forKey: .runId)
         try container.encodeIfPresent(parentRunId, forKey: .parentRunId)
 
-        // Encode state as JSON object
+        // Encode state as arbitrary JSON object
         let stateObject = try JSONSerialization.jsonObject(with: state)
         var stateContainer = container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .state)
         try stateContainer.encodeJSONObject(stateObject)
 
-        // Encode messages as polymorphic array
-        let messageWrappers = messages.map { MessageWrapper(message: $0) }
-        try container.encode(messageWrappers, forKey: .messages)
+        // Encode messages as polymorphic array using helper
+        var messagesArray: [Any] = []
+        for message in messages {
+            let messageData = try encodeMessage(message, encoder: encoder)
+            let messageDict = try JSONSerialization.jsonObject(with: messageData)
+            messagesArray.append(messageDict)
+        }
+        var messagesContainer = container.nestedUnkeyedContainer(forKey: .messages)
+        try messagesContainer.encodeJSONArray(messagesArray)
 
-        // Encode tools
+        // Encode tools and context arrays (these already conform to Codable)
         try container.encode(tools, forKey: .tools)
-
-        // Encode context
         try container.encode(context, forKey: .context)
 
-        // Encode forwardedProps as JSON object
+        // Encode forwardedProps as arbitrary JSON object
         let propsObject = try JSONSerialization.jsonObject(with: forwardedProps)
         var propsContainer = container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .forwardedProps)
         try propsContainer.encodeJSONObject(propsObject)
@@ -240,67 +251,196 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
     }
 }
 
-// MARK: - Message Wrapper for Polymorphic Encoding
+// MARK: - Message Encoding Helpers
 
-/// Wrapper for encoding/decoding polymorphic Message arrays.
-private struct MessageWrapper: Codable {
-    let message: any Message
+/// Encodes a message to JSON data using the appropriate DTO.
+private func encodeMessage(_ message: any Message, encoder: Encoder) throws -> Data {
+    let jsonEncoder = JSONEncoder()
 
-    init(message: any Message) {
-        self.message = message
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: RoleKeys.self)
-        let role = try container.decode(Role.self, forKey: .role)
-
-        let singleContainer = try decoder.singleValueContainer()
-
-        switch role {
-        case .developer:
-            message = try singleContainer.decode(DeveloperMessage.self)
-        case .system:
-            message = try singleContainer.decode(SystemMessage.self)
-        case .user:
-            message = try singleContainer.decode(UserMessage.self)
-        case .assistant:
-            message = try singleContainer.decode(AssistantMessage.self)
-        case .tool:
-            message = try singleContainer.decode(ToolMessage.self)
-        case .activity:
-            message = try singleContainer.decode(ActivityMessage.self)
+    // Convert message to DTO and encode
+    switch message.role {
+    case .developer:
+        guard let devMsg = message as? DeveloperMessage else {
+            throw EncodingError.invalidValue(message, EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription: "Message role is developer but type doesn't match"
+            ))
         }
-    }
+        return try encodeDeveloperMessage(devMsg, encoder: jsonEncoder)
 
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-
-        if let developerMessage = message as? DeveloperMessage {
-            try container.encode(developerMessage)
-        } else if let systemMessage = message as? SystemMessage {
-            try container.encode(systemMessage)
-        } else if let userMessage = message as? UserMessage {
-            try container.encode(userMessage)
-        } else if let assistantMessage = message as? AssistantMessage {
-            try container.encode(assistantMessage)
-        } else if let toolMessage = message as? ToolMessage {
-            try container.encode(toolMessage)
-        } else if let activityMessage = message as? ActivityMessage {
-            try container.encode(activityMessage)
-        } else {
-            throw EncodingError.invalidValue(
-                message,
-                EncodingError.Context(
-                    codingPath: encoder.codingPath,
-                    debugDescription: "Unsupported Message type"
-                )
-            )
+    case .system:
+        guard let sysMsg = message as? SystemMessage else {
+            throw EncodingError.invalidValue(message, EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription: "Message role is system but type doesn't match"
+            ))
         }
+        return try encodeSystemMessage(sysMsg, encoder: jsonEncoder)
+
+    case .user:
+        guard let userMsg = message as? UserMessage else {
+            throw EncodingError.invalidValue(message, EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription: "Message role is user but type doesn't match"
+            ))
+        }
+        return try encodeUserMessage(userMsg, encoder: jsonEncoder)
+
+    case .assistant:
+        guard let assistantMsg = message as? AssistantMessage else {
+            throw EncodingError.invalidValue(message, EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription: "Message role is assistant but type doesn't match"
+            ))
+        }
+        return try encodeAssistantMessage(assistantMsg, encoder: jsonEncoder)
+
+    case .tool:
+        guard let toolMsg = message as? ToolMessage else {
+            throw EncodingError.invalidValue(message, EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription: "Message role is tool but type doesn't match"
+            ))
+        }
+        return try encodeToolMessage(toolMsg, encoder: jsonEncoder)
+
+    case .activity:
+        guard let activityMsg = message as? ActivityMessage else {
+            throw EncodingError.invalidValue(message, EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription: "Message role is activity but type doesn't match"
+            ))
+        }
+        return try encodeActivityMessage(activityMsg, encoder: jsonEncoder)
+    }
+}
+
+/// Encodes a DeveloperMessage to JSON
+private func encodeDeveloperMessage(_ message: DeveloperMessage, encoder: JSONEncoder) throws -> Data {
+    var dict: [String: Any] = [
+        "id": message.id,
+        "role": message.role.rawValue,
+        "content": message.content ?? ""
+    ]
+    if let name = message.name {
+        dict["name"] = name
+    }
+    return try JSONSerialization.data(withJSONObject: dict)
+}
+
+/// Encodes a SystemMessage to JSON
+private func encodeSystemMessage(_ message: SystemMessage, encoder: JSONEncoder) throws -> Data {
+    var dict: [String: Any] = [
+        "id": message.id,
+        "role": message.role.rawValue
+    ]
+    if let content = message.content {
+        dict["content"] = content
+    }
+    if let name = message.name {
+        dict["name"] = name
+    }
+    return try JSONSerialization.data(withJSONObject: dict)
+}
+
+/// Encodes a UserMessage to JSON
+private func encodeUserMessage(_ message: UserMessage, encoder: JSONEncoder) throws -> Data {
+    var dict: [String: Any] = [
+        "id": message.id,
+        "role": message.role.rawValue
+    ]
+
+    // Handle polymorphic content
+    if let parts = message.contentParts {
+        // Multimodal - encode as array
+        var contentArray: [[String: Any]] = []
+        for part in parts {
+            if let textPart = part as? TextInputContent {
+                contentArray.append([
+                    "type": "text",
+                    "text": textPart.text
+                ])
+            } else if let binaryPart = part as? BinaryInputContent {
+                var binaryDict: [String: Any] = [
+                    "type": "binary",
+                    "mimeType": binaryPart.mimeType
+                ]
+                if let id = binaryPart.id {
+                    binaryDict["id"] = id
+                }
+                if let url = binaryPart.url {
+                    binaryDict["url"] = url
+                }
+                if let data = binaryPart.data {
+                    binaryDict["data"] = data
+                }
+                if let filename = binaryPart.filename {
+                    binaryDict["filename"] = filename
+                }
+                contentArray.append(binaryDict)
+            }
+        }
+        dict["content"] = contentArray
+    } else {
+        // Text-only
+        dict["content"] = message.content ?? ""
     }
 
-    private enum RoleKeys: String, CodingKey {
-        case role
+    if let name = message.name {
+        dict["name"] = name
     }
+    return try JSONSerialization.data(withJSONObject: dict)
+}
+
+/// Encodes an AssistantMessage to JSON
+private func encodeAssistantMessage(_ message: AssistantMessage, encoder: JSONEncoder) throws -> Data {
+    var dict: [String: Any] = [
+        "id": message.id,
+        "role": message.role.rawValue
+    ]
+    if let content = message.content {
+        dict["content"] = content
+    }
+    if let name = message.name {
+        dict["name"] = name
+    }
+    if let toolCalls = message.toolCalls {
+        let toolCallsData = try encoder.encode(toolCalls)
+        let toolCallsArray = try JSONSerialization.jsonObject(with: toolCallsData)
+        dict["toolCalls"] = toolCallsArray
+    }
+    return try JSONSerialization.data(withJSONObject: dict)
+}
+
+/// Encodes a ToolMessage to JSON
+private func encodeToolMessage(_ message: ToolMessage, encoder: JSONEncoder) throws -> Data {
+    var dict: [String: Any] = [
+        "id": message.id,
+        "role": message.role.rawValue,
+        "toolCallId": message.toolCallId
+    ]
+    if let content = message.content {
+        dict["content"] = content
+    }
+    if let name = message.name {
+        dict["name"] = name
+    }
+    if let error = message.error {
+        dict["error"] = error
+    }
+    return try JSONSerialization.data(withJSONObject: dict)
+}
+
+/// Encodes an ActivityMessage to JSON
+private func encodeActivityMessage(_ message: ActivityMessage, encoder: JSONEncoder) throws -> Data {
+    let activityContentObj = try JSONSerialization.jsonObject(with: message.activityContent)
+    let dict: [String: Any] = [
+        "id": message.id,
+        "role": message.role.rawValue,
+        "activityType": message.activityType,
+        "activityContent": activityContentObj
+    ]
+    return try JSONSerialization.data(withJSONObject: dict)
 }
 
 // MARK: - JSON Encoding Helpers

@@ -130,50 +130,6 @@ public struct UserMessage: Message, Sendable, Hashable {
         self.contentParts = contentParts
     }
 
-    // MARK: - Codable
-
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case role
-        case content
-        case name
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        id = try container.decode(String.self, forKey: .id)
-        role = try container.decode(Role.self, forKey: .role)
-        name = try container.decodeIfPresent(String.self, forKey: .name)
-
-        // Try to decode content as array (multimodal) or string (text-only)
-        if let contentArray = try? container.decode([InputContentWrapper].self, forKey: .content) {
-            // Multimodal message
-            content = ""
-            contentParts = contentArray.map(\.content)
-        } else {
-            // Text-only message
-            content = try container.decode(String.self, forKey: .content)
-            contentParts = nil
-        }
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        try container.encode(id, forKey: .id)
-        try container.encode(role, forKey: .role)
-        try container.encodeIfPresent(name, forKey: .name)
-
-        // Encode as array (multimodal) or string (text-only)
-        if let parts = contentParts {
-            let wrappers = parts.map { InputContentWrapper(content: $0) }
-            try container.encode(wrappers, forKey: .content)
-        } else {
-            try container.encode(content ?? "", forKey: .content)
-        }
-    }
-
     // MARK: - Hashable
 
     public func hash(into hasher: inout Hasher) {
@@ -191,59 +147,5 @@ public struct UserMessage: Message, Sendable, Hashable {
             lhs.content == rhs.content &&
             lhs.name == rhs.name &&
             lhs.isMultimodal == rhs.isMultimodal
-    }
-}
-
-// MARK: - InputContent Wrapper for Polymorphic Encoding
-
-/// Wrapper for encoding/decoding polymorphic InputContent arrays.
-private struct InputContentWrapper: Codable {
-    let content: any InputContent
-
-    init(content: any InputContent) {
-        self.content = content
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-
-        // Try to decode the type discriminator
-        let typeContainer = try decoder.container(keyedBy: TypeKeys.self)
-        let type = try typeContainer.decode(String.self, forKey: .type)
-
-        switch type {
-        case "text":
-            content = try container.decode(TextInputContent.self)
-        case "binary":
-            content = try container.decode(BinaryInputContent.self)
-        default:
-            throw DecodingError.dataCorruptedError(
-                forKey: .type,
-                in: typeContainer,
-                debugDescription: "Unknown InputContent type: \(type)"
-            )
-        }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-
-        if let textContent = content as? TextInputContent {
-            try container.encode(textContent)
-        } else if let binaryContent = content as? BinaryInputContent {
-            try container.encode(binaryContent)
-        } else {
-            throw EncodingError.invalidValue(
-                content,
-                EncodingError.Context(
-                    codingPath: encoder.codingPath,
-                    debugDescription: "Unsupported InputContent type"
-                )
-            )
-        }
-    }
-
-    private enum TypeKeys: String, CodingKey {
-        case type
     }
 }

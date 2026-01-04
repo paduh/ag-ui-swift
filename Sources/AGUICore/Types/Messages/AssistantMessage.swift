@@ -122,35 +122,4 @@ public struct AssistantMessage: Message, Sendable, Hashable {
         self.name = name
         self.toolCalls = toolCalls
     }
-
-    // MARK: - Codable
-
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case role
-        case content
-        case name
-        case toolCalls
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        content = try container.decodeIfPresent(String.self, forKey: .content)
-        name = try container.decodeIfPresent(String.self, forKey: .name)
-        toolCalls = try container.decodeIfPresent([ToolCall].self, forKey: .toolCalls)
-
-        // Role is always .assistant, but we decode it for validation
-        _ = try container.decodeIfPresent(Role.self, forKey: .role)
-        role = .assistant
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encode(role, forKey: .role)
-        try container.encodeIfPresent(content, forKey: .content)
-        try container.encodeIfPresent(name, forKey: .name)
-        try container.encodeIfPresent(toolCalls, forKey: .toolCalls)
-    }
 }

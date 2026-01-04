@@ -113,38 +113,4 @@ public struct ToolMessage: Message, Sendable, Hashable {
         self.name = name
         self.error = error
     }
-
-    // MARK: - Codable
-
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case role
-        case content
-        case toolCallId
-        case name
-        case error
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        content = try container.decode(String.self, forKey: .content)
-        toolCallId = try container.decode(String.self, forKey: .toolCallId)
-        name = try container.decodeIfPresent(String.self, forKey: .name)
-        error = try container.decodeIfPresent(String.self, forKey: .error)
-
-        // Role is always .tool, but we decode it for validation
-        _ = try container.decodeIfPresent(Role.self, forKey: .role)
-        role = .tool
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encode(role, forKey: .role)
-        try container.encode(content, forKey: .content)
-        try container.encode(toolCallId, forKey: .toolCallId)
-        try container.encodeIfPresent(name, forKey: .name)
-        try container.encodeIfPresent(error, forKey: .error)
-    }
 }

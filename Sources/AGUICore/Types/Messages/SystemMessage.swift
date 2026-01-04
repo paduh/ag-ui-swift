@@ -90,32 +90,4 @@ public struct SystemMessage: Message, Sendable, Hashable {
         self.content = content
         self.name = name
     }
-
-    // MARK: - Codable
-
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case role
-        case content
-        case name
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        content = try container.decodeIfPresent(String.self, forKey: .content)
-        name = try container.decodeIfPresent(String.self, forKey: .name)
-
-        // Role is always .system, but we decode it for validation
-        _ = try container.decodeIfPresent(Role.self, forKey: .role)
-        role = .system
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(id, forKey: .id)
-        try container.encode(role, forKey: .role)
-        try container.encodeIfPresent(content, forKey: .content)
-        try container.encodeIfPresent(name, forKey: .name)
-    }
 }

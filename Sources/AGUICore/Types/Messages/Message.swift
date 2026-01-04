@@ -58,7 +58,7 @@ import Foundation
 /// ```
 ///
 /// - SeeAlso: ``Role``
-public protocol Message: Sendable, Codable {
+public protocol Message: Sendable {
     /// Unique identifier for this message.
     ///
     /// Message IDs should be unique within a conversation thread to enable
