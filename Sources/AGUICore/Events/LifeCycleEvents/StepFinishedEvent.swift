@@ -1,3 +1,6 @@
+// StepFinishedEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating that an execution step has completed.

@@ -1,3 +1,6 @@
+// ThinkingTextMessageContentEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event containing incremental content for a thinking text message.

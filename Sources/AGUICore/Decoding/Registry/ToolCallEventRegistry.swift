@@ -1,9 +1,5 @@
-//
-//  ToolCallEventRegistry.swift
-//  AGUISwift
-//
-//  Created by Perfect Aduh on 2026-01-02.
-//
+// ToolCallEventRegistry.swift
+// AGUISwift
 
 import Foundation
 

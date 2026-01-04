@@ -1,3 +1,6 @@
+// ThinkingStartEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating the start of a thinking step.

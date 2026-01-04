@@ -1,3 +1,6 @@
+// StepFinishedEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct StepFinishedEventDTO: Decodable {

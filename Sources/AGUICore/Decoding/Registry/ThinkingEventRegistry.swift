@@ -1,3 +1,6 @@
+// ThinkingEventRegistry.swift
+// AGUISwift
+
 import Foundation
 
 enum ThinkingEventRegistry {

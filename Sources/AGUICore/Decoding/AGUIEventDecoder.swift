@@ -1,3 +1,6 @@
+// AGUIEventDecoder.swift
+// AGUISwift
+
 import Foundation
 
 /// Decoder for AG-UI protocol events with polymorphic deserialization.

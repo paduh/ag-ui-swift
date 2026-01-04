@@ -1,3 +1,6 @@
+// EventDecodingErrorTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -82,16 +85,17 @@ extension EventDecodingErrorTests {
     ///
     /// This validates that the decoder correctly identifies and reports
     /// when the required "type" field is missing from event JSON.
-    func test_decodeMissingType_throwsMissingTypeField() {
+    func test_decodeMissingType_throwsMissingTypeField() throws {
         // Given
         let json = validEventFieldsWithoutType
-        let data = try! JSONSerialization.data(withJSONObject: json, options: [])
+        let data = try JSONSerialization.data(withJSONObject: json, options: [])
         let decoder = makeStrictDecoder()
 
         // When / Then
         XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .missingTypeField,
-                          "Expected .missingTypeField error when 'type' field is missing")
+            XCTAssertEqual(error as? EventDecodingError,
+                           .missingTypeField,
+                           "Expected .missingTypeField error when 'type' field is missing")
         }
     }
 
@@ -99,11 +103,11 @@ extension EventDecodingErrorTests {
     ///
     /// This validates that the decoder in strict mode correctly rejects
     /// event types that are not recognized, throwing a specific error.
-    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() {
+    func test_decodeUnknownType_inStrictMode_throwsUnknownEventType() throws {
         // Given
         var json = validEventFieldsWithoutType
         json["type"] = unknownEventTypeString
-        let data = try! JSONSerialization.data(withJSONObject: json, options: [])
+        let data = try JSONSerialization.data(withJSONObject: json, options: [])
         let decoder = makeStrictDecoder()
 
         // When / Then
@@ -111,8 +115,9 @@ extension EventDecodingErrorTests {
             guard case .unknownEventType(let type) = error as? EventDecodingError else {
                 return XCTFail("Expected .unknownEventType error, got \(error)")
             }
-            XCTAssertEqual(type, unknownEventTypeString,
-                          "Error should report the unknown type string")
+            XCTAssertEqual(type,
+                           unknownEventTypeString,
+                           "Error should report the unknown type string")
         }
     }
 
@@ -124,38 +129,43 @@ extension EventDecodingErrorTests {
         // Given
         var json = validEventFieldsWithoutType
         json["type"] = unknownEventTypeString
-        let data = try! JSONSerialization.data(withJSONObject: json, options: [])
+        let data = try JSONSerialization.data(withJSONObject: json, options: [])
         let decoder = makeTolerantDecoder()
 
         // When
         let event = try decoder.decode(data)
 
         // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent,
-                                    "Tolerant decoder should return UnknownEvent for unknown types")
-        XCTAssertEqual(unknown.typeRaw, unknownEventTypeString,
-                      "UnknownEvent should preserve the original type string")
-        XCTAssertEqual(unknown.rawEvent, data,
-                      "UnknownEvent should preserve the raw event data")
+        let unknown = try XCTUnwrap(
+            event as? UnknownEvent,
+            "Tolerant decoder should return UnknownEvent for unknown types"
+        )
+        XCTAssertEqual(unknown.typeRaw,
+                       unknownEventTypeString,
+                       "UnknownEvent should preserve the original type string")
+        XCTAssertEqual(unknown.rawEvent,
+                       data,
+                       "UnknownEvent should preserve the raw event data")
     }
 
     /// Tests that decoding a known type with no handler in strict mode throws `.unsupportedEventType`.
     ///
     /// This validates that the decoder correctly identifies when an event type
     /// is recognized but no handler is registered to decode it.
-    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() {
+    func test_decodeKnownTypeButNoHandler_inStrictMode_throwsUnsupportedEventType() throws {
         // Given
         var json = validEventFieldsWithoutType
         json["type"] = eventTypeString
-        let data = try! JSONSerialization.data(withJSONObject: json, options: [])
+        let data = try JSONSerialization.data(withJSONObject: json, options: [])
 
         // Registry intentionally empty -> handler missing
         let decoder = makeStrictDecoder(registry: [:])
 
         // When / Then
         XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .unsupportedEventType(expectedEventType),
-                          "Expected .unsupportedEventType error when handler is missing")
+            XCTAssertEqual(error as? EventDecodingError,
+                           .unsupportedEventType(expectedEventType),
+                           "Expected .unsupportedEventType error when handler is missing")
         }
     }
 
@@ -167,7 +177,7 @@ extension EventDecodingErrorTests {
         // Given
         var json = validEventFieldsWithoutType
         json["type"] = eventTypeString
-        let data = try! JSONSerialization.data(withJSONObject: json, options: [])
+        let data = try JSONSerialization.data(withJSONObject: json, options: [])
 
         // Registry intentionally empty -> handler missing
         let decoder = makeTolerantDecoder(registry: [:])
@@ -176,12 +186,16 @@ extension EventDecodingErrorTests {
         let event = try decoder.decode(data)
 
         // Then
-        let unknown = try XCTUnwrap(event as? UnknownEvent,
-                                    "Tolerant decoder should return UnknownEvent when handler is missing")
-        XCTAssertEqual(unknown.typeRaw, eventTypeString,
-                      "UnknownEvent should preserve the event type string")
-        XCTAssertEqual(unknown.rawEvent, data,
-                      "UnknownEvent should preserve the raw event data")
+        let unknown = try XCTUnwrap(
+            event as? UnknownEvent,
+            "Tolerant decoder should return UnknownEvent when handler is missing"
+        )
+        XCTAssertEqual(unknown.typeRaw,
+                       eventTypeString,
+                       "UnknownEvent should preserve the event type string")
+        XCTAssertEqual(unknown.rawEvent,
+                       data,
+                       "UnknownEvent should preserve the raw event data")
     }
 
     /// Tests that invalid JSON throws `.invalidJSON`.
@@ -195,8 +209,9 @@ extension EventDecodingErrorTests {
 
         // When / Then
         XCTAssertThrowsError(try decoder.decode(data)) { error in
-            XCTAssertEqual(error as? EventDecodingError, .invalidJSON,
-                          "Expected .invalidJSON error when JSON is malformed")
+            XCTAssertEqual(error as? EventDecodingError,
+                           .invalidJSON,
+                           "Expected .invalidJSON error when JSON is malformed")
         }
     }
 }

@@ -1,9 +1,5 @@
-//
-//  RegistryComposer.swift
-//  AGUISwift
-//
-//  Created by Perfect Aduh on 2026-01-02.
-//
+// RegistryComposer.swift
+// AGUISwift
 
 import Foundation
 

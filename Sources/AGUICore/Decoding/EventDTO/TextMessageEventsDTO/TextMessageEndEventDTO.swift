@@ -1,3 +1,6 @@
+// TextMessageEndEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct TextMessageEndEventDTO: Decodable {
@@ -12,4 +15,3 @@ struct TextMessageEndEventDTO: Decodable {
         )
     }
 }
-

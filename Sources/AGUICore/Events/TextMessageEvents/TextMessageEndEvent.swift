@@ -1,3 +1,6 @@
+// TextMessageEndEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating that text message generation has completed.

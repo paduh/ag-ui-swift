@@ -1,3 +1,6 @@
+// ToolCallStartEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -300,65 +303,65 @@ final class ToolCallStartEventTests: XCTestCase,
 
     func test_toolCallStartEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_toolCallStartEvent_equatable_differentToolCallIds_areNotEqual() {
         // Given
-        let a = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallStartEvent(toolCallId: "call-456", toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallStartEvent(toolCallId: "call-456", toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallStartEvent_equatable_differentToolCallNames_areNotEqual() {
         // Given
-        let a = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_time", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_time", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallStartEvent_equatable_differentParentMessageIds_areNotEqual() {
         // Given
-        let a = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: "msg-789", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: "msg-789", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallStartEvent_equatable_oneNilParentMessageId_areNotEqual() {
         // Given
-        let a = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallStartEvent_equatable_bothNilParentMessageIds_areEqual() {
         // Given
-        let a = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_toolCallStartEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let event1 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallStartEvent(toolCallId: EventTestData.toolCallId, toolCallName: "get_weather", parentMessageId: nil, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallStartEvent_withEmptyToolCallId_isValid() {

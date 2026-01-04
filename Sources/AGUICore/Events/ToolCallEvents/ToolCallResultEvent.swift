@@ -1,3 +1,6 @@
+// ToolCallResultEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event containing the result/output from a tool call execution.

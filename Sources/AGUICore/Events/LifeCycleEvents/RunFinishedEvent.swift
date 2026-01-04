@@ -1,3 +1,6 @@
+// RunFinishedEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating that an agent run has completed successfully.

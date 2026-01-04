@@ -1,3 +1,6 @@
+// TextMessageStartEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -239,38 +242,38 @@ final class TextMessageStartEventTests: XCTestCase,
 
     func test_textMessageStartEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_textMessageStartEvent_equatable_differentMessageIds_areNotEqual() {
         // Given
-        let a = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageStartEvent(messageId: EventTestData.messageId2, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageStartEvent(messageId: EventTestData.messageId2, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_textMessageStartEvent_equatable_differentRoles_areNotEqual() {
         // Given
-        let a = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageStartEvent(messageId: EventTestData.messageId, role: "user", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageStartEvent(messageId: EventTestData.messageId, role: "user", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_textMessageStartEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let event1 = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageStartEvent(messageId: EventTestData.messageId, role: "assistant", timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_textMessageStartEvent_withEmptyMessageId_isValid() {

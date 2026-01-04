@@ -1,9 +1,5 @@
-//
-//  TextMessageEventRegistry.swift
-//  AGUISwift
-//
-//  Created by Perfect Aduh on 2026-01-02.
-//
+// TextMessageEventRegistry.swift
+// AGUISwift
 
 import Foundation
 

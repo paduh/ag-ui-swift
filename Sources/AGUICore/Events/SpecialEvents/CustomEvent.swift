@@ -1,3 +1,6 @@
+// CustomEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event for custom, application-specific event types.

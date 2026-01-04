@@ -1,3 +1,6 @@
+// ThinkingTextMessageEndEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating the completion of a thinking text message.

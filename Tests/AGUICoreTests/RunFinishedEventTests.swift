@@ -1,3 +1,6 @@
+// RunFinishedEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -161,10 +164,10 @@ final class RunFinishedEventTests: XCTestCase,
 
     func test_runFinishedEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = RunFinishedEvent(threadId: "t", runId: "r", timestamp: 1, rawEvent: nil)
-        let b = RunFinishedEvent(threadId: "t", runId: "r", timestamp: 1, rawEvent: nil)
+        let event1 = RunFinishedEvent(threadId: "t", runId: "r", timestamp: 1, rawEvent: nil)
+        let event2 = RunFinishedEvent(threadId: "t", runId: "r", timestamp: 1, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 }

@@ -1,3 +1,6 @@
+// TypeDiscriminator.swift
+// AGUISwift
+
 import Foundation
 
 /// Internal structure for reading the "type" field during polymorphic decoding.

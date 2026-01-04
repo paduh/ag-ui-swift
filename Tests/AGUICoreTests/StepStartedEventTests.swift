@@ -1,3 +1,6 @@
+// StepStartedEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -189,11 +192,11 @@ final class StepStartedEventTests: XCTestCase,
 
     func test_stepStartedEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = StepStartedEvent(stepName: "reasoning", timestamp: 1, rawEvent: nil)
-        let b = StepStartedEvent(stepName: "reasoning", timestamp: 1, rawEvent: nil)
+        let event1 = StepStartedEvent(stepName: "reasoning", timestamp: 1, rawEvent: nil)
+        let event2 = StepStartedEvent(stepName: "reasoning", timestamp: 1, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_stepStartedEvent_withEmptyStepName_isValid() {

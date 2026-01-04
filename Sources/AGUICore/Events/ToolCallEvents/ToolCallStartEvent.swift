@@ -1,3 +1,6 @@
+// ToolCallStartEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating that a tool call has started.

@@ -1,3 +1,6 @@
+// TextMessageContentEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event containing a chunk of text content for a message.

@@ -1,3 +1,6 @@
+// RawEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 

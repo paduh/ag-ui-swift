@@ -1,3 +1,6 @@
+// RawEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event containing raw, unprocessed event data.

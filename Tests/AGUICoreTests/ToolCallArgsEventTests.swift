@@ -1,3 +1,6 @@
+// ToolCallArgsEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -279,38 +282,38 @@ final class ToolCallArgsEventTests: XCTestCase,
 
     func test_toolCallArgsEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_toolCallArgsEvent_equatable_differentToolCallIds_areNotEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: "call-456", delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallArgsEvent(toolCallId: "call-456", delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallArgsEvent_equatable_differentDeltas_areNotEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value1\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value2\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value1\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value2\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallArgsEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let event1 = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallArgsEvent(toolCallId: EventTestData.toolCallId, delta: "{\"key\": \"value\"}", timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallArgsEvent_withEmptyDelta_isValid() {

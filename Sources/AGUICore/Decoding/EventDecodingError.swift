@@ -1,3 +1,6 @@
+// EventDecodingError.swift
+// AGUISwift
+
 import Foundation
 
 /// Errors that can occur during event decoding.

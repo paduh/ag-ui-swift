@@ -1,3 +1,6 @@
+// RunErrorEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct RunErrorEventDTO: Decodable {

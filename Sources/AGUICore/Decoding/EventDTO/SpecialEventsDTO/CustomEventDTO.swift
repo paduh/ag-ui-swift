@@ -1,3 +1,6 @@
+// CustomEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct CustomEventDTO {

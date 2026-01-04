@@ -1,3 +1,6 @@
+// RawEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct RawEventDTO {

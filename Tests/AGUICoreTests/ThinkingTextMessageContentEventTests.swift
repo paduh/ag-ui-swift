@@ -1,3 +1,6 @@
+// ThinkingTextMessageContentEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 

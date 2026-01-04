@@ -1,3 +1,6 @@
+// StateDeltaEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct StateDeltaEventDTO {

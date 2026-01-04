@@ -1,3 +1,6 @@
+// RunStartedEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct RunStartedEventDTO: Decodable {

@@ -1,3 +1,6 @@
+// EventType.swift
+// AGUISwift
+
 import Foundation
 
 /// Enumeration of all event types in the AG-UI protocol that can be received from or sent to an AG-UI agent.

@@ -1,3 +1,6 @@
+// ThinkingStartEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct ThinkingStartEventDTO: Decodable {

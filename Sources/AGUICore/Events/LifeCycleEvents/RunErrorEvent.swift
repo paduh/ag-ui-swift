@@ -1,3 +1,6 @@
+// RunErrorEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating that an agent run has encountered an error.

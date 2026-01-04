@@ -1,3 +1,6 @@
+// ToolCallResultEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -377,74 +380,74 @@ final class ToolCallResultEventTests: XCTestCase,
 
     func test_toolCallResultEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_equatable_differentMessageIds_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: "msg-789", toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: "msg-789", toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_equatable_differentToolCallIds_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-789", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-789", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_equatable_differentContent_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result1", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result2", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result1", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result2", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_equatable_differentRoles_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "assistant", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_equatable_oneNilRole_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: "tool", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_equatable_bothNilRoles_areEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", role: nil, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let event1 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallResultEvent(messageId: EventTestData.messageId, toolCallId: "call-456", content: "Result", timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallResultEvent_withEmptyContent_isValid() {

@@ -1,3 +1,6 @@
+// ToolCallEndEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -187,47 +190,47 @@ final class ToolCallEndEventTests: XCTestCase,
 
     func test_toolCallEndEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_toolCallEndEvent_equatable_differentToolCallIds_areNotEqual() {
         // Given
-        let a = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallEndEvent(toolCallId: "call-456", timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallEndEvent(toolCallId: "call-456", timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallEndEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let event1 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallEndEvent_equatable_oneNilTimestamp_areNotEqual() {
         // Given
-        let a = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: nil, rawEvent: nil)
+        let event1 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: nil, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_toolCallEndEvent_equatable_bothNilTimestamps_areEqual() {
         // Given
-        let a = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: nil, rawEvent: nil)
-        let b = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: nil, rawEvent: nil)
+        let event1 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: nil, rawEvent: nil)
+        let event2 = ToolCallEndEvent(toolCallId: EventTestData.toolCallId, timestamp: nil, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_toolCallEndEvent_withEmptyToolCallId_isValid() {

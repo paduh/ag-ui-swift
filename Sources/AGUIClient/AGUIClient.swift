@@ -1,3 +1,6 @@
+// AGUIClient.swift
+// AGUISwift
+
 import AGUICore
 import Foundation
 
@@ -11,6 +14,6 @@ public struct AGUIClient {
 
     /// Client functionality example
     public func clientFunction() -> String {
-        return "AGUIClient is working with \(core.coreFunction())"
+        "AGUIClient is working with \(core.coreFunction())"
     }
 }

@@ -1,3 +1,6 @@
+// AGUITools.swift
+// AGUISwift
+
 import AGUICore
 import Foundation
 
@@ -11,6 +14,6 @@ public struct AGUITools {
 
     /// Tools functionality example
     public func toolsFunction() -> String {
-        return "AGUITools is working with \(core.coreFunction())"
+        "AGUITools is working with \(core.coreFunction())"
     }
 }

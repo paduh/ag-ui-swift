@@ -1,3 +1,6 @@
+// ThinkingEndEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating the end of a thinking step.

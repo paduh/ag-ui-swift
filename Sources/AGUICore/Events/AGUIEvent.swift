@@ -1,3 +1,6 @@
+// AGUIEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Base protocol for all events in the AG-UI protocol.

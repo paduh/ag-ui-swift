@@ -74,121 +74,55 @@ jobs:
       run: |
         # GitHub Actions artifact upload doesn't support colons in filenames
         # We need to rename files AND update JSON references properly
-        
-        cat > /tmp/fix_colons.py << 'EOF'
-        import os
-        import json
-        import glob
-        import re
-        from pathlib import Path
-        
-        def rename_files_with_colons(root_dir):
-            """Recursively rename all files and directories containing colons"""
-            renamed_count = 0
-            
-            # First, rename directories (must be done depth-first)
-            for root, dirs, files in os.walk(root_dir, topdown=False):
-                for dirname in dirs:
-                    if ':' in dirname:
-                        old_path = os.path.join(root, dirname)
-                        new_dirname = dirname.replace(':', '-')
-                        new_path = os.path.join(root, new_dirname)
-                        print(f"Renaming directory: {old_path} -> {new_path}")
-                        os.rename(old_path, new_path)
-                        renamed_count += 1
-            
-            # Then rename files
-            for root, dirs, files in os.walk(root_dir):
-                for filename in files:
-                    if ':' in filename:
-                        old_path = os.path.join(root, filename)
-                        new_filename = filename.replace(':', '-')
-                        new_path = os.path.join(root, new_filename)
-                        print(f"Renaming file: {old_path} -> {new_path}")
-                        os.rename(old_path, new_path)
-                        renamed_count += 1
-            
-            print(f"Renamed {renamed_count} files/directories")
-            return renamed_count
-        
-        def fix_json_paths(obj):
-            """Recursively fix path strings in JSON object by replacing : with -"""
-            if isinstance(obj, dict):
-                return {k: fix_json_paths(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [fix_json_paths(item) for item in obj]
-            elif isinstance(obj, str):
-                # Replace colons in strings that look like paths or URLs
-                # Match paths (contain /) or URLs (start with http://, https://, doc://, etc.)
-                if '/' in obj or re.match(r'^[a-z]+://', obj):
-                    return obj.replace(':', '-')
-                return obj
-            else:
-                return obj
-        
-        # Rename all files and directories with colons
-        print("Step 1: Renaming files and directories with colons...")
-        rename_files_with_colons('./docs')
-        
-        # Update JSON file references
-        print("\nStep 2: Updating JSON references...")
-        json_files = list(glob.glob('./docs/**/*.json', recursive=True))
-        print(f"Found {len(json_files)} JSON files to process")
-        
-        for json_file in json_files:
-            try:
-                with open(json_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-        
-                # Fix paths in the JSON
-                fixed_data = fix_json_paths(data)
-        
-                # Write back
-                with open(json_file, 'w', encoding='utf-8') as f:
-                    json.dump(fixed_data, f, ensure_ascii=False, separators=(',', ':'))
-            except Exception as e:
-                print(f"Error processing {json_file}: {e}")
-        
-        # Also fix HTML files that might reference paths with colons
-        print("\nStep 3: Updating HTML references...")
-        html_files = list(glob.glob('./docs/**/*.html', recursive=True))
-        print(f"Found {len(html_files)} HTML files to process")
-        
-        for html_file in html_files:
-            try:
-                with open(html_file, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                # Replace colons in paths/URLs within HTML
-                # Match href, src, or any attribute with a path
-                fixed_content = re.sub(r'(href|src|data-path|data-url)=["\']([^"\']*):([^"\']*)["\']', 
-                                      r'\1="\2-\3"', content)
-                
-                if fixed_content != content:
-                    with open(html_file, 'w', encoding='utf-8') as f:
-                        f.write(fixed_content)
-            except Exception as e:
-                print(f"Error processing {html_file}: {e}")
-        
-        # Verify no files with colons remain
-        print("\nStep 4: Verifying no files with colons remain...")
-        remaining = []
-        for root, dirs, files in os.walk('./docs'):
-            for name in dirs + files:
-                if ':' in name:
-                    remaining.append(os.path.join(root, name))
-        
-        if remaining:
-            print(f"WARNING: {len(remaining)} files/directories with colons still remain:")
-            for item in remaining:
-                print(f"  - {item}")
-        else:
-            print("✓ All files and directories with colons have been renamed")
-        
-        print("\nAll fixes completed successfully")
-        EOF
-        
-        python3 /tmp/fix_colons.py
+
+        # First, rename files with colons to use hyphens
+        echo "Renaming files with colons..."
+        find ./docs -depth -name "*:*" | while read -r file; do
+          dir=$(dirname "$file")
+          base=$(basename "$file")
+          newbase=$(echo "$base" | tr ':' '-')
+          mv "$file" "$dir/$newbase"
+        done
+
+        # Now update JSON file references using a Python script
+        # This only updates path/URL strings, not JSON syntax colons
+        echo "Updating JSON references..."
+        python3 << 'PYTHON_SCRIPT'
+import json
+import os
+import glob
+
+def fix_json_paths(obj):
+    """Recursively fix path strings in JSON object by replacing : with -"""
+    if isinstance(obj, dict):
+        return {k: fix_json_paths(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [fix_json_paths(item) for item in obj]
+    elif isinstance(obj, str):
+        # Only replace colons in strings that look like paths or URLs
+        if '/' in obj or obj.startswith('doc://'):
+            return obj.replace(':', '-')
+        return obj
+    else:
+        return obj
+
+# Process all JSON files
+for json_file in glob.glob('./docs/**/*.json', recursive=True):
+    try:
+        with open(json_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        # Fix paths in the JSON
+        fixed_data = fix_json_paths(data)
+
+        # Write back
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(fixed_data, f, ensure_ascii=False, separators=(',', ':'))
+    except Exception as e:
+        print(f"Error processing {json_file}: {e}")
+
+print("JSON references updated successfully")
+PYTHON_SCRIPT
 
     - name: Create landing page
       run: |

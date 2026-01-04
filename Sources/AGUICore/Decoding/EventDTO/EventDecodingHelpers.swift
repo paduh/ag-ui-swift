@@ -1,3 +1,6 @@
+// EventDecodingHelpers.swift
+// AGUISwift
+
 import Foundation
 
 /// Helper utilities for decoding event DTOs.

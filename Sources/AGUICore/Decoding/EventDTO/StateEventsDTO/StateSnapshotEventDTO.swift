@@ -1,3 +1,6 @@
+// StateSnapshotEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct StateSnapshotEventDTO {

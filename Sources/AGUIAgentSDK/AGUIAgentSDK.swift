@@ -1,3 +1,6 @@
+// AGUIAgentSDK.swift
+// AGUISwift
+
 import AGUIClient
 import AGUICore
 import Foundation

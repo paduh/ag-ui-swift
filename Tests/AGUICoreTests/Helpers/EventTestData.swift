@@ -1,3 +1,6 @@
+// EventTestData.swift
+// AGUISwiftTests
+
 import Foundation
 @testable import AGUICore
 
@@ -55,7 +58,7 @@ enum EventTestData {
         
         // Use additionalFields if provided, otherwise use threadId/runId
         if let additionalFields = additionalFields {
-            json.merge(additionalFields) { (_, new) in new }
+            json.merge(additionalFields) { _, new in new }
         } else {
             json["threadId"] = threadId
             json["runId"] = runId
@@ -71,8 +74,8 @@ enum EventTestData {
     ///
     /// - Parameter dictionary: Dictionary to convert to JSON Data
     /// - Returns: JSON Data representation
-    /// - Throws: Never throws - uses force-try for test convenience
-    static func jsonData(from dictionary: [String: Any]) -> Data {
-        try! JSONSerialization.data(withJSONObject: dictionary, options: [])
+    /// - Throws: An error if the dictionary cannot be serialized to JSON
+    static func jsonData(from dictionary: [String: Any]) throws -> Data {
+        try JSONSerialization.data(withJSONObject: dictionary, options: [])
     }
 }

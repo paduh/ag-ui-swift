@@ -1,3 +1,6 @@
+// StateSnapshotEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -342,9 +345,9 @@ final class StateSnapshotEventTests: XCTestCase,
 
     // MARK: - Feature: Model behaviors
 
-    func test_stateSnapshotEvent_eventTypeIsAlwaysStateSnapshot() {
+    func test_stateSnapshotEvent_eventTypeIsAlwaysStateSnapshot() throws {
         // Given
-        let snapshotData = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
+        let snapshotData = try JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
         let event = StateSnapshotEvent(snapshot: snapshotData, timestamp: nil, rawEvent: nil)
 
         // Then
@@ -353,43 +356,43 @@ final class StateSnapshotEventTests: XCTestCase,
 
     func test_stateSnapshotEvent_equatable_sameSnapshots_areEqual() throws {
         // Given
-        let snapshotData = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let snapshotData = try JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
+        let event1 = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_stateSnapshotEvent_equatable_differentSnapshots_areNotEqual() throws {
         // Given
-        let snapshotData1 = try! JSONSerialization.data(withJSONObject: ["key": "value1"], options: [])
-        let snapshotData2 = try! JSONSerialization.data(withJSONObject: ["key": "value2"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData1, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateSnapshotEvent(snapshot: snapshotData2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let snapshotData1 = try JSONSerialization.data(withJSONObject: ["key": "value1"], options: [])
+        let snapshotData2 = try JSONSerialization.data(withJSONObject: ["key": "value2"], options: [])
+        let event1 = StateSnapshotEvent(snapshot: snapshotData1, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateSnapshotEvent(snapshot: snapshotData2, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_stateSnapshotEvent_equatable_differentTimestamps_areNotEqual() throws {
         // Given
-        let snapshotData = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let snapshotData = try JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
+        let event1 = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_stateSnapshotEvent_equatable_oneWithTimestampOneWithout_areNotEqual() throws {
         // Given
-        let snapshotData = try! JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
-        let a = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateSnapshotEvent(snapshot: snapshotData, timestamp: nil, rawEvent: nil)
+        let snapshotData = try JSONSerialization.data(withJSONObject: ["key": "value"], options: [])
+        let event1 = StateSnapshotEvent(snapshot: snapshotData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateSnapshotEvent(snapshot: snapshotData, timestamp: nil, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_stateSnapshotEvent_parsedSnapshot_returnsCorrectValue() throws {

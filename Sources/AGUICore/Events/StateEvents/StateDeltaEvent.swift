@@ -1,3 +1,6 @@
+// StateDeltaEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event containing incremental state updates using JSON Patch format (RFC 6902).
@@ -129,4 +132,3 @@ extension StateDeltaEvent: CustomDebugStringConvertible {
         """
     }
 }
-

@@ -1,3 +1,6 @@
+// TextMessageEndEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -198,47 +201,47 @@ final class TextMessageEndEventTests: XCTestCase,
 
     func test_textMessageEndEvent_equatable_sameFields_areEqual() {
         // Given
-        let a = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_textMessageEndEvent_equatable_differentMessageIds_areNotEqual() {
         // Given
-        let a = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageEndEvent(messageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event1 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageEndEvent(messageId: EventTestData.messageId2, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_textMessageEndEvent_equatable_differentTimestamps_areNotEqual() {
         // Given
-        let a = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let event1 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_textMessageEndEvent_equatable_oneNilTimestamp_areNotEqual() {
         // Given
-        let a = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: nil, rawEvent: nil)
+        let event1 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: nil, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_textMessageEndEvent_equatable_bothNilTimestamps_areEqual() {
         // Given
-        let a = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: nil, rawEvent: nil)
-        let b = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: nil, rawEvent: nil)
+        let event1 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: nil, rawEvent: nil)
+        let event2 = TextMessageEndEvent(messageId: EventTestData.messageId, timestamp: nil, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_textMessageEndEvent_withEmptyMessageId_isValid() {

@@ -1,3 +1,6 @@
+// AGUIClientTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUIClient
 

@@ -1,3 +1,6 @@
+// ToolCallResultEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct ToolCallResultEventDTO: Decodable {

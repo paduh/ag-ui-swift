@@ -1,3 +1,6 @@
+// StepStartedEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event indicating that a new execution step has started.

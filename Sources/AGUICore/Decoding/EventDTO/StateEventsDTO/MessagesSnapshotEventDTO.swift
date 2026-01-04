@@ -1,3 +1,6 @@
+// MessagesSnapshotEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct MessagesSnapshotEventDTO {

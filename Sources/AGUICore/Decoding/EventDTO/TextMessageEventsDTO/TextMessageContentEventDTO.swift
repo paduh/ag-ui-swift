@@ -1,3 +1,6 @@
+// TextMessageContentEventDTO.swift
+// AGUISwift
+
 import Foundation
 
 struct TextMessageContentEventDTO: Decodable {
@@ -14,4 +17,3 @@ struct TextMessageContentEventDTO: Decodable {
         )
     }
 }
-

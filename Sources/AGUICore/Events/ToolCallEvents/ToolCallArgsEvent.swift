@@ -1,3 +1,6 @@
+// ToolCallArgsEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event containing a chunk of argument data for a tool call.

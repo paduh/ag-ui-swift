@@ -1,9 +1,5 @@
-//
-//  UnknownEvent.swift
-//  AGUISwift
-//
-//  Created by Perfect Aduh on 2026-01-02.
-//
+// UnknownEvent.swift
+// AGUISwift
 
 import Foundation
 

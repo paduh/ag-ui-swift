@@ -1,3 +1,6 @@
+// RunErrorEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -288,19 +291,19 @@ final class RunErrorEventTests: XCTestCase,
     func test_runErrorEvent_equatable_sameFields_areEqual() {
         // Given
         let error = RunErrorEvent.ErrorInfo(code: "CODE", message: "Message", details: ["key": "value"])
-        let a = RunErrorEvent(threadId: "t", runId: "r", error: error, timestamp: 1, rawEvent: nil)
-        let b = RunErrorEvent(threadId: "t", runId: "r", error: error, timestamp: 1, rawEvent: nil)
+        let event1 = RunErrorEvent(threadId: "t", runId: "r", error: error, timestamp: 1, rawEvent: nil)
+        let event2 = RunErrorEvent(threadId: "t", runId: "r", error: error, timestamp: 1, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_runErrorEvent_errorInfo_equatable_sameFields_areEqual() {
         // Given
-        let a = RunErrorEvent.ErrorInfo(code: "CODE", message: "Message", details: ["key": "value"])
-        let b = RunErrorEvent.ErrorInfo(code: "CODE", message: "Message", details: ["key": "value"])
+        let errorInfo1 = RunErrorEvent.ErrorInfo(code: "CODE", message: "Message", details: ["key": "value"])
+        let errorInfo2 = RunErrorEvent.ErrorInfo(code: "CODE", message: "Message", details: ["key": "value"])
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(errorInfo1, errorInfo2)
     }
 }

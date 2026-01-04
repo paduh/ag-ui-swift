@@ -1,3 +1,6 @@
+// StateDeltaEventTests.swift
+// AGUISwiftTests
+
 import XCTest
 @testable import AGUICore
 
@@ -330,9 +333,9 @@ final class StateDeltaEventTests: XCTestCase,
 
     // MARK: - Feature: Model behaviors
 
-    func test_stateDeltaEvent_eventTypeIsAlwaysStateDelta() {
+    func test_stateDeltaEvent_eventTypeIsAlwaysStateDelta() throws {
         // Given
-        let deltaData = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
+        let deltaData = try JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
         let event = StateDeltaEvent(delta: deltaData, timestamp: nil, rawEvent: nil)
 
         // Then
@@ -341,43 +344,43 @@ final class StateDeltaEventTests: XCTestCase,
 
     func test_stateDeltaEvent_equatable_sameDeltas_areEqual() throws {
         // Given
-        let deltaData = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let deltaData = try JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
+        let event1 = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertEqual(a, b)
+        XCTAssertEqual(event1, event2)
     }
 
     func test_stateDeltaEvent_equatable_differentDeltas_areNotEqual() throws {
         // Given
-        let deltaData1 = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
-        let deltaData2 = try! JSONSerialization.data(withJSONObject: [["op": "remove", "path": "/foo"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData1, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateDeltaEvent(delta: deltaData2, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let deltaData1 = try JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
+        let deltaData2 = try JSONSerialization.data(withJSONObject: [["op": "remove", "path": "/foo"]], options: [])
+        let event1 = StateDeltaEvent(delta: deltaData1, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateDeltaEvent(delta: deltaData2, timestamp: EventTestData.timestamp, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_stateDeltaEvent_equatable_differentTimestamps_areNotEqual() throws {
         // Given
-        let deltaData = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp2, rawEvent: nil)
+        let deltaData = try JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
+        let event1 = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp2, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_stateDeltaEvent_equatable_oneWithTimestampOneWithout_areNotEqual() throws {
         // Given
-        let deltaData = try! JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
-        let a = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
-        let b = StateDeltaEvent(delta: deltaData, timestamp: nil, rawEvent: nil)
+        let deltaData = try JSONSerialization.data(withJSONObject: [["op": "add", "path": "/foo", "value": "bar"]], options: [])
+        let event1 = StateDeltaEvent(delta: deltaData, timestamp: EventTestData.timestamp, rawEvent: nil)
+        let event2 = StateDeltaEvent(delta: deltaData, timestamp: nil, rawEvent: nil)
 
         // Then
-        XCTAssertNotEqual(a, b)
+        XCTAssertNotEqual(event1, event2)
     }
 
     func test_stateDeltaEvent_parsedDelta_returnsCorrectValue() throws {

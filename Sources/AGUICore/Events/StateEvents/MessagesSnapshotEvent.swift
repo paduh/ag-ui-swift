@@ -1,3 +1,6 @@
+// MessagesSnapshotEvent.swift
+// AGUISwift
+
 import Foundation
 
 /// Event containing a complete snapshot of the conversation messages.
