@@ -34,13 +34,13 @@ import Foundation
 /// ## Incremental Building
 ///
 /// ```swift
-/// let builder = RunAgentInput.builder()
+/// var builder = RunAgentInput.builder()
 ///     .threadId("thread-1")
 ///     .runId("run-1")
 ///
 /// // Add messages conditionally
 /// if includeSystemPrompt {
-///     builder.message(SystemMessage(id: "sys-1", content: "Be concise"))
+///     builder = builder.message(SystemMessage(id: "sys-1", content: "Be concise"))
 /// }
 ///
 /// let input = builder.build()
@@ -48,23 +48,27 @@ import Foundation
 ///
 /// ## Thread Safety
 ///
-/// The builder is `Sendable` and thread-safe. However, you should not mutate
-/// a builder instance from multiple threads concurrently. Instead, use separate
-/// builder instances per thread or synchronize access appropriately.
+/// The builder uses value semantics (struct) and is naturally thread-safe. Each
+/// builder method returns a new builder instance, making it safe to use across
+/// isolation boundaries and in concurrent contexts.
+///
+/// ## Concurrency
+///
+/// The builder uses value semantics and is intended for use on a single task or actor.
+/// It does not conform to `Sendable` in Swift 6 because it contains mutable stored properties.
+/// Prefer building inputs on one actor/task and then pass the resulting `RunAgentInput` across boundaries.
 ///
 /// - SeeAlso: `RunAgentInput`
-public final class RunAgentInputBuilder: Sendable {
+public struct RunAgentInputBuilder {
 
-    // Use nonisolated(unsafe) for mutable state in a Sendable class
-    // This is safe because builders are typically used in a single-threaded context
-    nonisolated(unsafe) private var _threadId: String?
-    nonisolated(unsafe) private var _runId: String?
-    nonisolated(unsafe) private var _parentRunId: String?
-    nonisolated(unsafe) private var _state = Data("{}".utf8)
-    nonisolated(unsafe) private var _messages: [any Message] = []
-    nonisolated(unsafe) private var _tools: [Tool] = []
-    nonisolated(unsafe) private var _context: [Context] = []
-    nonisolated(unsafe) private var _forwardedProps = Data("{}".utf8)
+    private var _threadId: String?
+    private var _runId: String?
+    private var _parentRunId: String?
+    private var _state = Data("{}".utf8)
+    private var _messages: [any Message] = []
+    private var _tools: [Tool] = []
+    private var _context: [Context] = []
+    private var _forwardedProps = Data("{}".utf8)
 
     /// Creates a new builder instance.
     public init() {}
@@ -74,21 +78,21 @@ public final class RunAgentInputBuilder: Sendable {
     /// Sets the conversation thread identifier.
     ///
     /// - Parameter threadId: The thread identifier
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the thread ID set
     public func threadId(_ threadId: String) -> Self {
-        _threadId = threadId
-        return self
+        var builder = self
+        builder._threadId = threadId
+        return builder
     }
 
     /// Sets the unique identifier for this run.
     ///
     /// - Parameter runId: The run identifier
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the run ID set
     public func runId(_ runId: String) -> Self {
-        _runId = runId
-        return self
+        var builder = self
+        builder._runId = runId
+        return builder
     }
 
     // MARK: - Optional Fields
@@ -96,31 +100,31 @@ public final class RunAgentInputBuilder: Sendable {
     /// Sets the parent run identifier for nested agent calls.
     ///
     /// - Parameter parentRunId: The parent run identifier
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the parent run ID set
     public func parentRunId(_ parentRunId: String) -> Self {
-        _parentRunId = parentRunId
-        return self
+        var builder = self
+        builder._parentRunId = parentRunId
+        return builder
     }
 
     /// Sets the state data as JSON.
     ///
     /// - Parameter state: The state data
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the state set
     public func state(_ state: Data) -> Self {
-        _state = state
-        return self
+        var builder = self
+        builder._state = state
+        return builder
     }
 
     /// Sets the forwarded properties as JSON.
     ///
     /// - Parameter forwardedProps: The forwarded properties data
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the forwarded properties set
     public func forwardedProps(_ forwardedProps: Data) -> Self {
-        _forwardedProps = forwardedProps
-        return self
+        var builder = self
+        builder._forwardedProps = forwardedProps
+        return builder
     }
 
     // MARK: - Messages
@@ -130,21 +134,21 @@ public final class RunAgentInputBuilder: Sendable {
     /// Can be called multiple times to add messages incrementally.
     ///
     /// - Parameter message: The message to add
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the message added
     public func message(_ message: any Message) -> Self {
-        _messages.append(message)
-        return self
+        var builder = self
+        builder._messages.append(message)
+        return builder
     }
 
     /// Sets the complete message array, replacing any previously added messages.
     ///
     /// - Parameter messages: The array of messages
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the messages set
     public func messages(_ messages: [any Message]) -> Self {
-        _messages = messages
-        return self
+        var builder = self
+        builder._messages = messages
+        return builder
     }
 
     // MARK: - Tools
@@ -154,21 +158,21 @@ public final class RunAgentInputBuilder: Sendable {
     /// Can be called multiple times to add tools incrementally.
     ///
     /// - Parameter tool: The tool to add
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the tool added
     public func tool(_ tool: Tool) -> Self {
-        _tools.append(tool)
-        return self
+        var builder = self
+        builder._tools.append(tool)
+        return builder
     }
 
     /// Sets the complete tools array, replacing any previously added tools.
     ///
     /// - Parameter tools: The array of tools
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the tools set
     public func tools(_ tools: [Tool]) -> Self {
-        _tools = tools
-        return self
+        var builder = self
+        builder._tools = tools
+        return builder
     }
 
     // MARK: - Context
@@ -178,21 +182,21 @@ public final class RunAgentInputBuilder: Sendable {
     /// Can be called multiple times to add context items incrementally.
     ///
     /// - Parameter item: The context item to add
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the context item added
     public func contextItem(_ item: Context) -> Self {
-        _context.append(item)
-        return self
+        var builder = self
+        builder._context.append(item)
+        return builder
     }
 
     /// Sets the complete context array, replacing any previously added context items.
     ///
     /// - Parameter context: The array of context items
-    /// - Returns: The builder instance for method chaining
-    @discardableResult
+    /// - Returns: A new builder instance with the context set
     public func context(_ context: [Context]) -> Self {
-        _context = context
-        return self
+        var builder = self
+        builder._context = context
+        return builder
     }
 
     // MARK: - Build
