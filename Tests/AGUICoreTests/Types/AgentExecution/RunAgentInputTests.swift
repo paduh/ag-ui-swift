@@ -428,6 +428,60 @@ final class RunAgentInputTests: XCTestCase {
         XCTAssertNotEqual(input1, input4)
     }
 
+    func testEqualityWithDifferentMessages() {
+        let messages1: [any Message] = [
+            UserMessage(id: "msg-1", content: "Hello"),
+            AssistantMessage(id: "msg-2", content: "Hi there!")
+        ]
+
+        let messages2: [any Message] = [
+            UserMessage(id: "msg-1", content: "Goodbye"),
+            AssistantMessage(id: "msg-2", content: "See you!")
+        ]
+
+        let input1 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages1
+        )
+
+        let input2 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages2
+        )
+
+        // Should be different even though message count is the same
+        XCTAssertNotEqual(input1, input2)
+    }
+
+    func testEqualityWithIdenticalMessages() {
+        let messages1: [any Message] = [
+            UserMessage(id: "msg-1", content: "Hello"),
+            AssistantMessage(id: "msg-2", content: "Hi there!")
+        ]
+
+        let messages2: [any Message] = [
+            UserMessage(id: "msg-1", content: "Hello"),
+            AssistantMessage(id: "msg-2", content: "Hi there!")
+        ]
+
+        let input1 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages1
+        )
+
+        let input2 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages2
+        )
+
+        // Should be equal when messages have same id, role, content, name
+        XCTAssertEqual(input1, input2)
+    }
+
     // MARK: - Hashable Tests
 
     func testHashable() {
@@ -438,6 +492,58 @@ final class RunAgentInputTests: XCTestCase {
         XCTAssertEqual(set.count, 2)
         XCTAssertTrue(set.contains(input1))
         XCTAssertTrue(set.contains(input2))
+    }
+
+    func testHashableWithDifferentMessages() {
+        let messages1: [any Message] = [
+            UserMessage(id: "msg-1", content: "Hello"),
+            AssistantMessage(id: "msg-2", content: "Hi!")
+        ]
+
+        let messages2: [any Message] = [
+            UserMessage(id: "msg-3", content: "Goodbye"),
+            AssistantMessage(id: "msg-4", content: "Bye!")
+        ]
+
+        let input1 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages1
+        )
+
+        let input2 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages2
+        )
+
+        // Different messages should produce different hashes (or at least be distinguishable in Set)
+        let set: Set<RunAgentInput> = [input1, input2]
+        XCTAssertEqual(set.count, 2, "Set should contain both inputs with different messages")
+        XCTAssertTrue(set.contains(input1))
+        XCTAssertTrue(set.contains(input2))
+    }
+
+    func testHashConsistency() {
+        let messages: [any Message] = [
+            UserMessage(id: "msg-1", content: "Test")
+        ]
+
+        let input1 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages
+        )
+
+        let input2 = RunAgentInput(
+            threadId: "t1",
+            runId: "r1",
+            messages: messages
+        )
+
+        // Equal objects must have equal hashes
+        XCTAssertEqual(input1, input2)
+        XCTAssertEqual(input1.hashValue, input2.hashValue)
     }
 
     // MARK: - Sendable Tests

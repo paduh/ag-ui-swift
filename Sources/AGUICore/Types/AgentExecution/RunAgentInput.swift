@@ -235,19 +235,36 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         hasher.combine(tools)
         hasher.combine(context)
         hasher.combine(forwardedProps)
-        // Messages not directly hashable due to protocol type
-        hasher.combine(messages.count)
+
+        // Hash each message's identifying properties
+        for message in messages {
+            hasher.combine(message.id)
+            hasher.combine(message.role)
+            hasher.combine(message.content)
+            hasher.combine(message.name)
+        }
     }
 
     public static func == (lhs: RunAgentInput, rhs: RunAgentInput) -> Bool {
-        lhs.threadId == rhs.threadId &&
-            lhs.runId == rhs.runId &&
-            lhs.parentRunId == rhs.parentRunId &&
-            lhs.state == rhs.state &&
-            lhs.messages.count == rhs.messages.count &&
-            lhs.tools == rhs.tools &&
-            lhs.context == rhs.context &&
-            lhs.forwardedProps == rhs.forwardedProps
+        // Fast path: check simple properties first
+        guard lhs.threadId == rhs.threadId &&
+              lhs.runId == rhs.runId &&
+              lhs.parentRunId == rhs.parentRunId &&
+              lhs.state == rhs.state &&
+              lhs.tools == rhs.tools &&
+              lhs.context == rhs.context &&
+              lhs.forwardedProps == rhs.forwardedProps &&
+              lhs.messages.count == rhs.messages.count else {
+            return false
+        }
+
+        // Compare each message's identifying properties
+        return zip(lhs.messages, rhs.messages).allSatisfy { lhsMsg, rhsMsg in
+            lhsMsg.id == rhsMsg.id &&
+            lhsMsg.role == rhsMsg.role &&
+            lhsMsg.content == rhsMsg.content &&
+            lhsMsg.name == rhsMsg.name
+        }
     }
 }
 
