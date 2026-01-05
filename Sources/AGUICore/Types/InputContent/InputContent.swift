@@ -41,10 +41,16 @@ import Foundation
 /// ## Type Discrimination
 ///
 /// The `type` property identifies the concrete content type during deserialization,
-/// enabling the protocol to route JSON to the appropriate Swift type.
+/// enabling the protocol to route JSON to the appropriate Swift type via DTOs.
+///
+/// ## Serialization
+///
+/// InputContent types use the DTO pattern for serialization:
+/// - Decoding is handled by ``TextInputContentDTO`` and ``BinaryInputContentDTO``
+/// - Encoding is handled by ``UserMessageDTO`` when encoding UserMessage
 ///
 /// - SeeAlso: ``TextInputContent``, ``BinaryInputContent``, ``UserMessage``
-public protocol InputContent: Sendable, Codable, Hashable {
+public protocol InputContent: Sendable, Hashable {
     /// The content type discriminator.
     ///
     /// This field identifies the concrete content type:

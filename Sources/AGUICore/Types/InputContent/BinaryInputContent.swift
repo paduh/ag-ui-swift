@@ -152,42 +152,6 @@ public struct BinaryInputContent: InputContent {
             throw ValidationError.noSourceProvided
         }
     }
-
-    // MARK: - Codable
-
-    private enum CodingKeys: String, CodingKey {
-        case type
-        case mimeType
-        case id
-        case url
-        case data
-        case filename
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        mimeType = try container.decode(String.self, forKey: .mimeType)
-        id = try container.decodeIfPresent(String.self, forKey: .id)
-        url = try container.decodeIfPresent(String.self, forKey: .url)
-        data = try container.decodeIfPresent(String.self, forKey: .data)
-        filename = try container.decodeIfPresent(String.self, forKey: .filename)
-
-        // Validate that at least one source is provided
-        try Self.validate(mimeType: mimeType, id: id, url: url, data: data)
-
-        // Type should always be "binary", decode if present but default to "binary"
-        type = try container.decodeIfPresent(String.self, forKey: .type) ?? "binary"
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(type, forKey: .type)
-        try container.encode(mimeType, forKey: .mimeType)
-        try container.encodeIfPresent(id, forKey: .id)
-        try container.encodeIfPresent(url, forKey: .url)
-        try container.encodeIfPresent(data, forKey: .data)
-        try container.encodeIfPresent(filename, forKey: .filename)
-    }
 }
 
 // MARK: - Convenience Initializers

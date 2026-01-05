@@ -66,25 +66,4 @@ public struct TextInputContent: InputContent {
         self.type = "text"
         self.text = text
     }
-
-    // MARK: - Codable
-
-    private enum CodingKeys: String, CodingKey {
-        case type
-        case text
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        text = try container.decode(String.self, forKey: .text)
-
-        // Type should always be "text", decode if present but default to "text"
-        type = try container.decodeIfPresent(String.self, forKey: .type) ?? "text"
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(type, forKey: .type)
-        try container.encode(text, forKey: .text)
-    }
 }

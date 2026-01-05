@@ -117,40 +117,10 @@ final class BinaryInputContentTests: XCTestCase {
     }
 
     // MARK: - Encoding Tests
-
-    func testEncodingWithURL() throws {
-        let content = BinaryInputContent(
-            mimeType: "image/jpeg",
-            url: "https://example.com/test.jpg"
-        )
-
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys]
-        let encoded = try encoder.encode(content)
-        let json = String(data: encoded, encoding: .utf8)
-
-        XCTAssertNotNil(json)
-        XCTAssertTrue(json?.contains("\"type\"") ?? false)
-        XCTAssertTrue(json?.contains("\"binary\"") ?? false)
-        XCTAssertTrue(json?.contains("\"mimeType\"") ?? false)
-        XCTAssertTrue(json?.contains("\"url\"") ?? false)
-    }
-
-    func testEncodedStructure() throws {
-        let content = BinaryInputContent(
-            mimeType: "audio/mp3",
-            id: "audio-123",
-            filename: "song.mp3"
-        )
-
-        let encoded = try JSONEncoder().encode(content)
-        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
-
-        XCTAssertEqual(json?["type"] as? String, "binary")
-        XCTAssertEqual(json?["mimeType"] as? String, "audio/mp3")
-        XCTAssertEqual(json?["id"] as? String, "audio-123")
-        XCTAssertEqual(json?["filename"] as? String, "song.mp3")
-    }
+    // Note: Direct encoding of BinaryInputContent is not supported.
+    // BinaryInputContent is encoded via DTOs when part of larger structures
+    // (e.g., UserMessageDTO when encoding UserMessage with multimodal content).
+    // These tests are intentionally omitted as they would not reflect real-world usage.
 
     // MARK: - Decoding Tests
 
@@ -163,8 +133,8 @@ final class BinaryInputContentTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let content = try decoder.decode(BinaryInputContent.self, from: Data(json.utf8))
+        let dto = try BinaryInputContentDTO.decode(from: Data(json.utf8))
+        let content = try dto.toDomain()
 
         XCTAssertEqual(content.type, "binary")
         XCTAssertEqual(content.mimeType, "image/png")
@@ -182,8 +152,8 @@ final class BinaryInputContentTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let content = try decoder.decode(BinaryInputContent.self, from: Data(json.utf8))
+        let dto = try BinaryInputContentDTO.decode(from: Data(json.utf8))
+        let content = try dto.toDomain()
 
         XCTAssertEqual(content.id, "doc-456")
     }
@@ -197,8 +167,8 @@ final class BinaryInputContentTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let content = try decoder.decode(BinaryInputContent.self, from: Data(json.utf8))
+        let dto = try BinaryInputContentDTO.decode(from: Data(json.utf8))
+        let content = try dto.toDomain()
 
         XCTAssertEqual(content.data, "iVBORw0KGgo=")
     }
@@ -215,8 +185,8 @@ final class BinaryInputContentTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        let content = try decoder.decode(BinaryInputContent.self, from: Data(json.utf8))
+        let dto = try BinaryInputContentDTO.decode(from: Data(json.utf8))
+        let content = try dto.toDomain()
 
         XCTAssertEqual(content.mimeType, "image/jpeg")
         XCTAssertEqual(content.id, "img-789")
@@ -233,8 +203,7 @@ final class BinaryInputContentTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(BinaryInputContent.self, from: Data(json.utf8))) { error in
+        XCTAssertThrowsError(try BinaryInputContentDTO.decode(from: Data(json.utf8))) { error in
             XCTAssertTrue(error is DecodingError)
         }
     }
@@ -247,8 +216,7 @@ final class BinaryInputContentTests: XCTestCase {
         }
         """
 
-        let decoder = JSONDecoder()
-        XCTAssertThrowsError(try decoder.decode(BinaryInputContent.self, from: Data(json.utf8)))
+        XCTAssertThrowsError(try BinaryInputContentDTO.decode(from: Data(json.utf8)))
     }
 
     // MARK: - Round-trip Tests
@@ -260,11 +228,21 @@ final class BinaryInputContentTests: XCTestCase {
             filename: "demo.mp4"
         )
 
-        let encoder = JSONEncoder()
-        let encoded = try encoder.encode(original)
+        // Encode manually (simulating what UserMessageDTO does)
+        var dict: [String: Any] = [
+            "type": "binary",
+            "mimeType": original.mimeType
+        ]
+        if let url = original.url {
+            dict["url"] = url
+        }
+        if let filename = original.filename {
+            dict["filename"] = filename
+        }
+        let encoded = try JSONSerialization.data(withJSONObject: dict)
 
-        let decoder = JSONDecoder()
-        let decoded = try decoder.decode(BinaryInputContent.self, from: encoded)
+        let dto = try BinaryInputContentDTO.decode(from: encoded)
+        let decoded = try dto.toDomain()
 
         XCTAssertEqual(decoded.type, original.type)
         XCTAssertEqual(decoded.mimeType, original.mimeType)

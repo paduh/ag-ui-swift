@@ -59,7 +59,7 @@ struct UserMessageDTO {
         return UserMessageDTO(id: id, content: content, name: name, contentParts: contentParts)
     }
 
-    /// Decodes an array of InputContent from JSON dictionaries.
+    /// Decodes an array of InputContent from JSON dictionaries using DTOs.
     private static func decodeInputContentArray(
         _ array: [[String: Any]],
         decoder: JSONDecoder
@@ -81,9 +81,11 @@ struct UserMessageDTO {
 
             switch type {
             case "text":
-                result.append(try decoder.decode(TextInputContent.self, from: itemData))
+                let dto = try TextInputContentDTO.decode(from: itemData, decoder: decoder)
+                result.append(dto.toDomain())
             case "binary":
-                result.append(try decoder.decode(BinaryInputContent.self, from: itemData))
+                let dto = try BinaryInputContentDTO.decode(from: itemData, decoder: decoder)
+                result.append(try dto.toDomain())
             default:
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(
