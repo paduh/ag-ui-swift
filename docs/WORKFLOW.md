@@ -176,6 +176,10 @@ git push
 
 ### Merge a PR
 
+**Prerequisites**:
+- All CI checks must pass ✅
+- Must have approval from an **approved code reviewer** ✅
+
 **Using GitHub CLI**:
 
 ```bash
@@ -192,10 +196,12 @@ gh pr merge <PR-number> --rebase
 **Using GitHub Web UI**:
 
 1. Navigate to the PR
-2. Wait for all checks to pass
-3. Get approval from reviewers
+2. Wait for all CI checks to pass
+3. **Get approval from a designated code reviewer** (required)
 4. Click "Squash and merge"
 5. Confirm merge
+
+**Note**: Only approved code reviewers with merge permissions can approve PRs. If you're not an approved reviewer, request review from a designated reviewer.
 
 ### Clean Up After Merge
 

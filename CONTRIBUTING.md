@@ -123,9 +123,11 @@ gh pr create
 
 ### 6. Code Review & Merge
 
-- Wait for code review and CI checks to pass
-- Address any review feedback
-- Once approved, merge the PR (use "Squash and merge" for clean history)
+- Wait for CI checks to pass
+- Wait for approval from an **approved code reviewer** (required for merge)
+- Address any review feedback by making changes and pushing updates
+- Once approved by a designated reviewer, the PR can be merged
+- Use "Squash and merge" to maintain clean commit history
 
 ## Pre-Commit Checklist
 
@@ -208,20 +210,39 @@ See `CLAUDE.md` for detailed testing guidelines.
 - Update PR description if scope changes
 
 ### For Reviewers
+
+**Note**: Only designated code reviewers with approval permissions can approve PRs for merging.
+
+#### Review Guidelines
 - Review within 24-48 hours
 - Be constructive and respectful
 - Focus on code quality, not personal preferences
-- Approve when standards are met
+- Check that all checklist items are completed
+- Verify tests pass and cover new functionality
+- Approve only when project standards are met
 
 ## Branch Protection Rules
 
 The `main` branch is protected with:
-- Require pull request before merging
-- Require status checks to pass (CI)
-- Require code review approval
-- Dismiss stale reviews on new commits
-- No force pushes
-- No deletions
+- **Require pull request before merging** - No direct commits to main
+- **Require status checks to pass** - All CI checks must be green
+- **Require approval from designated code reviewers** - Only approved reviewers can approve PRs
+- **Dismiss stale reviews on new commits** - New changes invalidate previous approvals
+- **No force pushes** - Protects commit history
+- **No deletions** - Branch cannot be deleted
+
+### Setting Up Approved Reviewers
+
+Repository administrators can configure approved reviewers in GitHub:
+
+1. Go to **Settings** → **Branches** → **Branch protection rules**
+2. Edit the `main` branch rule
+3. Enable **"Require a pull request before merging"**
+4. Enable **"Require approvals"** (set to 1 or more)
+5. Enable **"Restrict who can approve pull requests"**
+6. Add designated reviewers to the approval list
+
+This ensures only trusted reviewers with expertise can approve code for production.
 
 ## Emergency Hotfixes
 

@@ -121,6 +121,7 @@ We welcome contributions! Please follow our development workflow:
 ### Development Workflow
 
 - **No direct commits to `main`** - All changes must go through pull requests
+- **Code review required** - PRs must be approved by designated reviewers before merging
 - **Branch naming**: `feature/`, `fix/`, `refactor/`, `docs/`
 - **Follow TDD**: Write tests first, then implement
 - **Code quality**: Format with SwiftFormat, lint with SwiftLint
