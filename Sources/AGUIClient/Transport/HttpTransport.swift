@@ -4,42 +4,83 @@
 import AGUICore
 import Foundation
 
-/// Low-level HTTP transport using URLSession.
+/// Low-level HTTP transport for AG-UI agent communication.
 ///
-/// `HttpTransport` is an actor that provides thread-safe access to URLSession
-/// and handles the HTTP communication with AG-UI agents.
+/// `HttpTransport` handles HTTP communication with AG-UI agents using
+/// dependency injection for testability and flexibility. It accepts any
+/// `HTTPClient` implementation, defaulting to `URLSessionHTTPClient`.
 ///
 /// ## Example
 ///
 /// ```swift
+/// // Default usage with URLSession
 /// let config = HttpAgentConfiguration(baseURL: agentURL)
 /// let transport = HttpTransport(configuration: config)
 ///
+/// // With custom HTTP client (e.g., for testing)
+/// let mockClient = MockHTTPClient()
+/// let transport = HttpTransport(
+///     configuration: config,
+///     httpClient: mockClient
+/// )
+///
+/// // Execute request
 /// let bytes = try await transport.execute(endpoint: "/run", input: input)
-/// for try await byte in bytes {
-///     // Process streaming response
-/// }
 /// ```
 public actor HttpTransport {
-    private let session: URLSession
+    private let httpClient: any HTTPClient
     private let configuration: HttpAgentConfiguration
 
-    /// Creates a new HTTP transport with the specified configuration.
+    /// Creates a new HTTP transport with dependency injection.
     ///
-    /// - Parameter configuration: The HTTP agent configuration
-    public init(configuration: HttpAgentConfiguration) {
+    /// - Parameters:
+    ///   - configuration: HTTP agent configuration
+    ///   - httpClient: HTTP client implementation (optional)
+    ///
+    /// If no HTTP client is provided, creates a default `URLSessionHTTPClient`
+    /// configured according to the provided configuration.
+    ///
+    /// ## Default Client Configuration
+    ///
+    /// When using the default client, URLSession is configured with:
+    /// - Request timeout from configuration
+    /// - Resource timeout from configuration
+    /// - Custom headers from configuration
+    /// - User-Agent header set to "AGUISwift/1.0"
+    ///
+    /// ## Dependency Injection
+    ///
+    /// For testing or custom networking, inject a custom HTTPClient:
+    ///
+    /// ```swift
+    /// let mockClient = MockHTTPClient()
+    /// let transport = HttpTransport(
+    ///     configuration: config,
+    ///     httpClient: mockClient
+    /// )
+    /// ```
+    public init(
+        configuration: HttpAgentConfiguration,
+        httpClient: (any HTTPClient)? = nil
+    ) {
         self.configuration = configuration
 
-        let sessionConfig = URLSessionConfiguration.default
-        sessionConfig.timeoutIntervalForRequest = configuration.timeout
-        sessionConfig.timeoutIntervalForResource = configuration.timeout
+        if let httpClient = httpClient {
+            self.httpClient = httpClient
+        } else {
+            // Create default URLSession-based client
+            let sessionConfig = URLSessionConfiguration.default
+            sessionConfig.timeoutIntervalForRequest = configuration.timeout
+            sessionConfig.timeoutIntervalForResource = configuration.timeout
 
-        // Set additional headers
-        var headers = configuration.headers
-        headers["User-Agent"] = "AGUISwift/1.0"
-        sessionConfig.httpAdditionalHeaders = headers
+            // Set additional headers
+            var headers = configuration.headers
+            headers["User-Agent"] = "AGUISwift/1.0"
+            sessionConfig.httpAdditionalHeaders = headers
 
-        self.session = URLSession(configuration: sessionConfig)
+            let session = URLSession(configuration: sessionConfig)
+            self.httpClient = URLSessionHTTPClient(session: session)
+        }
     }
 
     /// Executes an HTTP request and returns streaming bytes.
@@ -49,6 +90,30 @@ public actor HttpTransport {
     ///   - input: The run agent input to send
     /// - Returns: An async sequence of bytes from the server
     /// - Throws: `ClientError` if the request fails
+    ///
+    /// ## Request Format
+    ///
+    /// The request is constructed as:
+    /// - Method: POST
+    /// - URL: `baseURL` + `endpoint`
+    /// - Headers:
+    ///   - Content-Type: application/json
+    ///   - Accept: text/event-stream
+    /// - Body: JSON-encoded `RunAgentInput`
+    ///
+    /// ## Response Validation
+    ///
+    /// Validates the HTTP response:
+    /// - Status code must be 200-299
+    /// - Response must be HTTPURLResponse
+    ///
+    /// ## Error Handling
+    ///
+    /// Throws `ClientError` for:
+    /// - Encoding failures → `.decodingError`
+    /// - Non-2xx status codes → `.httpError(statusCode:)`
+    /// - Invalid responses → `.invalidResponse`
+    /// - Network errors → `.networkError`, `.timeout`, `.cancelled`
     public func execute(
         endpoint: String,
         input: RunAgentInput
@@ -70,37 +135,14 @@ public actor HttpTransport {
             throw ClientError.decodingError(error)
         }
 
-        // Execute request
-        let (bytes, response): (URLSession.AsyncBytes, URLResponse)
-        do {
-            (bytes, response) = try await session.bytes(for: request)
-        } catch let error as URLError {
-            throw mapURLError(error)
-        } catch {
-            throw ClientError.networkError(error)
+        // Execute request via injected HTTP client
+        let response = try await httpClient.execute(request)
+
+        // Validate HTTP status code
+        guard (200...299).contains(response.statusCode) else {
+            throw ClientError.httpError(statusCode: response.statusCode)
         }
 
-        // Validate response
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ClientError.invalidResponse
-        }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            throw ClientError.httpError(statusCode: httpResponse.statusCode)
-        }
-
-        return bytes
-    }
-
-    /// Maps URLError to ClientError.
-    private func mapURLError(_ error: URLError) -> ClientError {
-        switch error.code {
-        case .timedOut:
-            return .timeout
-        case .cancelled:
-            return .cancelled
-        default:
-            return .networkError(error)
-        }
+        return response.bytes
     }
 }

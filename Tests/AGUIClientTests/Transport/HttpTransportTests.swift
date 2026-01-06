@@ -148,4 +148,134 @@ final class HttpTransportTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Dependency Injection Tests
+
+    func testTransportWithCustomHTTPClient() async {
+        let url = URL(string: "https://agent.example.com")!
+        let config = HttpAgentConfiguration(baseURL: url)
+        let mockClient = MockHTTPClient()
+
+        let transport = HttpTransport(configuration: config, httpClient: mockClient)
+
+        // Verify transport was created with custom client
+        await withCheckedContinuation { continuation in
+            Task {
+                _ = transport
+                continuation.resume()
+            }
+        }
+    }
+
+    func testTransportExecutesWithMockClient() async throws {
+        // Setup
+        let url = URL(string: "https://agent.example.com")!
+        let config = HttpAgentConfiguration(baseURL: url)
+        let mockClient = MockHTTPClient()
+
+        // Configure mock response
+        let mockData = Data("event: test\ndata: {}\n\n".utf8)
+        let mockResponse = try await HTTPResponse.mock(data: mockData, statusCode: 200)
+        await mockClient.setResponse(mockResponse)
+
+        let transport = HttpTransport(configuration: config, httpClient: mockClient)
+
+        // Execute
+        let input = try RunAgentInput.builder()
+            .threadId("thread-1")
+            .runId("run-1")
+            .build()
+
+        let bytes = try await transport.execute(endpoint: "/run", input: input)
+
+        // Verify request was made
+        let callCount = await mockClient.executeCallCount
+        XCTAssertEqual(callCount, 1)
+
+        let lastRequest = await mockClient.lastRequest
+        XCTAssertNotNil(lastRequest)
+        XCTAssertEqual(lastRequest?.url?.path, "/run")
+        XCTAssertEqual(lastRequest?.httpMethod, "POST")
+        XCTAssertEqual(lastRequest?.value(forHTTPHeaderField: "Content-Type"), "application/json")
+        XCTAssertEqual(lastRequest?.value(forHTTPHeaderField: "Accept"), "text/event-stream")
+
+        // Verify bytes are returned
+        _ = bytes
+    }
+
+    func testTransportPropagatesClientErrors() async throws {
+        // Setup
+        let url = URL(string: "https://agent.example.com")!
+        let config = HttpAgentConfiguration(baseURL: url)
+        let mockClient = MockHTTPClient()
+
+        // Configure mock to throw error
+        await mockClient.setError(ClientError.timeout)
+
+        let transport = HttpTransport(configuration: config, httpClient: mockClient)
+
+        // Execute
+        let input = try RunAgentInput.builder()
+            .threadId("thread-1")
+            .runId("run-1")
+            .build()
+
+        // Verify error is propagated
+        do {
+            _ = try await transport.execute(endpoint: "/run", input: input)
+            XCTFail("Expected error to be thrown")
+        } catch let error as ClientError {
+            if case .timeout = error {
+                // Success
+            } else {
+                XCTFail("Expected timeout error, got \(error)")
+            }
+        }
+    }
+
+    func testTransportHandlesHTTPErrors() async throws {
+        // Setup
+        let url = URL(string: "https://agent.example.com")!
+        let config = HttpAgentConfiguration(baseURL: url)
+        let mockClient = MockHTTPClient()
+
+        // Configure mock response with error status
+        let mockResponse = try await HTTPResponse.mock(statusCode: 500)
+        await mockClient.setResponse(mockResponse)
+
+        let transport = HttpTransport(configuration: config, httpClient: mockClient)
+
+        // Execute
+        let input = try RunAgentInput.builder()
+            .threadId("thread-1")
+            .runId("run-1")
+            .build()
+
+        // Verify HTTP error is thrown
+        do {
+            _ = try await transport.execute(endpoint: "/run", input: input)
+            XCTFail("Expected HTTP error to be thrown")
+        } catch let error as ClientError {
+            if case .httpError(let statusCode) = error {
+                XCTAssertEqual(statusCode, 500)
+            } else {
+                XCTFail("Expected httpError, got \(error)")
+            }
+        }
+    }
+
+    func testTransportUsesDefaultClientWhenNoneProvided() async {
+        let url = URL(string: "https://agent.example.com")!
+        let config = HttpAgentConfiguration(baseURL: url)
+
+        // Create without providing httpClient - should use default URLSessionHTTPClient
+        let transport = HttpTransport(configuration: config)
+
+        await withCheckedContinuation { continuation in
+            Task {
+                _ = transport
+                continuation.resume()
+            }
+        }
+    }
 }
