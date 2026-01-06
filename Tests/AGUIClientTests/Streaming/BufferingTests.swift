@@ -306,7 +306,7 @@ final class BufferingTests: XCTestCase {
     // MARK: - Composition Tests
 
     func testBufferedThenBatched() async throws {
-        let events = (0..<20).map { $0 }
+        let events = Array(0..<20)
         let source = AsyncStream<Int> { continuation in
             Task {
                 for event in events {

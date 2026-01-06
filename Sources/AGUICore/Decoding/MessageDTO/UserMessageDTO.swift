@@ -127,7 +127,7 @@ struct UserMessageDTO {
         }
 
         init?(stringValue: String) {
-            return nil
+            nil
         }
     }
 }

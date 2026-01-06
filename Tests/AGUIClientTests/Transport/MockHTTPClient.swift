@@ -148,7 +148,7 @@ public struct MockAsyncBytes: AsyncSequence {
 /// ```
 actor MockURLProtocolRegistry {
     /// Unique identifier for this registry
-    let id: UUID = UUID()
+    let id = UUID()
 
     private var responses: [String: MockResponse] = [:]
 

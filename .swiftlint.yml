@@ -61,6 +61,7 @@ disabled_rules:
   - prefer_self_in_static_references  # Would require extensive refactoring
   - trailing_closure  # Conflicts with existing code style
   - trailing_whitespace  # SwiftFormat will handle this - temporarily disabled
+  - static_over_final_class  # URLProtocol subclasses require class methods for overrides
 
 # Rule configurations
 line_length:
@@ -122,7 +123,9 @@ large_tuple:
   error: 4
 
 # Force cast and force try (warnings only, not errors)
-force_cast: warning
+# Disable in tests since we're testing known types
+force_cast:
+  severity: warning
 force_try: warning
 
 # File header format (matches project style)
