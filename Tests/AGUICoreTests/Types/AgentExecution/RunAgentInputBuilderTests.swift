@@ -9,8 +9,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
     // MARK: - Basic Builder Tests
 
-    func testBuilderWithMinimalParameters() {
-        let input = RunAgentInput.builder()
+    func testBuilderWithMinimalParameters() throws {
+        let input = try RunAgentInput.builder()
             .threadId("thread-123")
             .runId("run-456")
             .build()
@@ -23,7 +23,7 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertTrue(input.context.isEmpty)
     }
 
-    func testBuilderWithAllParameters() {
+    func testBuilderWithAllParameters() throws {
         let messages: [any Message] = [
             UserMessage(id: "msg-1", content: "Hello")
         ]
@@ -36,7 +36,7 @@ final class RunAgentInputBuilderTests: XCTestCase {
         let state = Data("{\"x\": 1}".utf8)
         let props = Data("{\"y\": 2}".utf8)
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("thread-1")
             .runId("run-1")
             .parentRunId("run-0")
@@ -59,8 +59,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
     // MARK: - Fluent Interface Tests
 
-    func testBuilderMethodChaining() {
-        let input = RunAgentInput.builder()
+    func testBuilderMethodChaining() throws {
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .parentRunId("r0")
@@ -71,13 +71,13 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.parentRunId, "r0")
     }
 
-    func testBuilderCanBeReused() {
+    func testBuilderCanBeReused() throws {
         let builder = RunAgentInput.builder()
             .threadId("thread-1")
             .runId("run-1")
 
-        let input1 = builder.build()
-        let input2 = builder.build()
+        let input1 = try builder.build()
+        let input2 = try builder.build()
 
         XCTAssertEqual(input1.threadId, input2.threadId)
         XCTAssertEqual(input1.runId, input2.runId)
@@ -85,10 +85,10 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
     // MARK: - Message Building Tests
 
-    func testBuilderWithSingleMessage() {
+    func testBuilderWithSingleMessage() throws {
         let message = UserMessage(id: "msg-1", content: "Hello")
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .message(message)
@@ -98,8 +98,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.messages[0].id, "msg-1")
     }
 
-    func testBuilderWithMultipleMessages() {
-        let input = RunAgentInput.builder()
+    func testBuilderWithMultipleMessages() throws {
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .message(UserMessage(id: "msg-1", content: "Hello"))
@@ -111,13 +111,13 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.messages[1].id, "msg-2")
     }
 
-    func testBuilderWithMessagesArray() {
+    func testBuilderWithMessagesArray() throws {
         let messages: [any Message] = [
             UserMessage(id: "msg-1", content: "Hello"),
             AssistantMessage(id: "msg-2", content: "Hi")
         ]
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .messages(messages)
@@ -126,12 +126,12 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.messages.count, 2)
     }
 
-    func testBuilderCombiningMessageAndMessages() {
+    func testBuilderCombiningMessageAndMessages() throws {
         let messages: [any Message] = [
             UserMessage(id: "msg-1", content: "Hello")
         ]
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .messages(messages)
@@ -145,10 +145,10 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
     // MARK: - Tool Building Tests
 
-    func testBuilderWithSingleTool() {
+    func testBuilderWithSingleTool() throws {
         let tool = Tool(name: "get_weather", description: "Get weather", parameters: Data("{}".utf8))
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .tool(tool)
@@ -158,8 +158,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.tools[0].name, "get_weather")
     }
 
-    func testBuilderWithMultipleTools() {
-        let input = RunAgentInput.builder()
+    func testBuilderWithMultipleTools() throws {
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .tool(Tool(name: "tool1", description: "Tool 1", parameters: Data("{}".utf8)))
@@ -173,8 +173,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
     // MARK: - Context Building Tests
 
-    func testBuilderWithSingleContext() {
-        let input = RunAgentInput.builder()
+    func testBuilderWithSingleContext() throws {
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .contextItem(Context(description: "user_id", value: "123"))
@@ -184,8 +184,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.context[0].description, "user_id")
     }
 
-    func testBuilderWithMultipleContextItems() {
-        let input = RunAgentInput.builder()
+    func testBuilderWithMultipleContextItems() throws {
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .contextItem(Context(description: "user_id", value: "123"))
@@ -197,13 +197,13 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.context[1].description, "language")
     }
 
-    func testBuilderWithContextArray() {
+    func testBuilderWithContextArray() throws {
         let contexts = [
             Context(description: "user_id", value: "123"),
             Context(description: "language", value: "en")
         ]
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .context(contexts)
@@ -218,7 +218,7 @@ final class RunAgentInputBuilderTests: XCTestCase {
         let stateDict: [String: Any] = ["counter": 42, "active": true]
         let stateData = try JSONSerialization.data(withJSONObject: stateDict)
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .state(stateData)
@@ -233,7 +233,7 @@ final class RunAgentInputBuilderTests: XCTestCase {
         let propsDict: [String: Any] = ["custom_field": "value"]
         let propsData = try JSONSerialization.data(withJSONObject: propsDict)
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .forwardedProps(propsData)
@@ -245,8 +245,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
     // MARK: - Real-world Usage Tests
 
-    func testBuilderForChatConversation() {
-        let input = RunAgentInput.builder()
+    func testBuilderForChatConversation() throws {
+        let input = try RunAgentInput.builder()
             .threadId("chat-session-123")
             .runId("run-456")
             .message(DeveloperMessage(id: "dev-1", content: "You are helpful"))
@@ -259,14 +259,14 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.messages[1].role, .user)
     }
 
-    func testBuilderForAgentWithTools() {
+    func testBuilderForAgentWithTools() throws {
         let weatherTool = Tool(
             name: "get_weather",
             description: "Get current weather",
             parameters: Data("{\"type\": \"object\"}".utf8)
         )
 
-        let input = RunAgentInput.builder()
+        let input = try RunAgentInput.builder()
             .threadId("agent-thread-1")
             .runId("run-1")
             .message(UserMessage(id: "user-1", content: "What's the weather?"))
@@ -279,8 +279,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
         XCTAssertEqual(input.messages.count, 1)
     }
 
-    func testBuilderForNestedRun() {
-        let input = RunAgentInput.builder()
+    func testBuilderForNestedRun() throws {
+        let input = try RunAgentInput.builder()
             .threadId("thread-1")
             .runId("child-run-1")
             .parentRunId("parent-run-1")
@@ -291,8 +291,8 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
     // MARK: - Default Values Tests
 
-    func testBuilderDefaultsAreCorrect() {
-        let input = RunAgentInput.builder()
+    func testBuilderDefaultsAreCorrect() throws {
+        let input = try RunAgentInput.builder()
             .threadId("t1")
             .runId("r1")
             .build()
@@ -319,7 +319,7 @@ final class RunAgentInputBuilderTests: XCTestCase {
 
         Task {
             let capturedBuilder = builder
-            let input = capturedBuilder.build()
+            let input = try capturedBuilder.build()
             XCTAssertEqual(input.threadId, "t1")
         }
     }

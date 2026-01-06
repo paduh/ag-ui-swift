@@ -204,21 +204,25 @@ public struct RunAgentInputBuilder {
     /// Builds and returns a `RunAgentInput` instance.
     ///
     /// - Returns: A configured `RunAgentInput` instance
-    /// - Precondition: `threadId` and `runId` must be set before calling build
+    /// - Throws: `BuilderError` if required fields are missing
     ///
     /// Example:
     /// ```swift
-    /// let input = RunAgentInput.builder()
-    ///     .threadId("thread-1")
-    ///     .runId("run-1")
-    ///     .build()
+    /// do {
+    ///     let input = try RunAgentInput.builder()
+    ///         .threadId("thread-1")
+    ///         .runId("run-1")
+    ///         .build()
+    /// } catch {
+    ///     print("Failed to build input: \(error)")
+    /// }
     /// ```
-    public func build() -> RunAgentInput {
+    public func build() throws -> RunAgentInput {
         guard let threadId = _threadId else {
-            preconditionFailure("threadId is required")
+            throw BuilderError.missingThreadId
         }
         guard let runId = _runId else {
-            preconditionFailure("runId is required")
+            throw BuilderError.missingRunId
         }
 
         return RunAgentInput(
@@ -231,6 +235,28 @@ public struct RunAgentInputBuilder {
             context: _context,
             forwardedProps: _forwardedProps
         )
+    }
+}
+
+// MARK: - Builder Error
+
+/// Errors that can occur when building a `RunAgentInput`.
+public enum BuilderError: Error {
+    /// The thread ID is required but was not set.
+    case missingThreadId
+
+    /// The run ID is required but was not set.
+    case missingRunId
+}
+
+extension BuilderError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .missingThreadId:
+            return "Thread ID is required. Call .threadId(_:) before building."
+        case .missingRunId:
+            return "Run ID is required. Call .runId(_:) before building."
+        }
     }
 }
 
