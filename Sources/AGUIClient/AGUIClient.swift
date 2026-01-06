@@ -4,16 +4,27 @@
 import AGUICore
 import Foundation
 
-/// AGUIClient provides client-side functionality
+/// AGUIClient provides HTTP transport and streaming capabilities for AG-UI agents.
+///
+/// This module contains the low-level client infrastructure including:
+/// - HTTP transport with URLSession
+/// - Server-Sent Events (SSE) parsing
+/// - Event stream management
+/// - State synchronization
+///
+/// ## Usage
+///
+/// ```swift
+/// import AGUIClient
+///
+/// let agent = HttpAgent(baseURL: agentURL)
+/// for try await event in try await agent.run(input) {
+///     // Process events
+/// }
+/// ```
 public struct AGUIClient {
-    private let core: AGUICore
+    /// The version of the AGUIClient module.
+    public static let version = "0.1.0"
 
-    public init() {
-        self.core = AGUICore()
-    }
-
-    /// Client functionality example
-    public func clientFunction() -> String {
-        "AGUIClient is working with \(core.coreFunction())"
-    }
+    private init() {}
 }

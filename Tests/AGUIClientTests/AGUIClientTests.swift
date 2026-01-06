@@ -5,10 +5,12 @@ import XCTest
 @testable import AGUIClient
 
 final class AGUIClientTests: XCTestCase {
-    func testClientFunction() {
-        let client = AGUIClient()
-        let result = client.clientFunction()
-        XCTAssertTrue(result.contains("AGUIClient is working"))
-        XCTAssertTrue(result.contains("AGUICore is working"))
+    func testModuleVersion() {
+        XCTAssertEqual(AGUIClient.version, "0.1.0")
+    }
+
+    func testModuleExists() {
+        // Verify the module can be imported and used
+        XCTAssertNotNil(AGUIClient.self)
     }
 }
