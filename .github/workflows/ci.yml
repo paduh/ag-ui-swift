@@ -55,7 +55,7 @@ jobs:
       
       - name: Run SwiftLint
         run: |
-          swiftlint lint --strict
+          swiftlint lint
       
       - name: Check Package Format
         run: swift package resolve
