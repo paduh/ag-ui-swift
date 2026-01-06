@@ -6,7 +6,15 @@ The AG-UI Swift SDK is an open-source Swift framework for building AI agent user
 
 ### Architecture
 ```
-AGUISwift Core → SwiftAgents (Agent Orchestration) → Application
+AGUICore (Foundation layer - Protocol types • Event models • Message definitions)
+    ↓
+AGUIClient (Low-level client infrastructure and transport implementations - HttpAgent • AbstractAgent • SseParser • EventStreamManager )
+    ↓
+    ├─→ AGUITools (Tool execution framework for extending agent capabilities - ToolExecutor • ToolRegistry  • ToolExecutionManager)
+    └─→ AGUIAgentSDK (High-level APIs for common agent interaction patterns - AgUiAgent  • StatefulAgUiAgent  • Builders)
+         ↓
+      Application
+
 ```
 
 ### Key Directories
@@ -180,3 +188,10 @@ Use specialized agents for focused expertise. Delegate proactively:
 - API patterns: See `https://github.com/ag-ui-protocol/ag-ui/tree/main/sdks/community/kotlin`
 - Protocol design: See `https://github.com/ag-ui-protocol/ag-ui`
 - Understanding how AG-UI complements and works with MCP and A2A: See `https://docs.ag-ui.com/llms-full.txt`
+
+## Git Commit Guidelines
+
+When creating commits:
+- Follow conventional commit format
+- Keep the first line under 50 characters
+- Do not include AI attribution in commit messages
