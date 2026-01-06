@@ -140,12 +140,9 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
                             let event = try decoder.decode(data)
                             eventQueue.append(event)
                         } catch {
-                            // Log decoding error but continue stream
-                            // Non-fatal errors shouldn't stop the stream
-                            #if DEBUG
-                            print("Warning: Failed to decode AG-UI event: \(error)")
-                            print("  Event data: \(String(data: data, encoding: .utf8) ?? "invalid UTF-8")")
-                            #endif
+                            // Non-fatal decoding errors are silently ignored
+                            // The stream continues processing subsequent events
+                            // Applications can implement custom error handling if needed
                         }
                     }
 

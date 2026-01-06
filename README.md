@@ -89,3 +89,53 @@ Then open `http://localhost:8000` in your browser.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+
+## Contributing
+
+We welcome contributions! Please follow our development workflow:
+
+### Quick Start
+
+1. **Install Git Hooks** (prevents direct commits to main):
+   ```bash
+   ./scripts/install-git-hooks.sh
+   ```
+
+2. **Create a Feature Branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+3. **Make Changes & Test**:
+   ```bash
+   swift test
+   swiftlint lint
+   ```
+
+4. **Create Pull Request**:
+   ```bash
+   git push -u origin feature/your-feature-name
+   gh pr create
+   ```
+
+### Development Workflow
+
+- **No direct commits to `main`** - All changes must go through pull requests
+- **Code review required** - PRs must be approved by designated reviewers before merging
+- **Branch naming**: `feature/`, `fix/`, `refactor/`, `docs/`
+- **Follow TDD**: Write tests first, then implement
+- **Code quality**: Format with SwiftFormat, lint with SwiftLint
+
+See detailed guides:
+- [Contributing Guide](CONTRIBUTING.md) - Full workflow and standards
+- [Workflow Quick Reference](docs/WORKFLOW.md) - Common tasks and commands
+- [Project Standards](CLAUDE.md) - Code conventions and architecture
+
+### Before Submitting PR
+
+- [ ] Tests pass: `swift test`
+- [ ] Code formatted: `swift package plugin swiftformat`
+- [ ] Linting passes: `swiftlint lint`
+- [ ] Documentation updated
+- [ ] Commit messages follow conventions
+

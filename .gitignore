@@ -96,6 +96,7 @@ iOSInjectionProject/
 docs/*
 !docs/README.md
 !docs/.nojekyll
+!docs/WORKFLOW.md
 
 # SwiftLint
 .swiftlintcache
