@@ -81,30 +81,45 @@ actor MockHTTPClient: HTTPClient {
 
 /// Mock bytes sequence for testing.
 ///
-/// Creates an AsyncSequence of bytes from a Data object.
-struct MockAsyncBytes: AsyncSequence {
-    typealias Element = UInt8
+/// Creates an AsyncSequence of bytes from a Data object with controllable chunking.
+public struct MockAsyncBytes: AsyncSequence {
+    public typealias Element = UInt8
 
     private let data: Data
+    private let chunkSize: Int
 
-    init(data: Data) {
+    /// Creates a mock async bytes sequence.
+    ///
+    /// - Parameters:
+    ///   - data: The data to stream as bytes
+    ///   - chunkSize: Number of bytes per chunk for simulating network delays (default: 1)
+    public init(data: Data, chunkSize: Int = 1) {
         self.data = data
+        self.chunkSize = chunkSize
     }
 
-    func makeAsyncIterator() -> AsyncIterator {
-        AsyncIterator(data: data)
+    public func makeAsyncIterator() -> AsyncIterator {
+        AsyncIterator(data: data, chunkSize: chunkSize)
     }
 
-    struct AsyncIterator: AsyncIteratorProtocol {
+    public struct AsyncIterator: AsyncIteratorProtocol {
         private let data: Data
+        private let chunkSize: Int
         private var index: Int = 0
 
-        init(data: Data) {
+        init(data: Data, chunkSize: Int) {
             self.data = data
+            self.chunkSize = chunkSize
         }
 
-        mutating func next() async throws -> UInt8? {
+        public mutating func next() async throws -> UInt8? {
             guard index < data.count else { return nil }
+
+            // Simulate variable delay to mimic network
+            if index > 0, index % chunkSize == 0 {
+                try await Task.sleep(nanoseconds: 100_000) // 0.1ms
+            }
+
             let byte = data[index]
             index += 1
             return byte
