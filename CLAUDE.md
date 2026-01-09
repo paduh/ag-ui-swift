@@ -178,7 +178,7 @@ Use specialized agents for focused expertise. Delegate proactively:
 
 **TDD + Sub-Agent Workflow** (for complex features):
 1. `context-builder` → research existing patterns and requirements
-2. `test-specialist` → write failing tests first (Red phase)
+2. `test-specialist` → write failing tests first (Red phase) and keep async/time-sensitive tests deterministic (no flakiness)
 3. `protocol-architect` → design abstractions to satisfy tests
 4. `api-designer` → refine public interface
 5. `concurrency-expert` → verify thread safety

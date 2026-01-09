@@ -128,10 +128,10 @@ force_cast:
   severity: warning
 force_try: warning
 
-# File header format (matches project style)
+# File header format (MIT License)
 file_header:
   required_pattern: |
-    \/\/ [\w+]+\.swift\n\/\/ AGUISwift(Tests)?
+    \/\*\s*\n \* MIT License\s*\n \*\s*\n \* Copyright \(c\) 2025 Perfect Aduh
 
 # Modifier order (Swift 6 conventions - matches SwiftFormat)
 # Valid groups: override, isolation, acl, setterACL, dynamic, mutators, lazy, final, required, convenience, typeMethods, owned
