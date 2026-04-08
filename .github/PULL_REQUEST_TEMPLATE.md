@@ -63,7 +63,3 @@ Relates to #
 - [ ] CI checks pass
 
 ---
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
