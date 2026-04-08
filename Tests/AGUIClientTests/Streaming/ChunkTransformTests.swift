@@ -89,9 +89,12 @@ final class ChunkTransformTests: XCTestCase {
         XCTAssertTrue(transformed[3] is TextMessageContentEvent)
         XCTAssertTrue(transformed[4] is TextMessageEndEvent)
 
-        let content1 = transformed[1] as! TextMessageContentEvent
-        let content2 = transformed[2] as! TextMessageContentEvent
-        let content3 = transformed[3] as! TextMessageContentEvent
+        guard let content1 = transformed[1] as? TextMessageContentEvent,
+              let content2 = transformed[2] as? TextMessageContentEvent,
+              let content3 = transformed[3] as? TextMessageContentEvent else {
+            XCTFail("Expected TextMessageContentEvent")
+            return
+        }
 
         XCTAssertEqual(content1.delta, "Hello")
         XCTAssertEqual(content2.delta, " world")

@@ -113,10 +113,8 @@ final class ToolRegistryConcurrencyTests: XCTestCase {
             }
 
             var successCount = 0
-            for try await result in group {
-                if result.success {
-                    successCount += 1
-                }
+            for try await result in group where result.success {
+                successCount += 1
             }
 
             XCTAssertEqual(successCount, executionCount)
