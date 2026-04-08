@@ -14,7 +14,7 @@ for target in AGUICore AGUIClient AGUITools AGUIAgentSDK; do
     --transform-for-static-hosting \
     --hosting-base-path /ag-ui-swift/$target \
     --output-path ./docs-test/$target
-  
+
   # Verify index.html was created
   if [ ! -f "./docs-test/$target/index.html" ]; then
     echo "  ⚠️  Warning: index.html not found for $target"
@@ -24,16 +24,60 @@ for target in AGUICore AGUIClient AGUITools AGUIAgentSDK; do
 done
 
 echo ""
-echo "🔧 Fixing filenames (colons -> hyphens)..."
-find ./docs-test -depth -name "*:*" | while read -r file; do
-  dir=$(dirname "$file")
-  base=$(basename "$file")
-  newbase=$(echo "$base" | tr ':' '-')
-  mv "$file" "$dir/$newbase"
-done
+echo "🔧 Fixing filenames (colons -> hyphens) and updating references..."
+python3 - << 'PYTHON_EOF'
+import os
+import glob
+from pathlib import Path
 
-echo "🔧 Updating JSON references..."
-find ./docs-test -name "*.json" -type f -exec sed -i '' 's/:/\\-/g' {} +
+def build_rename_map(root_dir):
+    rename_map = {}
+    root_path = Path(root_dir)
+    for path in root_path.rglob("*"):
+        if ":" in path.name:
+            new_name = path.name.replace(":", "-")
+            new_path = path.with_name(new_name)
+            old_rel = path.relative_to(root_path).as_posix()
+            new_rel = new_path.relative_to(root_path).as_posix()
+            rename_map[old_rel] = new_rel
+    return rename_map
+
+def apply_renames(root_dir, rename_map):
+    root_path = Path(root_dir)
+    for old_rel in sorted(rename_map.keys(), key=lambda p: p.count("/"), reverse=True):
+        old_path = root_path / old_rel
+        new_path = root_path / rename_map[old_rel]
+        if old_path.exists():
+            os.rename(old_path, new_path)
+
+def build_replacements(rename_map):
+    replacements = []
+    for old_rel, new_rel in rename_map.items():
+        replacements.append((old_rel, new_rel))
+        replacements.append(("/" + old_rel, "/" + new_rel))
+    return replacements
+
+def replace_all(content, replacements):
+    for old_value, new_value in replacements:
+        content = content.replace(old_value, new_value)
+    return content
+
+rename_map = build_rename_map("./docs-test")
+print(f"Found {len(rename_map)} paths to rename")
+apply_renames("./docs-test", rename_map)
+
+if rename_map:
+    replacements = build_replacements(rename_map)
+    files_to_update = glob.glob("./docs-test/**/*.json", recursive=True)
+    files_to_update.extend(glob.glob("./docs-test/**/*.html", recursive=True))
+    for path in files_to_update:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        updated = replace_all(content, replacements)
+        if updated != content:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(updated)
+PYTHON_EOF
 
 echo ""
 echo "📄 Creating landing page..."
@@ -149,33 +193,33 @@ cat > ./docs-test/index.html << 'LANDING_EOF'
       <h1>AG-UI Swift SDK</h1>
       <p>Comprehensive API Documentation</p>
     </header>
-    
+
     <div class="targets">
       <a href="./AGUICore/" class="target-card">
         <h2>AGUICore</h2>
         <p>Core event types, decoding infrastructure, and protocol implementations. The foundation of the AG-UI Swift SDK.</p>
         <span class="link">View Documentation</span>
       </a>
-      
+
       <a href="./AGUIClient/" class="target-card">
         <h2>AGUIClient</h2>
         <p>Client-side functionality for connecting to AG-UI protocol servers and managing agent interactions.</p>
         <span class="link">View Documentation</span>
       </a>
-      
+
       <a href="./AGUITools/" class="target-card">
         <h2>AGUITools</h2>
         <p>Utility tools and helpers for working with AG-UI events and protocol features.</p>
         <span class="link">View Documentation</span>
       </a>
-      
+
       <a href="./AGUIAgentSDK/" class="target-card">
         <h2>AGUIAgentSDK</h2>
         <p>High-level APIs for building agent applications with AG-UI protocol support.</p>
         <span class="link">View Documentation</span>
       </a>
     </div>
-    
+
     <footer>
       <p>
         <a href="https://github.com/paduh/ag-ui-swift">GitHub Repository</a> |

@@ -77,98 +77,71 @@ jobs:
         
         cat > /tmp/fix_colons.py << 'PYTHON_EOF'
         import os
-        import json
         import glob
-        import re
         from pathlib import Path
         
-        def rename_files_with_colons(root_dir):
-            """Recursively rename all files and directories containing colons"""
-            renamed_count = 0
-            
-            # First, rename directories (must be done depth-first)
-            for root, dirs, files in os.walk(root_dir, topdown=False):
-                for dirname in dirs:
-                    if ':' in dirname:
-                        old_path = os.path.join(root, dirname)
-                        new_dirname = dirname.replace(':', '-')
-                        new_path = os.path.join(root, new_dirname)
-                        print(f"Renaming directory: {old_path} -> {new_path}")
-                        os.rename(old_path, new_path)
-                        renamed_count += 1
-            
-            # Then rename files
-            for root, dirs, files in os.walk(root_dir):
-                for filename in files:
-                    if ':' in filename:
-                        old_path = os.path.join(root, filename)
-                        new_filename = filename.replace(':', '-')
-                        new_path = os.path.join(root, new_filename)
-                        print(f"Renaming file: {old_path} -> {new_path}")
-                        os.rename(old_path, new_path)
-                        renamed_count += 1
-            
-            print(f"Renamed {renamed_count} files/directories")
-            return renamed_count
+        def build_rename_map(root_dir):
+            """Collect files/directories with colons and build rename map."""
+            rename_map = {}
+            root_path = Path(root_dir)
+            for path in root_path.rglob("*"):
+                if ":" in path.name:
+                    new_name = path.name.replace(":", "-")
+                    new_path = path.with_name(new_name)
+                    old_rel = path.relative_to(root_path).as_posix()
+                    new_rel = new_path.relative_to(root_path).as_posix()
+                    rename_map[old_rel] = new_rel
+            return rename_map
         
-        def fix_json_paths(obj):
-            """Recursively fix path strings in JSON object by replacing : with -"""
-            if isinstance(obj, dict):
-                return {k: fix_json_paths(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [fix_json_paths(item) for item in obj]
-            elif isinstance(obj, str):
-                # Replace colons in strings that look like paths or URLs
-                # Match paths (contain /) or URLs (start with http://, https://, doc://, etc.)
-                if '/' in obj or re.match(r'^[a-z]+://', obj):
-                    return obj.replace(':', '-')
-                return obj
-            else:
-                return obj
+        def apply_renames(root_dir, rename_map):
+            """Rename files/directories depth-first to avoid conflicts."""
+            root_path = Path(root_dir)
+            for old_rel in sorted(rename_map.keys(), key=lambda p: p.count("/"), reverse=True):
+                old_path = root_path / old_rel
+                new_path = root_path / rename_map[old_rel]
+                if old_path.exists():
+                    print(f"Renaming: {old_path} -> {new_path}")
+                    os.rename(old_path, new_path)
+        
+        def build_replacements(rename_map):
+            replacements = []
+            for old_rel, new_rel in rename_map.items():
+                replacements.append((old_rel, new_rel))
+                replacements.append(("/" + old_rel, "/" + new_rel))
+            return replacements
+
+        def replace_all(content, replacements):
+            for old_value, new_value in replacements:
+                content = content.replace(old_value, new_value)
+            return content
         
         # Rename all files and directories with colons
-        print("Step 1: Renaming files and directories with colons...")
-        rename_files_with_colons('./docs')
+        print("Step 1: Building rename map for files/directories with colons...")
+        rename_map = build_rename_map('./docs')
+        print(f"Found {len(rename_map)} paths to rename")
         
-        # Update JSON file references
-        print("\nStep 2: Updating JSON references...")
-        json_files = list(glob.glob('./docs/**/*.json', recursive=True))
-        print(f"Found {len(json_files)} JSON files to process")
+        print("\nStep 2: Renaming files and directories...")
+        apply_renames('./docs', rename_map)
         
-        for json_file in json_files:
+        # Update JSON and HTML references to renamed paths
+        print("\nStep 3: Updating JSON and HTML references...")
+        files_to_update = []
+        files_to_update.extend(glob.glob('./docs/**/*.json', recursive=True))
+        files_to_update.extend(glob.glob('./docs/**/*.html', recursive=True))
+        print(f"Found {len(files_to_update)} files to process")
+        
+        replacements = build_replacements(rename_map)
+        for path in files_to_update:
             try:
-                with open(json_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-        
-                # Fix paths in the JSON
-                fixed_data = fix_json_paths(data)
-        
-                # Write back
-                with open(json_file, 'w', encoding='utf-8') as f:
-                    json.dump(fixed_data, f, ensure_ascii=False, separators=(',', ':'))
-            except Exception as e:
-                print(f"Error processing {json_file}: {e}")
-        
-        # Also fix HTML files that might reference paths with colons
-        print("\nStep 3: Updating HTML references...")
-        html_files = list(glob.glob('./docs/**/*.html', recursive=True))
-        print(f"Found {len(html_files)} HTML files to process")
-        
-        for html_file in html_files:
-            try:
-                with open(html_file, 'r', encoding='utf-8') as f:
+                with open(path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                
-                # Replace colons in paths/URLs within HTML
-                # Match href, src, or any attribute with a path
-                fixed_content = re.sub(r'(href|src|data-path|data-url)=["\']([^"\']*):([^"\']*)["\']', 
-                                      r'\1="\2-\3"', content)
-                
-                if fixed_content != content:
-                    with open(html_file, 'w', encoding='utf-8') as f:
-                        f.write(fixed_content)
+        
+                updated = replace_all(content, replacements)
+                if updated != content:
+                    with open(path, 'w', encoding='utf-8') as f:
+                        f.write(updated)
             except Exception as e:
-                print(f"Error processing {html_file}: {e}")
+                print(f"Error processing {path}: {e}")
         
         # Verify no files with colons remain
         print("\nStep 4: Verifying no files with colons remain...")
@@ -362,7 +335,7 @@ jobs:
 
     if: github.ref == 'refs/heads/main'
 
-    
+
 
     environment:
 
@@ -370,7 +343,7 @@ jobs:
 
       url: ${{ steps.deployment.outputs.page_url }}
 
-      
+
 
     steps:
 
@@ -384,13 +357,13 @@ jobs:
 
         path: ./docs
 
-        
+
 
     - name: Setup Pages
 
       uses: actions/configure-pages@v4
 
-      
+
 
     - name: Upload to GitHub Pages
 
@@ -400,7 +373,7 @@ jobs:
 
         path: ./docs
 
-        
+
 
     - name: Deploy to GitHub Pages
 
