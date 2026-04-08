@@ -76,183 +76,222 @@ public struct ChunkTransformer {
     ) -> AsyncThrowingStream<any AGUIEvent, Error> where S.Element == any AGUIEvent {
         AsyncThrowingStream { continuation in
             Task {
-                var mode: ChunkMode?
-                var textState: TextState?
-                var toolState: ToolState?
-
-                func closeText(_ event: any AGUIEvent) {
-                    if let state = textState, state.fromChunk {
-                        continuation.yield(TextMessageEndEvent(
-                            messageId: state.messageId,
-                            timestamp: event.timestamp,
-                            rawEvent: event.rawEvent
-                        ))
-                    }
-                    textState = nil
-                    if mode == .text {
-                        mode = nil
-                    }
-                }
-
-                func closeTool(_ event: any AGUIEvent) {
-                    if let state = toolState, state.fromChunk {
-                        continuation.yield(ToolCallEndEvent(
-                            toolCallId: state.toolCallId,
-                            timestamp: event.timestamp,
-                            rawEvent: event.rawEvent
-                        ))
-                    }
-                    toolState = nil
-                    if mode == .tool {
-                        mode = nil
-                    }
-                }
-
-                func closePending(_ event: any AGUIEvent) {
-                    closeText(event)
-                    closeTool(event)
-                }
-
-                do {
-                    for try await event in events {
-                        switch event {
-                        case let chunk as TextMessageChunkEvent:
-                            let messageId = chunk.messageId
-
-                            // Check if we need to start a new message
-                            if mode != .text || (messageId != nil && messageId != textState?.messageId) {
-                                closePending(event)
-
-                                guard let id = messageId else {
-                                    throw ChunkTransformError.missingMessageId
-                                }
-
-                                continuation.yield(TextMessageStartEvent(
-                                    messageId: id,
-                                    role: chunk.role ?? "assistant",
-                                    timestamp: chunk.timestamp,
-                                    rawEvent: chunk.rawEvent
-                                ))
-
-                                mode = .text
-                                textState = TextState(messageId: id, fromChunk: true)
-                            }
-
-                            // Emit content if delta is present and non-empty
-                            if let delta = chunk.delta, !delta.isEmpty {
-                                continuation.yield(TextMessageContentEvent(
-                                    messageId: textState!.messageId,
-                                    delta: delta,
-                                    timestamp: chunk.timestamp,
-                                    rawEvent: chunk.rawEvent
-                                ))
-                            }
-
-                        case let chunk as ToolCallChunkEvent:
-                            let toolId = chunk.toolCallId
-                            let toolName = chunk.toolCallName
-
-                            // Check if we need to start a new tool call
-                            if mode != .tool || (toolId != nil && toolId != toolState?.toolCallId) {
-                                closePending(event)
-
-                                guard let id = toolId, let name = toolName else {
-                                    throw ChunkTransformError.missingToolCallInfo
-                                }
-
-                                continuation.yield(ToolCallStartEvent(
-                                    toolCallId: id,
-                                    toolCallName: name,
-                                    parentMessageId: chunk.parentMessageId,
-                                    timestamp: chunk.timestamp,
-                                    rawEvent: chunk.rawEvent
-                                ))
-
-                                mode = .tool
-                                toolState = ToolState(toolCallId: id, fromChunk: true)
-                            }
-
-                            // Emit args if delta is present and non-empty
-                            if let delta = chunk.delta, !delta.isEmpty {
-                                continuation.yield(ToolCallArgsEvent(
-                                    toolCallId: toolState!.toolCallId,
-                                    delta: delta,
-                                    timestamp: chunk.timestamp,
-                                    rawEvent: chunk.rawEvent
-                                ))
-                            }
-
-                        case is TextMessageStartEvent:
-                            closePending(event)
-                            mode = .text
-                            if let start = event as? TextMessageStartEvent {
-                                textState = TextState(messageId: start.messageId, fromChunk: false)
-                            }
-                            continuation.yield(event)
-
-                        case is TextMessageContentEvent:
-                            mode = .text
-                            if let content = event as? TextMessageContentEvent {
-                                textState = TextState(messageId: content.messageId, fromChunk: false)
-                            }
-                            continuation.yield(event)
-
-                        case is TextMessageEndEvent:
-                            textState = nil
-                            if mode == .text {
-                                mode = nil
-                            }
-                            continuation.yield(event)
-
-                        case is ToolCallStartEvent:
-                            closePending(event)
-                            mode = .tool
-                            if let start = event as? ToolCallStartEvent {
-                                toolState = ToolState(toolCallId: start.toolCallId, fromChunk: false)
-                            }
-                            continuation.yield(event)
-
-                        case is ToolCallArgsEvent:
-                            mode = .tool
-                            if let args = event as? ToolCallArgsEvent {
-                                if toolState?.toolCallId == args.toolCallId {
-                                    toolState?.fromChunk = false
-                                } else {
-                                    toolState = ToolState(toolCallId: args.toolCallId, fromChunk: false)
-                                }
-                            }
-                            continuation.yield(event)
-
-                        case is ToolCallEndEvent:
-                            toolState = nil
-                            if mode == .tool {
-                                mode = nil
-                            }
-                            continuation.yield(event)
-
-                        default:
-                            // Close pending state for other events
-                            closePending(event)
-                            continuation.yield(event)
-                        }
-                    }
-
-                    // Close any pending state at end of stream
-                    if textState != nil || toolState != nil {
-                        let finalEvent = RunFinishedEvent(
-                            threadId: "",
-                            runId: "",
-                            timestamp: nil,
-                            rawEvent: nil
-                        )
-                        closePending(finalEvent)
-                    }
-
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+                let transformer = EventTransformer(continuation: continuation)
+                await transformer.processEvents(events)
             }
+        }
+    }
+}
+
+// MARK: - EventTransformer
+
+/// Internal transformer that maintains state and processes events.
+private actor EventTransformer {
+    private var mode: ChunkMode?
+    private var textState: TextState?
+    private var toolState: ToolState?
+    private let continuation: AsyncThrowingStream<any AGUIEvent, Error>.Continuation
+
+    init(continuation: AsyncThrowingStream<any AGUIEvent, Error>.Continuation) {
+        self.continuation = continuation
+    }
+
+    func processEvents<S: AsyncSequence>(_ events: S) async where S.Element == any AGUIEvent {
+        do {
+            for try await event in events {
+                try await handleEvent(event)
+            }
+            closeAllPendingState()
+            continuation.finish()
+        } catch {
+            continuation.finish(throwing: error)
+        }
+    }
+
+    private func handleEvent(_ event: any AGUIEvent) async throws {
+        switch event {
+        case let chunk as TextMessageChunkEvent:
+            try handleTextChunk(chunk)
+        case let chunk as ToolCallChunkEvent:
+            try handleToolChunk(chunk)
+        case is TextMessageStartEvent, is TextMessageContentEvent, is TextMessageEndEvent:
+            handleTextEvent(event)
+        case is ToolCallStartEvent, is ToolCallArgsEvent, is ToolCallEndEvent:
+            handleToolEvent(event)
+        default:
+            handleOtherEvent(event)
+        }
+    }
+
+    private func handleTextChunk(_ chunk: TextMessageChunkEvent) throws {
+        let messageId = chunk.messageId
+
+        // Check if we need to start a new message
+        if mode != .text || (messageId != nil && messageId != textState?.messageId) {
+            closePending(chunk)
+
+            guard let id = messageId else {
+                throw ChunkTransformError.missingMessageId
+            }
+
+            continuation.yield(TextMessageStartEvent(
+                messageId: id,
+                role: chunk.role ?? "assistant",
+                timestamp: chunk.timestamp,
+                rawEvent: chunk.rawEvent
+            ))
+
+            mode = .text
+            textState = TextState(messageId: id, fromChunk: true)
+        }
+
+        // Emit content if delta is present and non-empty
+        if let delta = chunk.delta, !delta.isEmpty {
+            continuation.yield(TextMessageContentEvent(
+                messageId: textState!.messageId,
+                delta: delta,
+                timestamp: chunk.timestamp,
+                rawEvent: chunk.rawEvent
+            ))
+        }
+    }
+
+    private func handleToolChunk(_ chunk: ToolCallChunkEvent) throws {
+        let toolId = chunk.toolCallId
+        let toolName = chunk.toolCallName
+
+        // Check if we need to start a new tool call
+        if mode != .tool || (toolId != nil && toolId != toolState?.toolCallId) {
+            closePending(chunk)
+
+            guard let id = toolId, let name = toolName else {
+                throw ChunkTransformError.missingToolCallInfo
+            }
+
+            continuation.yield(ToolCallStartEvent(
+                toolCallId: id,
+                toolCallName: name,
+                parentMessageId: chunk.parentMessageId,
+                timestamp: chunk.timestamp,
+                rawEvent: chunk.rawEvent
+            ))
+
+            mode = .tool
+            toolState = ToolState(toolCallId: id, fromChunk: true)
+        }
+
+        // Emit args if delta is present and non-empty
+        if let delta = chunk.delta, !delta.isEmpty {
+            continuation.yield(ToolCallArgsEvent(
+                toolCallId: toolState!.toolCallId,
+                delta: delta,
+                timestamp: chunk.timestamp,
+                rawEvent: chunk.rawEvent
+            ))
+        }
+    }
+
+    private func handleTextEvent(_ event: any AGUIEvent) {
+        switch event {
+        case let start as TextMessageStartEvent:
+            closePending(event)
+            mode = .text
+            textState = TextState(messageId: start.messageId, fromChunk: false)
+            continuation.yield(event)
+
+        case let content as TextMessageContentEvent:
+            mode = .text
+            textState = TextState(messageId: content.messageId, fromChunk: false)
+            continuation.yield(event)
+
+        case is TextMessageEndEvent:
+            textState = nil
+            if mode == .text {
+                mode = nil
+            }
+            continuation.yield(event)
+
+        default:
+            break
+        }
+    }
+
+    private func handleToolEvent(_ event: any AGUIEvent) {
+        switch event {
+        case let start as ToolCallStartEvent:
+            closePending(event)
+            mode = .tool
+            toolState = ToolState(toolCallId: start.toolCallId, fromChunk: false)
+            continuation.yield(event)
+
+        case let args as ToolCallArgsEvent:
+            mode = .tool
+            if toolState?.toolCallId == args.toolCallId {
+                toolState?.fromChunk = false
+            } else {
+                toolState = ToolState(toolCallId: args.toolCallId, fromChunk: false)
+            }
+            continuation.yield(event)
+
+        case is ToolCallEndEvent:
+            toolState = nil
+            if mode == .tool {
+                mode = nil
+            }
+            continuation.yield(event)
+
+        default:
+            break
+        }
+    }
+
+    private func handleOtherEvent(_ event: any AGUIEvent) {
+        closePending(event)
+        continuation.yield(event)
+    }
+
+    private func closeText(_ event: any AGUIEvent) {
+        if let state = textState, state.fromChunk {
+            continuation.yield(TextMessageEndEvent(
+                messageId: state.messageId,
+                timestamp: event.timestamp,
+                rawEvent: event.rawEvent
+            ))
+        }
+        textState = nil
+        if mode == .text {
+            mode = nil
+        }
+    }
+
+    private func closeTool(_ event: any AGUIEvent) {
+        if let state = toolState, state.fromChunk {
+            continuation.yield(ToolCallEndEvent(
+                toolCallId: state.toolCallId,
+                timestamp: event.timestamp,
+                rawEvent: event.rawEvent
+            ))
+        }
+        toolState = nil
+        if mode == .tool {
+            mode = nil
+        }
+    }
+
+    private func closePending(_ event: any AGUIEvent) {
+        closeText(event)
+        closeTool(event)
+    }
+
+    private func closeAllPendingState() {
+        if textState != nil || toolState != nil {
+            let finalEvent = RunFinishedEvent(
+                threadId: "",
+                runId: "",
+                timestamp: nil,
+                rawEvent: nil
+            )
+            closePending(finalEvent)
         }
     }
 }
