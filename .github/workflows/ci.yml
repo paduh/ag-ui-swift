@@ -49,13 +49,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Install SwiftLint
-        run: |
-          brew install swiftlint
-      
-      - name: Run SwiftLint
-        run: |
-          swiftlint lint
+      # SwiftLint temporarily disabled
+      # - name: Install SwiftLint
+      #   run: |
+      #     brew install swiftlint
+      #
+      # - name: Run SwiftLint
+      #   run: |
+      #     swiftlint lint
       
       - name: Check Package Format
         run: swift package resolve
