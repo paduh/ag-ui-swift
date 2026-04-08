@@ -114,6 +114,9 @@ public struct HttpAgent: Sendable {
     /// Default endpoint for agent runs.
     private let defaultEndpoint: String
 
+    /// Manager for agent subscribers.
+    private let subscriberManager: SubscriberManager
+
     /// Creates a new HTTP agent with a base URL.
     ///
     /// This convenience initializer creates an agent with default configuration.
@@ -146,6 +149,7 @@ public struct HttpAgent: Sendable {
         self.transport = HttpTransport(configuration: configuration)
         self.decoder = AGUIEventDecoder()
         self.defaultEndpoint = "/run"
+        self.subscriberManager = SubscriberManager()
     }
 
     /// Creates a new HTTP agent with custom HTTP client.
@@ -176,6 +180,7 @@ public struct HttpAgent: Sendable {
         )
         self.decoder = AGUIEventDecoder()
         self.defaultEndpoint = "/run"
+        self.subscriberManager = SubscriberManager()
     }
 
     /// Executes an agent run with the provided input.
@@ -265,5 +270,43 @@ public struct HttpAgent: Sendable {
         ).build()
 
         return try await run(input, endpoint: endpoint)
+    }
+
+    /// Subscribes to agent lifecycle events.
+    ///
+    /// Subscribers receive callbacks for run initialization, events, finalization,
+    /// and failures. They can also observe and mutate the agent's state and messages.
+    ///
+    /// - Parameter subscriber: The subscriber to register
+    /// - Returns: Subscription handle for unsubscribing
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// struct LoggingSubscriber: AgentSubscriber {
+    ///     func onRunInitialized(params: AgentSubscriberParams) async -> AgentStateMutation? {
+    ///         print("Run started")
+    ///         return nil
+    ///     }
+    ///
+    ///     func onEvent(params: AgentEventParams) async -> AgentStateMutation? {
+    ///         print("Event: \(type(of: params.event))")
+    ///         return nil
+    ///     }
+    /// }
+    ///
+    /// let agent = HttpAgent(baseURL: agentURL)
+    /// let subscription = await agent.subscribe(LoggingSubscriber())
+    ///
+    /// // Later, when done observing
+    /// await subscription.unsubscribe()
+    /// ```
+    ///
+    /// - SeeAlso: ``AgentSubscriber``, ``AgentSubscription``
+    public func subscribe(_ subscriber: any AgentSubscriber) async -> any AgentSubscription {
+        let id = await subscriberManager.subscribe(subscriber)
+        return DefaultAgentSubscription {
+            await self.subscriberManager.unsubscribe(id)
+        }
     }
 }
