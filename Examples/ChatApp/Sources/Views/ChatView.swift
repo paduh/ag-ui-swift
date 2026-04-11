@@ -1,0 +1,192 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2025 Perfect Aduh
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import SwiftUI
+
+struct ChatView: View {
+    @EnvironmentObject private var store: ChatAppStore
+
+    let state: ChatUIState
+    let onSend: (String) -> Void
+
+    @State private var messageText: String = ""
+
+    var body: some View {
+        let background = state.backgroundHex.flatMap { Color(hex: $0) }
+            ?? Color(UIColor.systemBackground)
+
+        Group {
+            if state.activeAgent == nil {
+                EmptyAgentView()
+            } else {
+                VStack(spacing: 0) {
+                    messageList(background: background)
+
+                    if let ephemeral = state.ephemeralMessage {
+                        EphemeralBanner(message: ephemeral)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+
+                    Divider()
+                    inputArea
+                }
+                .background(background)
+            }
+        }
+        .animation(.default, value: state.messages.count)
+        .animation(.default, value: state.ephemeralMessage?.id)
+    }
+
+    // MARK: - Sub-views
+
+    private func messageList(background: Color) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    ForEach(state.messages, id: \.id) { message in
+                        MessageBubbleView(message: message)
+                            .id(message.id)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 16)
+            }
+            .background(background.opacity(0.6))
+            .onChange(of: state.messages.last?.id) { id in
+                guard let id else { return }
+                withAnimation { proxy.scrollTo(id, anchor: .bottom) }
+            }
+        }
+    }
+
+    private var inputArea: some View {
+        VStack(spacing: 8) {
+            HStack(alignment: .bottom, spacing: 12) {
+                TextField("Type a message", text: $messageText, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(1 ... 6)
+                    .disabled(!state.isConnected || state.isLoading)
+
+                Button {
+                    let trimmed = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    onSend(trimmed)
+                    messageText = ""
+                } label: {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!state.isConnected || state.isLoading)
+            }
+
+            if state.isLoading {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Waiting for response…")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Cancel", role: .cancel, action: store.cancelStreaming)
+                }
+            }
+        }
+        .padding()
+        .background(Material.bar)
+    }
+}
+
+// MARK: - EphemeralBanner
+
+private struct EphemeralBanner: View {
+    let message: DisplayMessage
+
+    private var icon: String {
+        switch message.role {
+        case .toolCall: return "wrench.adjustable"
+        case .stepInfo: return "bolt.fill"
+        default: return "info.circle"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .foregroundStyle(.cyan)
+            Text(message.content)
+                .font(.footnote)
+                .foregroundStyle(.cyan)
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.accentColor.opacity(0.1))
+    }
+}
+
+// MARK: - EmptyAgentView
+
+private struct EmptyAgentView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.system(size: 48))
+                .foregroundStyle(.secondary)
+            Text("Select an agent")
+                .font(.headline)
+            Text("Choose or create an agent to begin chatting.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Color + Hex
+
+extension Color {
+    /// Creates a `Color` from a 6-character (`RRGGBB`) or 8-character (`RRGGBBAA`) hex string.
+    init?(hex: String) {
+        let cleaned = hex
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+        guard let value = UInt64(cleaned, radix: 16) else { return nil }
+        switch cleaned.count {
+        case 6:
+            let r = Double((value & 0xFF0000) >> 16) / 255
+            let g = Double((value & 0x00FF00) >> 8) / 255
+            let b = Double(value & 0x0000FF) / 255
+            self.init(red: r, green: g, blue: b)
+        case 8:
+            let r = Double((value & 0xFF00_0000) >> 24) / 255
+            let g = Double((value & 0x00FF_0000) >> 16) / 255
+            let b = Double((value & 0x0000_FF00) >> 8) / 255
+            let a = Double(value & 0x0000_00FF) / 255
+            self.init(red: r, green: g, blue: b, opacity: a)
+        default:
+            return nil
+        }
+    }
+}

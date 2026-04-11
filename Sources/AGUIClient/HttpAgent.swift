@@ -104,7 +104,7 @@ import Foundation
 ///
 /// `HttpAgent` is safe to use across multiple concurrent tasks. Each run
 /// creates an isolated stream with its own state.
-public struct HttpAgent: Sendable {
+public final class HttpAgent: AbstractAgent, @unchecked Sendable {
     /// The underlying HTTP transport.
     private let transport: HttpTransport
 
@@ -113,9 +113,6 @@ public struct HttpAgent: Sendable {
 
     /// Default endpoint for agent runs.
     private let defaultEndpoint: String
-
-    /// Manager for agent subscribers.
-    private let subscriberManager: SubscriberManager
 
     /// Creates a new HTTP agent with a base URL.
     ///
@@ -129,7 +126,10 @@ public struct HttpAgent: Sendable {
     /// let agent = HttpAgent(baseURL: URL(string: "https://agent.example.com")!)
     /// ```
     public init(baseURL: URL) {
-        self.init(configuration: HttpAgentConfiguration(baseURL: baseURL))
+        self.transport = HttpTransport(configuration: HttpAgentConfiguration(baseURL: baseURL))
+        self.decoder = AGUIEventDecoder()
+        self.defaultEndpoint = "/run"
+        super.init()
     }
 
     /// Creates a new HTTP agent with custom configuration.
@@ -149,7 +149,7 @@ public struct HttpAgent: Sendable {
         self.transport = HttpTransport(configuration: configuration)
         self.decoder = AGUIEventDecoder()
         self.defaultEndpoint = "/run"
-        self.subscriberManager = SubscriberManager()
+        super.init()
     }
 
     /// Creates a new HTTP agent with custom HTTP client.
@@ -180,7 +180,7 @@ public struct HttpAgent: Sendable {
         )
         self.decoder = AGUIEventDecoder()
         self.defaultEndpoint = "/run"
-        self.subscriberManager = SubscriberManager()
+        super.init()
     }
 
     /// Executes an agent run with the provided input.
@@ -272,41 +272,32 @@ public struct HttpAgent: Sendable {
         return try await run(input, endpoint: endpoint)
     }
 
-    /// Subscribes to agent lifecycle events.
+    // MARK: - AbstractAgent override
+
+    /// Returns a stream of raw AG-UI events by executing an HTTP POST to the agent endpoint.
     ///
-    /// Subscribers receive callbacks for run initialization, events, finalization,
-    /// and failures. They can also observe and mutate the agent's state and messages.
+    /// This override bridges `AbstractAgent.run(input:)` to the underlying
+    /// `HttpTransport`, allowing the `runAgent` pipeline to drive the HTTP request.
     ///
-    /// - Parameter subscriber: The subscriber to register
-    /// - Returns: Subscription handle for unsubscribing
-    ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// struct LoggingSubscriber: AgentSubscriber {
-    ///     func onRunInitialized(params: AgentSubscriberParams) async -> AgentStateMutation? {
-    ///         print("Run started")
-    ///         return nil
-    ///     }
-    ///
-    ///     func onEvent(params: AgentEventParams) async -> AgentStateMutation? {
-    ///         print("Event: \(type(of: params.event))")
-    ///         return nil
-    ///     }
-    /// }
-    ///
-    /// let agent = HttpAgent(baseURL: agentURL)
-    /// let subscription = await agent.subscribe(LoggingSubscriber())
-    ///
-    /// // Later, when done observing
-    /// await subscription.unsubscribe()
-    /// ```
-    ///
-    /// - SeeAlso: ``AgentSubscriber``, ``AgentSubscription``
-    public func subscribe(_ subscriber: any AgentSubscriber) async -> any AgentSubscription {
-        let id = await subscriberManager.subscribe(subscriber)
-        return DefaultAgentSubscription {
-            await self.subscriberManager.unsubscribe(id)
+    /// - Parameter input: The run agent input.
+    /// - Returns: An `AsyncThrowingStream` of AG-UI events from the server.
+    public override func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    let stream = try await self.transport.execute(
+                        endpoint: self.defaultEndpoint,
+                        input: input
+                    )
+                    let eventStream = EventStream(bytes: stream, decoder: self.decoder)
+                    for try await event in eventStream {
+                        continuation.yield(event)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
         }
     }
 }

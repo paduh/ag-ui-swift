@@ -38,6 +38,44 @@ public struct HttpAgentConfiguration: Sendable {
     /// Additional HTTP headers to include in requests.
     public var headers: [String: String]
 
+    /// When `true`, enables verbose pipeline logging.
+    ///
+    /// Default: `false`
+    public var debug: Bool
+
+    /// Bearer token for authentication.
+    ///
+    /// When set, automatically adds `Authorization: Bearer <token>` to ``headers``.
+    /// Setting to `nil` does not remove a manually added `Authorization` header.
+    ///
+    /// Default: `nil`
+    public var bearerToken: String? {
+        didSet {
+            if let token = bearerToken {
+                headers["Authorization"] = "Bearer \(token)"
+            }
+        }
+    }
+
+    /// API key value.
+    ///
+    /// When set, automatically adds the key to ``headers`` under ``apiKeyHeader``.
+    /// Setting to `nil` does not remove a manually added header.
+    ///
+    /// Default: `nil`
+    public var apiKey: String? {
+        didSet {
+            if let key = apiKey {
+                headers[apiKeyHeader] = key
+            }
+        }
+    }
+
+    /// Header name used when adding the ``apiKey``.
+    ///
+    /// Default: `"X-API-Key"`
+    public var apiKeyHeader: String
+
     /// Retry policy options.
     public enum RetryPolicy: Sendable {
         /// No retry on failure.
@@ -57,16 +95,22 @@ public struct HttpAgentConfiguration: Sendable {
     ///   - timeout: Request timeout in seconds (default: 120.0)
     ///   - retryPolicy: Retry policy for failures (default: .none)
     ///   - headers: Additional HTTP headers (default: empty)
+    ///   - debug: Enable verbose pipeline logging (default: false)
     public init(
         baseURL: URL,
         timeout: TimeInterval = 120.0,
         retryPolicy: RetryPolicy = .none,
-        headers: [String: String] = [:]
+        headers: [String: String] = [:],
+        debug: Bool = false
     ) {
         self.baseURL = baseURL
         self.timeout = timeout
         self.retryPolicy = retryPolicy
         self.headers = headers
+        self.debug = debug
+        self.bearerToken = nil
+        self.apiKey = nil
+        self.apiKeyHeader = "X-API-Key"
     }
 }
 
