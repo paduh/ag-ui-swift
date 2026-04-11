@@ -24,6 +24,7 @@
 
 import AGUIClient
 import AGUICore
+import AGUITools
 import Foundation
 
 /// Stateful AG-UI agent that automatically manages conversation history.
@@ -89,10 +90,13 @@ public final class StatefulAgUiAgent: Sendable {
     private let historyManager: ConversationHistoryManager
 
     /// Configuration for this agent.
-    private let config: StatefulAgUiAgentConfig
+    public let config: StatefulAgUiAgentConfig
 
     /// Actor for managing current state (thread-safe).
     private let stateManager: StateManager
+
+    /// Optional tool execution manager. Created when `config.toolRegistry` is set.
+    private let toolExecutionManager: ToolExecutionManager?
 
     /// Creates a new stateful agent with a base URL.
     ///
@@ -104,15 +108,24 @@ public final class StatefulAgUiAgent: Sendable {
     /// let agent = StatefulAgUiAgent(baseURL: URL(string: "https://agent.example.com")!)
     /// ```
     public init(baseURL: URL) {
-        var config = StatefulAgUiAgentConfig(baseURL: baseURL)
+        let config = StatefulAgUiAgentConfig(baseURL: baseURL)
         self.config = config
-        self.httpAgent = HttpAgent(configuration: HttpAgentConfiguration(
+        let agent = HttpAgent(configuration: HttpAgentConfiguration(
             baseURL: config.baseURL,
             timeout: config.timeout,
             headers: config.headers
         ))
+        self.httpAgent = agent
         self.historyManager = ConversationHistoryManager()
         self.stateManager = StateManager(initialState: config.initialState)
+        if let registry = config.toolRegistry {
+            self.toolExecutionManager = ToolExecutionManager(
+                toolRegistry: registry,
+                responseHandler: ClientToolResponseHandler(httpAgent: agent)
+            )
+        } else {
+            self.toolExecutionManager = nil
+        }
     }
 
     /// Creates a new stateful agent with custom configuration.
@@ -130,13 +143,22 @@ public final class StatefulAgUiAgent: Sendable {
     /// ```
     public init(configuration: StatefulAgUiAgentConfig) {
         self.config = configuration
-        self.httpAgent = HttpAgent(configuration: HttpAgentConfiguration(
+        let agent = HttpAgent(configuration: HttpAgentConfiguration(
             baseURL: configuration.baseURL,
             timeout: configuration.timeout,
             headers: configuration.headers
         ))
+        self.httpAgent = agent
         self.historyManager = ConversationHistoryManager()
         self.stateManager = StateManager(initialState: configuration.initialState)
+        if let registry = configuration.toolRegistry {
+            self.toolExecutionManager = ToolExecutionManager(
+                toolRegistry: registry,
+                responseHandler: ClientToolResponseHandler(httpAgent: agent)
+            )
+        } else {
+            self.toolExecutionManager = nil
+        }
     }
 
     /// Sends a chat message with automatic history management.
@@ -236,19 +258,65 @@ public final class StatefulAgUiAgent: Sendable {
             stateToUse = await stateManager.currentState()
         }
 
-        // Build the run input
-        let input = try RunAgentInput.builder()
+        // Build the base run input
+        let baseInput = try RunAgentInput.builder()
             .threadId(threadId)
             .runId("run_\(UUID().uuidString)")
             .messages(history)
             .state(stateToUse)
             .build()
 
-        // Execute the run and track assistant responses
-        let stream = try await httpAgent.run(input)
+        // Include tool definitions if a registry is configured
+        let inputWithTools: RunAgentInput
+        if let registry = config.toolRegistry {
+            let tools = await registry.allTools()
+            inputWithTools = RunAgentInput(
+                threadId: baseInput.threadId,
+                runId: baseInput.runId,
+                parentRunId: baseInput.parentRunId,
+                state: baseInput.state,
+                messages: baseInput.messages,
+                tools: tools,
+                context: config.context.isEmpty ? baseInput.context : config.context,
+                forwardedProps: baseInput.forwardedProps
+            )
+        } else {
+            inputWithTools = RunAgentInput(
+                threadId: baseInput.threadId,
+                runId: baseInput.runId,
+                parentRunId: baseInput.parentRunId,
+                state: baseInput.state,
+                messages: baseInput.messages,
+                tools: baseInput.tools,
+                context: config.context.isEmpty ? baseInput.context : config.context,
+                forwardedProps: baseInput.forwardedProps
+            )
+        }
+
+        // Execute the run
+        let rawStream = try await httpAgent.run(inputWithTools)
+
+        // Wrap through tool execution manager if present, otherwise pass through
+        let eventStream: AsyncThrowingStream<any AGUIEvent, Error>
+        if let manager = toolExecutionManager {
+            eventStream = await manager.processEventStream(
+                rawStream,
+                threadId: inputWithTools.threadId,
+                runId: inputWithTools.runId
+            )
+        } else {
+            eventStream = AsyncThrowingStream { continuation in
+                Task {
+                    do {
+                        for try await event in rawStream { continuation.yield(event) }
+                        continuation.finish()
+                    } catch { continuation.finish(throwing: error) }
+                }
+            }
+        }
 
         // Wrap the stream to track history and state updates
-        return trackHistoryAndState(stream: stream, threadId: threadId)
+        return trackHistoryAndState(stream: eventStream, threadId: threadId)
     }
 
     /// Retrieves the conversation history for a thread.
@@ -285,53 +353,136 @@ public final class StatefulAgUiAgent: Sendable {
 
     // MARK: - Private Helpers
 
-    /// Wraps an event stream to track assistant messages and state updates.
-    private func trackHistoryAndState(
-        stream: EventStream<URLSession.AsyncBytes>,
+    /// Wraps an event stream to track assistant messages, tool calls, and state updates.
+    private func trackHistoryAndState<S: AsyncSequence>(
+        stream: S,
         threadId: String
-    ) -> AsyncThrowingStream<any AGUIEvent, Error> {
+    ) -> AsyncThrowingStream<any AGUIEvent, Error> where S.Element == any AGUIEvent {
         AsyncThrowingStream { continuation in
             Task {
                 var currentAssistantMessage: AssistantMessage?
+                let patchApplicator = PatchApplicator()
+                let messageDecoder = MessageDecoder()
 
                 do {
                     for try await event in stream {
                         // Yield the event downstream
                         continuation.yield(event)
 
-                        // Track assistant messages and state
+                        // Track assistant messages, tool calls, and state
                         switch event {
+
+                        // MARK: Text messages
+
                         case let start as TextMessageStartEvent:
-                            // Start collecting assistant message
                             currentAssistantMessage = AssistantMessage(
                                 id: start.messageId,
-                                content: "",
-                                toolCalls: nil
+                                content: ""
                             )
 
                         case let content as TextMessageContentEvent:
-                            // Update the current assistant message content
-                            if var msg = currentAssistantMessage, msg.id == content.messageId {
+                            if let msg = currentAssistantMessage, msg.id == content.messageId {
                                 let updatedContent = (msg.content ?? "") + content.delta
-                                msg = AssistantMessage(
+                                currentAssistantMessage = AssistantMessage(
                                     id: msg.id,
                                     content: updatedContent,
                                     name: msg.name,
                                     toolCalls: msg.toolCalls
                                 )
-                                currentAssistantMessage = msg
                             }
 
                         case let end as TextMessageEndEvent:
-                            // Finalize and save the assistant message
                             if let msg = currentAssistantMessage, msg.id == end.messageId {
                                 await self.historyManager.append(message: msg, to: threadId)
                                 currentAssistantMessage = nil
                             }
 
+                        // MARK: Tool calls
+
+                        case let start as ToolCallStartEvent:
+                            let newCall = ToolCall(
+                                id: start.toolCallId,
+                                function: FunctionCall(name: start.toolCallName, arguments: "")
+                            )
+                            if let msg = currentAssistantMessage {
+                                var calls = msg.toolCalls ?? []
+                                calls.append(newCall)
+                                currentAssistantMessage = AssistantMessage(
+                                    id: msg.id,
+                                    content: msg.content,
+                                    name: msg.name,
+                                    toolCalls: calls
+                                )
+                            } else {
+                                currentAssistantMessage = AssistantMessage(
+                                    id: "asst_\(UUID().uuidString)",
+                                    content: nil,
+                                    toolCalls: [newCall]
+                                )
+                            }
+
+                        case let args as ToolCallArgsEvent:
+                            if let msg = currentAssistantMessage,
+                               let calls = msg.toolCalls,
+                               let idx = calls.firstIndex(where: { $0.id == args.toolCallId }) {
+                                let call = calls[idx]
+                                let updatedCall = ToolCall(
+                                    id: call.id,
+                                    function: FunctionCall(
+                                        name: call.function.name,
+                                        arguments: call.function.arguments + args.delta
+                                    )
+                                )
+                                var updatedCalls = calls
+                                updatedCalls[idx] = updatedCall
+                                currentAssistantMessage = AssistantMessage(
+                                    id: msg.id,
+                                    content: msg.content,
+                                    name: msg.name,
+                                    toolCalls: updatedCalls
+                                )
+                            }
+
+                        case let end as ToolCallEndEvent:
+                            // Save the current assistant message (with completed tool calls so far).
+                            // A new ToolCallStartEvent for a subsequent call will update it further,
+                            // but we persist the snapshot here so history is never lost.
+                            if let msg = currentAssistantMessage {
+                                _ = end // tool call ID not needed here
+                                await self.historyManager.append(message: msg, to: threadId)
+                            }
+
+                        case let result as ToolCallResultEvent:
+                            let toolMessage = ToolMessage(
+                                id: result.messageId,
+                                content: result.content,
+                                toolCallId: result.toolCallId
+                            )
+                            await self.historyManager.append(message: toolMessage, to: threadId)
+
+                        // MARK: State events
+
                         case let snapshot as StateSnapshotEvent:
-                            // Update current state
                             await self.stateManager.updateState(snapshot.snapshot)
+
+                        case let delta as StateDeltaEvent:
+                            let currentState = await self.stateManager.currentState()
+                            if let newState = try? patchApplicator.apply(patch: delta.delta, to: currentState) {
+                                await self.stateManager.updateState(newState)
+                            }
+
+                        case let msgSnapshot as MessagesSnapshotEvent:
+                            // Replace the thread history with the authoritative snapshot.
+                            if let rawArray = try? JSONSerialization.jsonObject(with: msgSnapshot.messages) as? [[String: Any]] {
+                                let msgs: [any Message] = rawArray.compactMap { dict in
+                                    guard let data = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
+                                    return try? messageDecoder.decode(data)
+                                }
+                                await self.historyManager.clear(threadId: threadId)
+                                for msg in msgs {
+                                    await self.historyManager.append(message: msg, to: threadId)
+                                }
+                            }
 
                         default:
                             break

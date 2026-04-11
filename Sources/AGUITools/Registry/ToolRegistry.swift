@@ -116,6 +116,13 @@ public protocol ToolRegistry: Sendable {
 
     /// Clears execution statistics for all tools.
     func clearStats() async
+
+    /// Gets all registered tool executors.
+    ///
+    /// Returns a snapshot of the current executor map, keyed by tool name.
+    ///
+    /// - Returns: Map of tool name to executor
+    func getAllExecutors() async -> [String: any ToolExecutor]
 }
 
 // MARK: - ToolRegistryError
@@ -251,6 +258,10 @@ public actor DefaultToolRegistry: ToolRegistry {
         for (_, stat) in stats {
             stat.clear()
         }
+    }
+
+    public func getAllExecutors() async -> [String: any ToolExecutor] {
+        executors
     }
 }
 

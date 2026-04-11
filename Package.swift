@@ -35,7 +35,7 @@ let package = Package(
             dependencies: ["AGUICore"]),
         .target(
             name: "AGUIAgentSDK",
-            dependencies: ["AGUICore", "AGUIClient"]),
+            dependencies: ["AGUICore", "AGUIClient", "AGUITools"]),
         .target(
             name: "AGUITools",
             dependencies: ["AGUICore"]),
@@ -47,7 +47,7 @@ let package = Package(
             dependencies: ["AGUIClient"]),
         .testTarget(
             name: "AGUIAgentSDKTests",
-            dependencies: ["AGUIAgentSDK"]),
+            dependencies: ["AGUIAgentSDK", "AGUITools"]),
         .testTarget(
             name: "AGUIToolsTests",
             dependencies: ["AGUITools"]),

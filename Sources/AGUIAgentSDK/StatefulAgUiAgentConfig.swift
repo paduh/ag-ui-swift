@@ -24,6 +24,7 @@
 
 import AGUIClient
 import AGUICore
+import AGUITools
 import Foundation
 
 /// Configuration for ``StatefulAgUiAgent``.
@@ -84,6 +85,55 @@ public struct StatefulAgUiAgentConfig: Sendable {
     /// Default: `[:]`
     public var headers: [String: String]
 
+    /// Optional tool registry.
+    ///
+    /// When set, tool definitions are automatically included in every
+    /// `RunAgentInput` and tool calls from the agent are executed automatically.
+    ///
+    /// Default: `nil`
+    public var toolRegistry: (any ToolRegistry)?
+
+    /// Persistent user ID for message attribution.
+    ///
+    /// Default: `nil`
+    public var userId: String?
+
+    /// Context items included with every request.
+    ///
+    /// Default: `[]`
+    public var context: [Context]
+
+    /// Bearer token for authentication.
+    ///
+    /// When set, automatically adds an `Authorization: Bearer <token>` header
+    /// to every request.
+    ///
+    /// Default: `nil`
+    public var bearerToken: String? {
+        didSet {
+            if let token = bearerToken {
+                headers["Authorization"] = "Bearer \(token)"
+            }
+        }
+    }
+
+    /// API key value.
+    ///
+    /// Used together with ``apiKeyHeader`` to add an API key header to requests.
+    ///
+    /// Default: `nil`
+    public var apiKey: String?
+
+    /// Header name for the API key.
+    ///
+    /// Default: `"X-API-Key"`
+    public var apiKeyHeader: String
+
+    /// When `true`, enables verbose pipeline logging.
+    ///
+    /// Default: `false`
+    public var debug: Bool
+
     /// Creates a new stateful agent configuration.
     ///
     /// - Parameter baseURL: The base URL of the AG-UI agent server
@@ -94,5 +144,12 @@ public struct StatefulAgUiAgentConfig: Sendable {
         self.systemPrompt = nil
         self.timeout = 120.0
         self.headers = [:]
+        self.toolRegistry = nil
+        self.userId = nil
+        self.context = []
+        self.bearerToken = nil
+        self.apiKey = nil
+        self.apiKeyHeader = "X-API-Key"
+        self.debug = false
     }
 }
