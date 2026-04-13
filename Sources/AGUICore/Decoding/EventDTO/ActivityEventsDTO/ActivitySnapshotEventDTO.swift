@@ -39,14 +39,14 @@ struct ActivitySnapshotEventDTO {
             )
         }
 
-        guard let messageId = jsonObject["messageId"] as? String else {
+        guard let messageId = jsonObject["messageId"] as? String ?? jsonObject["message_id"] as? String else {
             throw DecodingError.keyNotFound(
                 CodingKeys.messageId,
                 DecodingError.Context(codingPath: [], debugDescription: "Missing messageId field")
             )
         }
 
-        guard let activityType = jsonObject["activityType"] as? String else {
+        guard let activityType = jsonObject["activityType"] as? String ?? jsonObject["activity_type"] as? String else {
             throw DecodingError.keyNotFound(
                 CodingKeys.activityType,
                 DecodingError.Context(codingPath: [], debugDescription: "Missing activityType field")
@@ -66,12 +66,17 @@ struct ActivitySnapshotEventDTO {
         // Extract timestamp using shared helper
         let timestamp = try EventDecodingHelpers.extractTimestamp(from: jsonObject)
 
-        // Convert content value to JSON data
+        // Convert content value to JSON data.
+        // When the server sends content as a JSON string (e.g. Python SDK), re-parse it
+        // so downstream consumers receive the unwrapped JSON object/array bytes.
         let contentData: Data
         if contentValue is NSNull {
             contentData = Data("null".utf8)
         } else if contentValue is [Any] || contentValue is [String: Any] {
             contentData = try JSONSerialization.data(withJSONObject: contentValue, options: [])
+        } else if let jsonString = contentValue as? String, let stringData = jsonString.data(using: .utf8) {
+            // Content was double-encoded as a JSON string — unwrap it.
+            contentData = stringData
         } else {
             let encoder = JSONEncoder()
             contentData = try encoder.encode(JSONPrimitiveWrapper(value: contentValue))

@@ -333,7 +333,7 @@ final class ChatAppStore: ObservableObject {
                 guard let self else { return }
                 do {
                     let registry = try await ChatAppToolRegistry.makeRegistry { [weak self] hex in
-                        await MainActor.run { self?.state.backgroundHex = hex }
+                        await MainActor.run { self?.state.backgroundHex = hex }  // nil = reset to default
                     }
                     var configWithTools = baseConfig
                     configWithTools.toolRegistry = registry

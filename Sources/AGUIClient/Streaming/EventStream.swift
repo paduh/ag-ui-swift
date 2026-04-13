@@ -133,8 +133,14 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
         /// - Returns: Next event, or nil when stream ends
         /// - Throws: Network errors or critical decoding failures
         public mutating func next() async throws -> (any AGUIEvent)? {
-            // Return queued events first
+            // Return queued events first.
+            // Yield before returning a buffered event so callers on the main actor
+            // give the run loop a chance to render UI between events. Without this,
+            // a burst of SSE data arriving in one network packet fills the queue and
+            // all events are consumed synchronously — SwiftUI never sees the
+            // intermediate streaming states (typing dots, streaming cursor).
             guard eventQueue.isEmpty else {
+                await Task.yield()
                 return eventQueue.removeFirst()
             }
 

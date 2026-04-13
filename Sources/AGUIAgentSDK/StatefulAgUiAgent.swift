@@ -122,7 +122,7 @@ public final class StatefulAgUiAgent: Sendable {
         if let registry = config.toolRegistry {
             self.toolExecutionManager = ToolExecutionManager(
                 toolRegistry: registry,
-                responseHandler: ClientToolResponseHandler(httpAgent: agent)
+                responseHandler: ClientToolResponseHandler(httpAgent: agent, endpoint: config.endpoint)
             )
         } else {
             self.toolExecutionManager = nil
@@ -156,7 +156,7 @@ public final class StatefulAgUiAgent: Sendable {
         if let registry = configuration.toolRegistry {
             self.toolExecutionManager = ToolExecutionManager(
                 toolRegistry: registry,
-                responseHandler: ClientToolResponseHandler(httpAgent: agent)
+                responseHandler: ClientToolResponseHandler(httpAgent: agent, endpoint: configuration.endpoint)
             )
         } else {
             self.toolExecutionManager = nil
