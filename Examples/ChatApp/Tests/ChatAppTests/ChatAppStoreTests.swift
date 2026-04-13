@@ -360,6 +360,59 @@ final class ChatAppStoreTests: XCTestCase {
         XCTAssertTrue(pendingMsg?.isSending == true)
     }
 
+    // MARK: - Phase 2A: ToolCallArgsEvent — args preview in ephemeral slot
+
+    func test_toolCallArgs_updatesEphemeralContent() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
+        store.processEvent(ToolCallArgsEvent(toolCallId: "tc1", delta: "{\"query\":\"swift\"}"))
+
+        let banner = store.state.ephemeralSlots[.toolCall]
+        XCTAssertNotNil(banner)
+        XCTAssertEqual(banner?.content, "{\"query\":\"swift\"}")
+    }
+
+    func test_toolCallArgs_multipleDeltas_concatenate() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
+        store.processEvent(ToolCallArgsEvent(toolCallId: "tc1", delta: "{\"query\":"))
+        store.processEvent(ToolCallArgsEvent(toolCallId: "tc1", delta: "\"swift\""))
+        store.processEvent(ToolCallArgsEvent(toolCallId: "tc1", delta: "}"))
+
+        let banner = store.state.ephemeralSlots[.toolCall]
+        XCTAssertEqual(banner?.content, "{\"query\":\"swift\"}")
+    }
+
+    func test_toolCallArgs_truncatesAt80Chars() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
+        let longArgs = String(repeating: "x", count: 90)
+        store.processEvent(ToolCallArgsEvent(toolCallId: "tc1", delta: longArgs))
+
+        let banner = store.state.ephemeralSlots[.toolCall]
+        XCTAssertEqual(banner?.content, String(repeating: "x", count: 80) + "…")
+    }
+
+    func test_toolCallEnd_clearsArgBuffer() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
+        store.processEvent(ToolCallArgsEvent(toolCallId: "tc1", delta: "{\"query\":\"test\"}"))
+
+        XCTAssertNotNil(store.toolCallArgBuffer["tc1"])
+
+        store.processEvent(ToolCallEndEvent(toolCallId: "tc1"))
+
+        XCTAssertNil(store.toolCallArgBuffer["tc1"])
+    }
+
     // MARK: - Agent lifecycle
 
     func test_presentCreateAgent_setsDraft() {

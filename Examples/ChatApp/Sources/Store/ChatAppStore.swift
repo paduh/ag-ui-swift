@@ -33,12 +33,14 @@ import Foundation
 /// All `@Published` mutations run on the main actor. The streaming
 /// `Task` suspends the main actor only during network waits, so UI
 /// updates remain snappy.
+///
+/// Event processing logic lives in `ChatAppStore+EventProcessing.swift`.
 @MainActor
 final class ChatAppStore: ObservableObject {
 
     // MARK: - Published state
 
-    @Published private(set) var state: ChatUIState = .init()
+    @Published var state: ChatUIState = .init()
     @Published private(set) var agents: [AgentConfig] = []
     @Published var formMode: AgentFormMode?
     @Published var draft: AgentDraft = .init()
@@ -49,11 +51,16 @@ final class ChatAppStore: ObservableObject {
     private var agent: StatefulAgUiAgent?
     private var streamingTask: Task<Void, Never>?
     /// messageId → index in `state.messages` for O(1) delta updates.
-    private var streamingMessageIndices: [String: Int] = [:]
+    var streamingMessageIndices: [String: Int] = [:]
     /// Per-slot dismiss tasks; keyed so TOOL_CALL and STEP cancel independently.
     var ephemeralDismissTasks: [EphemeralSlot: Task<Void, Never>] = [:]
     /// The `id` of the optimistic user message currently awaiting agent confirmation.
     var pendingUserMessageId: String?
+    /// Buffered tool-call arguments keyed by toolCallId.
+    ///
+    /// Populated on `ToolCallStartEvent`, appended on `ToolCallArgsEvent`,
+    /// removed on `ToolCallEndEvent`. Marked `internal` for test inspection.
+    var toolCallArgBuffer: [String: String] = [:]
 
     // MARK: - Persistence
 
@@ -139,6 +146,7 @@ final class ChatAppStore: ObservableObject {
         for task in ephemeralDismissTasks.values { task.cancel() }
         ephemeralDismissTasks.removeAll()
         state.ephemeralSlots.removeAll()
+        toolCallArgBuffer.removeAll()
         // Clear the optimistic pending message.
         if let pendingId = pendingUserMessageId {
             state.messages.removeAll { $0.id == pendingId }
@@ -156,6 +164,7 @@ final class ChatAppStore: ObservableObject {
         guard id != state.activeAgent?.id else { return }
         cancelStreaming()
         streamingMessageIndices.removeAll()
+        toolCallArgBuffer.removeAll()
 
         if let id, let config = agents.first(where: { $0.id == id }) {
             buildAgent(from: config)
@@ -221,98 +230,6 @@ final class ChatAppStore: ObservableObject {
         }
     }
 
-    // MARK: - Event processing
-
-    /// Processes a single AG-UI event and updates `state` accordingly.
-    ///
-    /// `internal` so tests can inject events directly without a live agent.
-    func processEvent(_ event: any AGUIEvent) {
-        switch event {
-
-        // MARK: Text messages (streaming assembly)
-
-        case let e as TextMessageStartEvent:
-            let msg = DisplayMessage(
-                id: e.messageId,
-                role: .assistant,
-                content: "",
-                timestamp: .now,
-                isStreaming: true
-            )
-            streamingMessageIndices[e.messageId] = state.messages.count
-            state.messages.append(msg)
-
-        case let e as TextMessageContentEvent:
-            if let idx = streamingMessageIndices[e.messageId] {
-                state.messages[idx].content += e.delta
-            }
-
-        case let e as TextMessageEndEvent:
-            if let idx = streamingMessageIndices[e.messageId] {
-                state.messages[idx].isStreaming = false
-                streamingMessageIndices.removeValue(forKey: e.messageId)
-            }
-
-        // MARK: Tool calls (ephemeral .toolCall slot)
-
-        case let e as ToolCallStartEvent:
-            showEphemeral(
-                DisplayMessage(
-                    id: e.toolCallId,
-                    role: .toolCall(name: e.toolCallName),
-                    content: "Calling \(e.toolCallName)…",
-                    timestamp: .now
-                ),
-                slot: .toolCall
-            )
-
-        case is ToolCallEndEvent:
-            scheduleEphemeralDismissal(for: .toolCall)
-
-        // MARK: Steps (ephemeral .step slot)
-
-        case let e as StepStartedEvent:
-            showEphemeral(
-                DisplayMessage(
-                    id: UUID().uuidString,
-                    role: .stepInfo(name: e.stepName),
-                    content: e.stepName,
-                    timestamp: .now
-                ),
-                slot: .step
-            )
-
-        case is StepFinishedEvent:
-            // Step dismisses immediately — no scheduled delay.
-            ephemeralDismissTasks[.step]?.cancel()
-            ephemeralDismissTasks.removeValue(forKey: .step)
-            state.ephemeralSlots[.step] = nil
-
-        // MARK: Run lifecycle
-
-        case let e as RunErrorEvent:
-            state.error = e.error.message
-            appendSupplemental(SupplementalMessage(
-                id: UUID().uuidString,
-                kind: .error(message: e.error.message),
-                timestamp: .now
-            ))
-
-        // MARK: Messages snapshot (authoritative history replacement)
-
-        case let e as MessagesSnapshotEvent:
-            rebuildMessages(from: e)
-
-        // MARK: Custom events (e.g. change_background tool)
-
-        case let e as CustomEvent:
-            handleCustomEvent(e)
-
-        default:
-            break
-        }
-    }
-
     // MARK: - Testing support
 
     /// Resets state and configures an active agent for unit tests.
@@ -320,6 +237,7 @@ final class ChatAppStore: ObservableObject {
         state = ChatUIState(isConnected: true, activeAgent: config)
         streamingMessageIndices = [:]
         ephemeralDismissTasks.removeAll()
+        toolCallArgBuffer.removeAll()
         pendingUserMessageId = nil
     }
 
@@ -335,8 +253,9 @@ final class ChatAppStore: ObservableObject {
 
     private func buildAgent(from config: AgentConfig) {
         do {
-            let agentConfig = try config.toStatefulAgentConfig()
-            agent = StatefulAgUiAgent(configuration: agentConfig)
+            let baseConfig = try config.toStatefulAgentConfig()
+            // Create the agent immediately (no tool registry yet) so the UI is usable right away.
+            agent = StatefulAgUiAgent(configuration: baseConfig)
             state = ChatUIState(isConnected: true, activeAgent: config)
             // Phase 1B: Record the connection as an in-chat supplemental message.
             appendSupplemental(SupplementalMessage(
@@ -344,90 +263,33 @@ final class ChatAppStore: ObservableObject {
                 kind: .connection(agentName: config.name),
                 timestamp: .now
             ))
+
+            // Phase 2B: Asynchronously enhance the agent with client-side tool executors.
+            // The agent remains functional during setup; tools are added once ready.
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let registry = try await ChatAppToolRegistry.makeRegistry { [weak self] hex in
+                        await MainActor.run { self?.state.backgroundHex = hex }
+                    }
+                    var configWithTools = baseConfig
+                    configWithTools.toolRegistry = registry
+                    self.agent = StatefulAgUiAgent(configuration: configWithTools)
+                } catch {
+                    // Tool registry setup failed — agent continues without client-side tools.
+                }
+            }
         } catch {
             state.error = error.localizedDescription
         }
     }
 
-    private func finishStreamingMessages() {
+    func finishStreamingMessages() {
         for idx in state.messages.indices where state.messages[idx].isStreaming {
             state.messages[idx].isStreaming = false
         }
         streamingMessageIndices.removeAll()
-    }
-
-    /// Sets the ephemeral message for `slot`, cancelling any pending dismissal for that slot.
-    private func showEphemeral(_ message: DisplayMessage, slot: EphemeralSlot) {
-        ephemeralDismissTasks[slot]?.cancel()
-        ephemeralDismissTasks.removeValue(forKey: slot)
-        state.ephemeralSlots[slot] = message
-    }
-
-    /// Schedules dismissal of `slot` after its `dismissDelay`.
-    ///
-    /// For slots with `dismissDelay == nil` (i.e. `.step`), this is a no-op —
-    /// those slots are cleared synchronously in the `StepFinishedEvent` case.
-    private func scheduleEphemeralDismissal(for slot: EphemeralSlot) {
-        guard let delay = slot.dismissDelay else { return }
-        ephemeralDismissTasks[slot]?.cancel()
-        ephemeralDismissTasks[slot] = Task { [weak self] in
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled else { return }
-            self?.state.ephemeralSlots[slot] = nil
-            self?.ephemeralDismissTasks.removeValue(forKey: slot)
-        }
-    }
-
-    /// Phase 1B: Appends a supplemental (system) message to the chat list.
-    private func appendSupplemental(_ message: SupplementalMessage) {
-        state.supplementalMessages.append(message)
-    }
-
-    private func rebuildMessages(from event: MessagesSnapshotEvent) {
-        guard let rawArray = try? event.parsedMessages() as? [[String: Any]] else { return }
-        var rebuilt = rawArray.compactMap { displayMessage(from: $0) }
-
-        // Phase 1C: Correlate the pending optimistic user message.
-        if let pendingId = pendingUserMessageId,
-           let pending = state.messages.first(where: { $0.id == pendingId }) {
-            let isEchoed = rebuilt.contains { $0.role == .user && $0.content == pending.content }
-            if isEchoed {
-                // Server confirmed — clear the pending reference.
-                pendingUserMessageId = nil
-            } else {
-                // Not yet in snapshot — keep showing the optimistic message at the top.
-                rebuilt.insert(pending, at: 0)
-            }
-        }
-
-        state.messages = rebuilt
-        streamingMessageIndices.removeAll()
-    }
-
-    private func displayMessage(from dict: [String: Any]) -> DisplayMessage? {
-        guard
-            let id = dict["id"] as? String,
-            let role = dict["role"] as? String
-        else { return nil }
-
-        let content = dict["content"] as? String ?? ""
-
-        let displayRole: DisplayMessageRole
-        switch role {
-        case "user": displayRole = .user
-        case "assistant": displayRole = .assistant
-        case "system": displayRole = .system
-        default: return nil  // skip tool/activity messages in the display list
-        }
-        return DisplayMessage(id: id, role: displayRole, content: content, timestamp: .now)
-    }
-
-    private func handleCustomEvent(_ event: CustomEvent) {
-        guard event.customType == "change_background",
-              let payload = try? event.parsedData() as? [String: Any],
-              let hex = payload["hex"] as? String ?? payload["color"] as? String
-        else { return }
-        state.backgroundHex = hex
+        toolCallArgBuffer.removeAll()
     }
 
     // MARK: - Persistence helpers
