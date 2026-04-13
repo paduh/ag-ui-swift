@@ -63,6 +63,10 @@ final class ChatAppStore: ObservableObject {
     var toolCallArgBuffer: [String: String] = [:]
     /// Phase 4: Manages raw JSON state for each A2UI surface.
     let surfaceManager = A2UISurfaceStateManager()
+    /// Phase 5: Drives the ClawgUI enterprise pairing state machine.
+    let pairingManager: ClawgUIPairingManager
+    /// Phase 5: Config awaiting agent build after successful ClawgUI pairing.
+    private var pendingAgentConfig: AgentConfig?
 
     // MARK: - Persistence
 
@@ -74,12 +78,16 @@ final class ChatAppStore: ObservableObject {
 
     // MARK: - Init
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, pairingManager: ClawgUIPairingManager? = nil) {
         self.defaults = defaults
+        // Default-parameter expressions cannot call @MainActor inits in Swift 6;
+        // create the manager in the body where main-actor isolation is guaranteed.
+        self.pairingManager = pairingManager ?? ClawgUIPairingManager()
         agents = Self.loadAgents(from: defaults)
+        setupPairingCallbacks()
         if let id = defaults.string(forKey: Self.activeAgentIdKey),
            let config = agents.first(where: { $0.id == id }) {
-            buildAgent(from: config)
+            startAgentOrPairing(config: config)
         }
     }
 
@@ -168,9 +176,12 @@ final class ChatAppStore: ObservableObject {
         streamingMessageIndices.removeAll()
         toolCallArgBuffer.removeAll()
         surfaceManager.reset()
+        // Phase 5: Cancel any in-flight pairing when switching agents.
+        pairingManager.reset()
+        pendingAgentConfig = nil
 
         if let id, let config = agents.first(where: { $0.id == id }) {
-            buildAgent(from: config)
+            startAgentOrPairing(config: config)
         } else {
             agent = nil
             state = ChatUIState()
@@ -222,6 +233,8 @@ final class ChatAppStore: ObservableObject {
 
         if state.activeAgent?.id == id {
             cancelStreaming()
+            pairingManager.reset()
+            pendingAgentConfig = nil
             if let next = agents.first {
                 buildAgent(from: next)
                 saveActiveAgentId(next.id)
@@ -231,6 +244,24 @@ final class ChatAppStore: ObservableObject {
                 saveActiveAgentId(nil)
             }
         }
+    }
+
+    // MARK: - ClawgUI pairing (Phase 5)
+
+    /// Called when the user taps "I've Authorized" in the pairing sheet.
+    func confirmPairing() {
+        pairingManager.confirmApproval()
+    }
+
+    /// Called when the user taps "Retry" in the pairing sheet.
+    func retryPairing() {
+        Task { await pairingManager.retryConnection() }
+    }
+
+    /// Called when the user cancels the pairing sheet.
+    func resetPairing() {
+        pairingManager.reset()
+        pendingAgentConfig = nil
     }
 
     // MARK: - Testing support
@@ -243,6 +274,8 @@ final class ChatAppStore: ObservableObject {
         toolCallArgBuffer.removeAll()
         pendingUserMessageId = nil
         surfaceManager.reset()
+        pairingManager.reset()
+        pendingAgentConfig = nil
     }
 
     /// Injects an optimistic user message for unit tests without going through `sendMessage`.
@@ -254,6 +287,32 @@ final class ChatAppStore: ObservableObject {
     }
 
     // MARK: - Private helpers
+
+    /// Routes to the ClawgUI pairing flow or directly builds the agent, depending on the URL.
+    private func startAgentOrPairing(config: AgentConfig) {
+        if ClawgUIDetector.isClawgUIEndpoint(config.url) {
+            pendingAgentConfig = config
+            Task { [weak self] in
+                guard let self, let url = URL(string: config.url) else { return }
+                await self.pairingManager.initiatePairing(agentURL: url)
+            }
+        } else {
+            buildAgent(from: config)
+        }
+    }
+
+    /// Wires up `pairingManager` callbacks so state changes are mirrored into `ChatUIState`
+    /// and a successful pairing triggers agent construction.
+    private func setupPairingCallbacks() {
+        pairingManager.onStateChange = { [weak self] pairingState in
+            self?.state.clawgUIPairingState = pairingState
+        }
+        pairingManager.onPairingSuccess = { [weak self] in
+            guard let self, let config = self.pendingAgentConfig else { return }
+            self.pendingAgentConfig = nil
+            self.buildAgent(from: config)
+        }
+    }
 
     private func buildAgent(from config: AgentConfig) {
         do {

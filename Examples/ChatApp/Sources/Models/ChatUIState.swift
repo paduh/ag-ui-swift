@@ -46,6 +46,11 @@ struct ChatUIState: Sendable {
     /// Populated by `ActivitySnapshotEvent` and updated on each `ActivityDeltaEvent`.
     /// Surfaces are cleared when the active agent changes.
     var a2uiSurfaces: [String: Data]
+    /// Phase 5: Current position in the ClawgUI enterprise pairing state machine.
+    ///
+    /// Non-idle values cause `RootView` to present the pairing sheet.
+    /// Reset to `.idle` when the active agent changes or the user cancels.
+    var clawgUIPairingState: ClawgUIPairingState
 
     init(
         messages: [DisplayMessage] = [],
@@ -56,7 +61,8 @@ struct ChatUIState: Sendable {
         error: String? = nil,
         backgroundHex: String? = nil,
         activeAgent: AgentConfig? = nil,
-        a2uiSurfaces: [String: Data] = [:]
+        a2uiSurfaces: [String: Data] = [:],
+        clawgUIPairingState: ClawgUIPairingState = .idle
     ) {
         self.messages = messages
         self.ephemeralSlots = ephemeralSlots
@@ -67,6 +73,7 @@ struct ChatUIState: Sendable {
         self.backgroundHex = backgroundHex
         self.activeAgent = activeAgent
         self.a2uiSurfaces = a2uiSurfaces
+        self.clawgUIPairingState = clawgUIPairingState
     }
 
     /// Unified list of all rows shown in the chat message list.
