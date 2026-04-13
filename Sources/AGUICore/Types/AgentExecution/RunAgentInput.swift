@@ -176,8 +176,10 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         runId = try container.decode(String.self, forKey: .runId)
         parentRunId = try container.decodeIfPresent(String.self, forKey: .parentRunId)
 
-        // Decode state as arbitrary JSON object and convert to Data
-        if container.contains(.state) {
+        // Decode state as arbitrary JSON object and convert to Data.
+        // The encoder writes `null` when state is an empty `{}` object, so treat
+        // an explicit null here as equivalent to "no state" (empty object).
+        if container.contains(.state), !(try container.decodeNil(forKey: .state)) {
             let stateContainer = try container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .state)
             let stateObject = try stateContainer.decodeJSONObject()
             state = try JSONSerialization.data(withJSONObject: stateObject)
@@ -221,10 +223,17 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         try container.encode(runId, forKey: .runId)
         try container.encodeIfPresent(parentRunId, forKey: .parentRunId)
 
-        // Encode state as arbitrary JSON object
+        // Encode state: send null when empty so backends treat it as "no state".
+        // An empty {} object causes some adapters (e.g. claude-agent-sdk) to
+        // spin up unnecessary state-management infrastructure. null is the
+        // correct sentinel for "caller has no state to manage."
         let stateObject = try JSONSerialization.jsonObject(with: state)
-        var stateContainer = container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .state)
-        try stateContainer.encodeJSONObject(stateObject)
+        if let stateDict = stateObject as? [String: Any], stateDict.isEmpty {
+            try container.encodeNil(forKey: .state)
+        } else {
+            var stateContainer = container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .state)
+            try stateContainer.encodeJSONObject(stateObject)
+        }
 
         // Encode messages as polymorphic array using MessageEncoder
         let messageEncoder = MessageEncoder()

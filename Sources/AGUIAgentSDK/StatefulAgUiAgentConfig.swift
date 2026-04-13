@@ -134,6 +134,15 @@ public struct StatefulAgUiAgentConfig: Sendable {
     /// Default: `false`
     public var debug: Bool
 
+    /// The endpoint path appended to `baseURL` for each run request.
+    ///
+    /// Override this when the agent server exposes its AG-UI endpoint at a
+    /// non-standard path. For example, the Claude Agent SDK demo server uses
+    /// `/agentic_chat` instead of the default `/run`.
+    ///
+    /// Default: `"/run"`
+    public var endpoint: String
+
     /// Creates a new stateful agent configuration.
     ///
     /// - Parameter baseURL: The base URL of the AG-UI agent server
@@ -151,5 +160,6 @@ public struct StatefulAgUiAgentConfig: Sendable {
         self.apiKey = nil
         self.apiKeyHeader = "X-API-Key"
         self.debug = false
+        self.endpoint = "/run"
     }
 }

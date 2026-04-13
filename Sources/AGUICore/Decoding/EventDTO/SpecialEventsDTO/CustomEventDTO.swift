@@ -37,51 +37,49 @@ struct CustomEventDTO {
             )
         }
 
-        guard let customType = jsonObject["customType"] as? String else {
-            if jsonObject["customType"] == nil {
+        // AG-UI protocol wire format uses "name" (not "customType")
+        guard let customType = jsonObject["name"] as? String else {
+            if jsonObject["name"] == nil {
                 throw DecodingError.keyNotFound(
                     CodingKeys.customType,
-                    DecodingError.Context(codingPath: [], debugDescription: "Missing customType field")
+                    DecodingError.Context(codingPath: [], debugDescription: "Missing key 'name' at root")
                 )
             } else {
                 throw DecodingError.typeMismatch(
                     String.self,
-                    DecodingError.Context(codingPath: [CodingKeys.customType], debugDescription: "Expected String for customType")
+                    DecodingError.Context(codingPath: [CodingKeys.customType], debugDescription: "Expected String for name")
                 )
             }
         }
 
-        guard let dataValue = jsonObject["data"] else {
-            throw DecodingError.keyNotFound(
-                CodingKeys.data,
-                DecodingError.Context(codingPath: [], debugDescription: "Missing data field")
-            )
-        }
+        // AG-UI protocol wire format uses "value" (not "data"); value is optional
+        let dataValue = jsonObject["value"]
 
         // Extract timestamp using shared helper
         let timestamp = try EventDecodingHelpers.extractTimestamp(from: jsonObject)
 
-        // Convert data value to JSON data
-        // Use JSONEncoder for primitives, JSONSerialization for collections
+        // Convert value to JSON data; treat absent/null value as empty object {}
         let eventData: Data
-        if dataValue is NSNull {
-            // NSNull needs special handling - encode as null JSON
-            eventData = Data("null".utf8)
-        } else if dataValue is [Any] || dataValue is [String: Any] {
-            // Collections can use JSONSerialization
-            eventData = try JSONSerialization.data(withJSONObject: dataValue, options: [])
+        if let dataValue {
+            if dataValue is NSNull {
+                eventData = Data("null".utf8)
+            } else if dataValue is [Any] || dataValue is [String: Any] {
+                eventData = try JSONSerialization.data(withJSONObject: dataValue, options: [])
+            } else {
+                let encoder = JSONEncoder()
+                eventData = try encoder.encode(JSONPrimitiveWrapper(value: dataValue))
+            }
         } else {
-            // Primitives need JSONEncoder
-            let encoder = JSONEncoder()
-            eventData = try encoder.encode(JSONPrimitiveWrapper(value: dataValue))
+            eventData = Data("{}".utf8)
         }
 
         return CustomEventDTO(customType: customType, data: eventData, timestamp: timestamp)
     }
 
+    // Wire keys: "name" maps to customType, "value" maps to data
     enum CodingKeys: String, CodingKey {
-        case customType
-        case data
+        case customType = "name"
+        case data = "value"
         case timestamp
     }
 

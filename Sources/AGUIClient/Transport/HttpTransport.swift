@@ -91,8 +91,13 @@ public actor HttpTransport {
         } else {
             // Create default URLSession-based client
             let sessionConfig = URLSessionConfiguration.default
-            sessionConfig.timeoutIntervalForRequest = configuration.timeout
-            sessionConfig.timeoutIntervalForResource = configuration.timeout
+            // timeoutIntervalForRequest: max idle time between consecutive bytes (per-chunk).
+            // For AI streaming, the inference step can take 30-120 s before the first
+            // token arrives; use at least 5 minutes so we don't cut off mid-inference.
+            // timeoutIntervalForResource: total wall-clock cap for the full stream.
+            // Cap at 1 hour so even long agent runs complete without being killed.
+            sessionConfig.timeoutIntervalForRequest = max(configuration.timeout, 300)
+            sessionConfig.timeoutIntervalForResource = max(configuration.timeout, 3600)
 
             // Set additional headers
             var headers = configuration.headers

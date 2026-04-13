@@ -43,7 +43,13 @@ struct ChatView: View {
                 VStack(spacing: 0) {
                     messageList(background: background)
 
-                    if let ephemeral = state.ephemeralMessage {
+                    // Phase 1A: Render each active ephemeral slot independently.
+                    // Slots are sorted by displayPriority so .step appears above .toolCall.
+                    let activeSlots = EphemeralSlot.allCases
+                        .sorted()
+                        .compactMap { slot -> DisplayMessage? in state.ephemeralSlots[slot] }
+
+                    ForEach(activeSlots, id: \.id) { ephemeral in
                         EphemeralBanner(message: ephemeral)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
@@ -54,8 +60,8 @@ struct ChatView: View {
                 .background(background)
             }
         }
-        .animation(.default, value: state.messages.count)
-        .animation(.default, value: state.ephemeralMessage?.id)
+        .animation(.default, value: state.chatRows.count)
+        .animation(.default, value: state.ephemeralSlots.count)
     }
 
     // MARK: - Sub-views
@@ -64,16 +70,24 @@ struct ChatView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    ForEach(state.messages, id: \.id) { message in
-                        MessageBubbleView(message: message)
-                            .id(message.id)
+                    // Phase 1B: Iterate chatRows (agent messages + supplemental messages).
+                    ForEach(state.chatRows) { row in
+                        Group {
+                            switch row {
+                            case .agent(let message):
+                                MessageBubbleView(message: message)
+                            case .supplemental(let supplemental):
+                                SupplementalMessageBubbleView(message: supplemental)
+                            }
+                        }
+                        .id(row.id)
                     }
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 16)
             }
             .background(background.opacity(0.6))
-            .onChange(of: state.messages.last?.id) { id in
+            .onChange(of: state.chatRows.last?.id) { id in
                 guard let id else { return }
                 withAnimation { proxy.scrollTo(id, anchor: .bottom) }
             }
@@ -141,6 +155,48 @@ private struct EphemeralBanner: View {
         }
         .padding(12)
         .background(Color.accentColor.opacity(0.1))
+    }
+}
+
+// MARK: - SupplementalMessageBubbleView
+
+/// Renders system lifecycle events (connection status, inline errors) as chat rows.
+private struct SupplementalMessageBubbleView: View {
+    let message: SupplementalMessage
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: iconName)
+                .font(.caption)
+                .foregroundStyle(iconColor)
+            Text(labelText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+
+    private var iconName: String {
+        switch message.kind {
+        case .connection: return "checkmark.circle.fill"
+        case .error: return "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var iconColor: Color {
+        switch message.kind {
+        case .connection: return .green
+        case .error: return .orange
+        }
+    }
+
+    private var labelText: String {
+        switch message.kind {
+        case .connection(let agentName): return "Connected to \(agentName)"
+        case .error(let message): return message
+        }
     }
 }
 

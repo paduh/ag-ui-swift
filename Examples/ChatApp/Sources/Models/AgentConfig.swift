@@ -112,14 +112,39 @@ extension AgentConfig {
     }
 
     /// Converts this config into a `StatefulAgUiAgentConfig`.
+    ///
+    /// The full URL entered by the user (e.g. `http://localhost:8888/agentic_chat`)
+    /// is split into a transport `baseURL` (scheme + host + port) and an `endpoint`
+    /// path (e.g. `/agentic_chat`), so the SDK doesn't double-append `/run`.
+    ///
     /// - Throws: `AgentConfigError.invalidURL` when the URL string is malformed.
     func toStatefulAgentConfig() throws -> StatefulAgUiAgentConfig {
         let trimmed = url.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let agentURL = URL(string: trimmed) else {
+        guard let agentURL = URL(string: trimmed),
+              let scheme = agentURL.scheme,
+              let host = agentURL.host else {
             throw AgentConfigError.invalidURL(url)
         }
-        var config = StatefulAgUiAgentConfig(baseURL: agentURL)
+
+        // Build a base URL containing only scheme + host + port.
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = host
+        components.port = agentURL.port
+        guard let baseURL = components.url else {
+            throw AgentConfigError.invalidURL(url)
+        }
+
+        // Use the path as the endpoint; fall back to "/run" if none was given.
+        let path = agentURL.path
+        let endpoint = path.isEmpty ? "/run" : path
+
+        var config = StatefulAgUiAgentConfig(baseURL: baseURL)
+        config.endpoint = endpoint
         config.systemPrompt = systemPrompt
+        #if DEBUG
+        config.debug = true
+        #endif
         config.headers = buildHeaders()
         return config
     }

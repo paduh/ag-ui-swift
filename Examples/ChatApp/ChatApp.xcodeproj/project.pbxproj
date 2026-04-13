@@ -26,6 +26,9 @@
 		A50000000000000000000011 /* AGUIAgentSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A80000000000000000000005 /* AGUIAgentSDK */; };
 		A50000000000000000000012 /* AGUICore in Frameworks */ = {isa = PBXBuildFile; productRef = A80000000000000000000006 /* AGUICore */; };
 		A50000000000000000000013 /* AGUICore in Frameworks */ = {isa = PBXBuildFile; productRef = A80000000000000000000007 /* AGUICore */; };
+		A50000000000000000000014 /* EphemeralSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000012 /* EphemeralSlot.swift */; };
+		A50000000000000000000015 /* SupplementalMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000013 /* SupplementalMessage.swift */; };
+		A50000000000000000000016 /* ChatRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000014 /* ChatRow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +48,10 @@
 		A4000000000000000000000E /* ChatAppStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatAppStoreTests.swift; sourceTree = "<group>"; };
 		A4000000000000000000000F /* ChatApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChatApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A40000000000000000000010 /* ChatAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ChatAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A40000000000000000000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A40000000000000000000012 /* EphemeralSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EphemeralSlot.swift; sourceTree = "<group>"; };
+		A40000000000000000000013 /* SupplementalMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupplementalMessage.swift; sourceTree = "<group>"; };
+		A40000000000000000000014 /* ChatRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +122,9 @@
 				A40000000000000000000003 /* DisplayMessage.swift */,
 				A40000000000000000000004 /* ChatUIState.swift */,
 				A40000000000000000000005 /* AgentDraft.swift */,
+				A40000000000000000000012 /* EphemeralSlot.swift */,
+				A40000000000000000000013 /* SupplementalMessage.swift */,
+				A40000000000000000000014 /* ChatRow.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -143,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				A4000000000000000000000C /* Assets.xcassets */,
+				A40000000000000000000011 /* Info.plist */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -286,6 +297,9 @@
 				A50000000000000000000009 /* MessageBubbleView.swift in Sources */,
 				A5000000000000000000000A /* AgentListView.swift in Sources */,
 				A5000000000000000000000B /* AgentFormView.swift in Sources */,
+				A50000000000000000000014 /* EphemeralSlot.swift in Sources */,
+				A50000000000000000000015 /* SupplementalMessage.swift in Sources */,
+				A50000000000000000000016 /* ChatRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -420,15 +434,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -447,15 +457,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -473,6 +479,7 @@
 		A20000000000000000000005 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
@@ -488,6 +495,7 @@
 		A20000000000000000000006 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;

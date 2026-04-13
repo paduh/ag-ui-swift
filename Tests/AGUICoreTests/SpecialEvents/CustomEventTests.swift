@@ -31,10 +31,11 @@ final class CustomEventTests: XCTestCase,
 
     // MARK: - EventDecodingErrorTests Protocol Requirements
 
+    // AG-UI wire format: "name" (event type) and "value" (payload)
     var validEventFieldsWithoutType: [String: Any] {
         [
-            "customType": "my.custom.event",
-            "data": ["field1": "value1", "field2": 123]
+            "name": "my.custom.event",
+            "value": ["field1": "value1", "field2": 123]
         ]
     }
 
@@ -49,8 +50,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "com.example.userAction",
-          "data": {
+          "name": "com.example.userAction",
+          "value": {
             "action": "buttonClick",
             "buttonId": "submit",
             "metadata": {
@@ -85,10 +86,10 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "events.batch",
-          "data": [
-            {"id": 1, "value": "a"},
-            {"id": 2, "value": "b"}
+          "name": "events.batch",
+          "value": [
+            {"id": 1, "val": "a"},
+            {"id": 2, "val": "b"}
           ]
         }
         """)
@@ -110,8 +111,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "simple.message",
-          "data": "Hello, World!"
+          "name": "simple.message",
+          "value": "Hello, World!"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -131,8 +132,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "void.event",
-          "data": null
+          "name": "void.event",
+          "value": null
         }
         """)
         let decoder = makeStrictDecoder()
@@ -152,8 +153,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "com.myapp.analytics.pageView",
-          "data": {"page": "/home"}
+          "name": "com.myapp.analytics.pageView",
+          "value": {"page": "/home"}
         }
         """)
         let decoder = makeStrictDecoder()
@@ -171,8 +172,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "test.event",
-          "data": { "value": 123 },
+          "name": "test.event",
+          "value": { "count": 123 },
           "timestamp": \(EventTestData.timestamp)
         }
         """)
@@ -191,8 +192,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "test.event",
-          "data": { "key": "value" },
+          "name": "test.event",
+          "value": { "key": "val" },
           "timestamp": \(EventTestData.timestamp)
         }
         """)
@@ -211,8 +212,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "test.event",
-          "data": { "key": "value" },
+          "name": "test.event",
+          "value": { "key": "val" },
           "extraField": "ignored",
           "nested": { "x": 1 }
         }
@@ -225,17 +226,17 @@ final class CustomEventTests: XCTestCase,
         // Then
         let customEvent = try XCTUnwrap(event as? CustomEvent)
         let parsed = try customEvent.parsedData() as? [String: Any]
-        XCTAssertEqual(parsed?["key"] as? String, "value")
+        XCTAssertEqual(parsed?["key"] as? String, "val")
     }
 
     // MARK: - Feature: Error handling
 
-    func test_decodeCustom_missingCustomType_throwsDecodingFailed() {
-        // Given
+    func test_decodeCustom_missingName_throwsDecodingFailed() {
+        // Given — "name" is required; "value" is optional
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "data": { "key": "value" }
+          "value": { "key": "val" }
         }
         """)
         let decoder = makeStrictDecoder()
@@ -245,37 +246,39 @@ final class CustomEventTests: XCTestCase,
             guard case .decodingFailed(let message) = error as? EventDecodingError else {
                 return XCTFail("Expected decodingFailed, got \(error)")
             }
-            XCTAssertTrue(message.contains("customType") || message.contains("Missing key"))
+            XCTAssertTrue(message.contains("name") || message.contains("Missing key"))
         }
     }
 
-    func test_decodeCustom_missingData_throwsDecodingFailed() {
-        // Given
+    func test_decodeCustom_missingValue_returnsEventWithEmptyData() throws {
+        // Given — "value" is optional per spec; absent value decodes to empty object
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "test.event",
+          "name": "test.event",
           "timestamp": \(EventTestData.timestamp)
         }
         """)
         let decoder = makeStrictDecoder()
 
-        // When / Then
-        XCTAssertThrowsError(try decoder.decode(data)) { error in
-            guard case .decodingFailed(let message) = error as? EventDecodingError else {
-                return XCTFail("Expected decodingFailed, got \(error)")
-            }
-            XCTAssertTrue(message.contains("data") || message.contains("Missing key"))
-        }
+        // When
+        let event = try decoder.decode(data)
+
+        // Then
+        let customEvent = try XCTUnwrap(event as? CustomEvent)
+        XCTAssertEqual(customEvent.customType, "test.event")
+        let parsed = try customEvent.parsedData() as? [String: Any]
+        XCTAssertNotNil(parsed)
+        XCTAssertTrue(parsed?.isEmpty == true)
     }
 
-    func test_decodeCustom_wrongTypeForCustomType_throwsDecodingFailed() {
+    func test_decodeCustom_wrongTypeForName_throwsDecodingFailed() {
         // Given
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": 123,
-          "data": { "key": "value" }
+          "name": 123,
+          "value": { "key": "val" }
         }
         """)
         let decoder = makeStrictDecoder()
@@ -285,7 +288,7 @@ final class CustomEventTests: XCTestCase,
             guard case .decodingFailed(let message) = error as? EventDecodingError else {
                 return XCTFail("Expected decodingFailed, got \(error)")
             }
-            XCTAssertTrue(message.contains("customType") || message.contains("Type mismatch"))
+            XCTAssertTrue(message.contains("name") || message.contains("String"))
         }
     }
 
@@ -294,8 +297,8 @@ final class CustomEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "CUSTOM",
-          "customType": "test.event",
-          "data": { "key": "value" },
+          "name": "test.event",
+          "value": { "key": "val" },
           "timestamp": "not-a-number"
         }
         """)

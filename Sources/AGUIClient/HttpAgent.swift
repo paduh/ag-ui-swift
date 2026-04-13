@@ -149,7 +149,7 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
         self.transport = HttpTransport(configuration: configuration)
         self.decoder = AGUIEventDecoder()
         self.defaultEndpoint = "/run"
-        super.init()
+        super.init(debug: configuration.debug)
     }
 
     /// Creates a new HTTP agent with custom HTTP client.

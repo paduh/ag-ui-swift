@@ -88,17 +88,18 @@ final class ChatAppStoreTests: XCTestCase {
         XCTAssertFalse(store.state.messages.last?.isStreaming == true)
     }
 
-    // MARK: - Tool call ephemeral banner
+    // MARK: - Phase 1A: Tool call ephemeral banner (.toolCall slot)
 
-    func test_toolCallStart_setsEphemeralMessage() {
+    func test_toolCallStart_setsToolCallEphemeralSlot() {
         let store = makeStore()
         store.setupForTesting(agent: testConfig())
 
         store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "web_search"))
 
-        XCTAssertNotNil(store.state.ephemeralMessage)
-        XCTAssertEqual(store.state.ephemeralMessage?.content, "Calling web_search…")
-        if case .toolCall(let name) = store.state.ephemeralMessage?.role {
+        let banner = store.state.ephemeralSlots[.toolCall]
+        XCTAssertNotNil(banner)
+        XCTAssertEqual(banner?.content, "Calling web_search…")
+        if case .toolCall(let name) = banner?.role {
             XCTAssertEqual(name, "web_search")
         } else {
             XCTFail("Expected .toolCall role")
@@ -110,40 +111,80 @@ final class ChatAppStoreTests: XCTestCase {
         store.setupForTesting(agent: testConfig())
 
         store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
-        XCTAssertNotNil(store.state.ephemeralMessage)
+        XCTAssertNotNil(store.state.ephemeralSlots[.toolCall])
 
         store.processEvent(ToolCallEndEvent(toolCallId: "tc1"))
 
         // The dismissal is scheduled after 1 second — wait slightly longer.
         try await Task.sleep(for: .seconds(1.2))
-        XCTAssertNil(store.state.ephemeralMessage)
+        XCTAssertNil(store.state.ephemeralSlots[.toolCall])
     }
 
-    // MARK: - Step events
+    // MARK: - Phase 1A: Step ephemeral banner (.step slot)
 
-    func test_stepStarted_setsEphemeral() {
+    func test_stepStarted_setsStepEphemeralSlot() {
         let store = makeStore()
         store.setupForTesting(agent: testConfig())
 
         store.processEvent(StepStartedEvent(stepName: "Reasoning"))
 
-        XCTAssertNotNil(store.state.ephemeralMessage)
-        XCTAssertEqual(store.state.ephemeralMessage?.content, "Reasoning")
-        if case .stepInfo(let name) = store.state.ephemeralMessage?.role {
+        let banner = store.state.ephemeralSlots[.step]
+        XCTAssertNotNil(banner)
+        XCTAssertEqual(banner?.content, "Reasoning")
+        if case .stepInfo(let name) = banner?.role {
             XCTAssertEqual(name, "Reasoning")
         } else {
             XCTFail("Expected .stepInfo role")
         }
     }
 
-    func test_stepFinished_clearsEphemeral() {
+    func test_stepFinished_clearsStepSlotImmediately() {
         let store = makeStore()
         store.setupForTesting(agent: testConfig())
 
         store.processEvent(StepStartedEvent(stepName: "Reasoning"))
+        XCTAssertNotNil(store.state.ephemeralSlots[.step])
+
         store.processEvent(StepFinishedEvent(stepName: "Reasoning"))
 
-        XCTAssertNil(store.state.ephemeralMessage)
+        XCTAssertNil(store.state.ephemeralSlots[.step])
+    }
+
+    func test_stepFinished_doesNotClearToolCallSlot() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
+        store.processEvent(StepStartedEvent(stepName: "Reasoning"))
+        store.processEvent(StepFinishedEvent(stepName: "Reasoning"))
+
+        // .toolCall slot must survive .step dismissal
+        XCTAssertNotNil(store.state.ephemeralSlots[.toolCall])
+        XCTAssertNil(store.state.ephemeralSlots[.step])
+    }
+
+    func test_bothEphemeralSlotsCoexist() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(StepStartedEvent(stepName: "Reasoning"))
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
+
+        XCTAssertNotNil(store.state.ephemeralSlots[.step])
+        XCTAssertNotNil(store.state.ephemeralSlots[.toolCall])
+        XCTAssertEqual(store.state.ephemeralSlots.count, 2)
+    }
+
+    func test_newToolCall_replacesExistingToolCallSlot() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc1", toolCallName: "search"))
+        store.processEvent(ToolCallStartEvent(toolCallId: "tc2", toolCallName: "calculator"))
+
+        let banner = store.state.ephemeralSlots[.toolCall]
+        // The second call replaces the first in the slot
+        XCTAssertEqual(banner?.content, "Calling calculator…")
     }
 
     // MARK: - Run error
@@ -175,6 +216,77 @@ final class ChatAppStoreTests: XCTestCase {
         XCTAssertNil(store.state.error)
     }
 
+    // MARK: - Phase 1B: Supplemental messages
+
+    func test_buildAgent_appendsConnectionSupplemental() {
+        let store = makeStore()
+        store.presentCreateAgent()
+        store.draft.name = "TestAgent"
+        store.draft.url = "https://test.local"
+        store.saveAgent()
+
+        XCTAssertFalse(store.state.supplementalMessages.isEmpty)
+        if case .connection(let name) = store.state.supplementalMessages.first?.kind {
+            XCTAssertEqual(name, "TestAgent")
+        } else {
+            XCTFail("Expected .connection supplemental message")
+        }
+    }
+
+    func test_runError_appendsInlineError() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+        let initialCount = store.state.supplementalMessages.count
+
+        store.processEvent(RunErrorEvent(
+            threadId: "t1",
+            runId: "r1",
+            error: .init(code: "ERR", message: "Network failed")
+        ))
+
+        XCTAssertEqual(store.state.supplementalMessages.count, initialCount + 1)
+        if case .error(let msg) = store.state.supplementalMessages.last?.kind {
+            XCTAssertEqual(msg, "Network failed")
+        } else {
+            XCTFail("Expected .error supplemental message")
+        }
+    }
+
+    func test_chatRows_includesAgentMessages() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.processEvent(TextMessageStartEvent(messageId: "m1", role: "assistant"))
+        store.processEvent(TextMessageEndEvent(messageId: "m1"))
+
+        let rows = store.state.chatRows
+        XCTAssertFalse(rows.isEmpty)
+        let hasAgentRow = rows.contains { if case .agent = $0 { return true }; return false }
+        XCTAssertTrue(hasAgentRow)
+    }
+
+    func test_chatRows_mergesAgentAndSupplementalByTimestamp() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        // Add a supplemental message
+        store.processEvent(RunErrorEvent(
+            threadId: "t1",
+            runId: "r1",
+            error: .init(code: "ERR", message: "Oops")
+        ))
+        // Add an agent message after
+        store.processEvent(TextMessageStartEvent(messageId: "m1", role: "assistant"))
+        store.processEvent(TextMessageEndEvent(messageId: "m1"))
+
+        let rows = store.state.chatRows
+        // Both rows should be present
+        let agentRows = rows.filter { if case .agent = $0 { return true }; return false }
+        let suppRows = rows.filter { if case .supplemental = $0 { return true }; return false }
+        XCTAssertEqual(agentRows.count, 1)
+        XCTAssertEqual(suppRows.count, 1)
+    }
+
     // MARK: - Background hex (custom event)
 
     func test_changeBackgroundCustomEvent_setsHex() throws {
@@ -185,6 +297,67 @@ final class ChatAppStoreTests: XCTestCase {
         store.processEvent(CustomEvent(customType: "change_background", data: payload))
 
         XCTAssertEqual(store.state.backgroundHex, "FF5733")
+    }
+
+    // MARK: - Phase 1C: Optimistic user messages
+
+    func test_displayMessage_isSendingDefaultsFalse() {
+        let msg = DisplayMessage(role: .user, content: "Hello")
+        XCTAssertFalse(msg.isSending)
+    }
+
+    func test_displayMessage_isSendingCanBeSet() {
+        let msg = DisplayMessage(role: .user, content: "Hello", isSending: true)
+        XCTAssertTrue(msg.isSending)
+    }
+
+    func test_injectPendingMessage_appearsInMessages() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        store.injectPendingMessageForTesting(content: "Hello!")
+
+        let pending = store.state.messages.last
+        XCTAssertNotNil(pending)
+        XCTAssertTrue(pending?.isSending == true)
+        XCTAssertEqual(pending?.content, "Hello!")
+        XCTAssertEqual(pending?.role, .user)
+    }
+
+    func test_messagesSnapshot_correlatesAndClearsPending() throws {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+        store.injectPendingMessageForTesting(content: "Hello!")
+
+        XCTAssertNotNil(store.pendingUserMessageId)
+
+        // Simulate the agent echoing the message in a snapshot
+        let snapshotData = try JSONSerialization.data(withJSONObject: [
+            ["id": "server-msg-1", "role": "user", "content": "Hello!"],
+        ])
+        store.processEvent(MessagesSnapshotEvent(messages: snapshotData))
+
+        // Pending should be cleared once the content is found in the snapshot
+        XCTAssertNil(store.pendingUserMessageId)
+        XCTAssertFalse(store.state.messages.isEmpty)
+    }
+
+    func test_messagesSnapshot_reinjectsPendingIfNotFound() throws {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+        store.injectPendingMessageForTesting(content: "Pending message")
+
+        // Snapshot that does NOT include the pending message
+        let snapshotData = try JSONSerialization.data(withJSONObject: [
+            ["id": "server-msg-1", "role": "assistant", "content": "I am processing"],
+        ])
+        store.processEvent(MessagesSnapshotEvent(messages: snapshotData))
+
+        // Pending must still be in the message list
+        XCTAssertNotNil(store.pendingUserMessageId)
+        let pendingMsg = store.state.messages.first { $0.role == .user }
+        XCTAssertNotNil(pendingMsg)
+        XCTAssertTrue(pendingMsg?.isSending == true)
     }
 
     // MARK: - Agent lifecycle

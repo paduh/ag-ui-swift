@@ -113,7 +113,8 @@ public final class StatefulAgUiAgent: Sendable {
         let agent = HttpAgent(configuration: HttpAgentConfiguration(
             baseURL: config.baseURL,
             timeout: config.timeout,
-            headers: config.headers
+            headers: config.headers,
+            debug: config.debug
         ))
         self.httpAgent = agent
         self.historyManager = ConversationHistoryManager()
@@ -146,7 +147,8 @@ public final class StatefulAgUiAgent: Sendable {
         let agent = HttpAgent(configuration: HttpAgentConfiguration(
             baseURL: configuration.baseURL,
             timeout: configuration.timeout,
-            headers: configuration.headers
+            headers: configuration.headers,
+            debug: configuration.debug
         ))
         self.httpAgent = agent
         self.historyManager = ConversationHistoryManager()
@@ -294,7 +296,7 @@ public final class StatefulAgUiAgent: Sendable {
         }
 
         // Execute the run
-        let rawStream = try await httpAgent.run(inputWithTools)
+        let rawStream = try await httpAgent.run(inputWithTools, endpoint: config.endpoint)
 
         // Wrap through tool execution manager if present, otherwise pass through
         let eventStream: AsyncThrowingStream<any AGUIEvent, Error>

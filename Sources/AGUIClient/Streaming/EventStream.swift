@@ -164,6 +164,9 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
                             // Non-fatal decoding errors are silently ignored
                             // The stream continues processing subsequent events
                             // Applications can implement custom error handling if needed
+                            #if DEBUG
+                            print("[EventStream] ⚠ Decode error: \(error) — raw: \(sseEvent.data.prefix(200))")
+                            #endif
                         }
                     }
 
