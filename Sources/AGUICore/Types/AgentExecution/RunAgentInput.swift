@@ -176,8 +176,10 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         runId = try container.decode(String.self, forKey: .runId)
         parentRunId = try container.decodeIfPresent(String.self, forKey: .parentRunId)
 
-        // Decode state as arbitrary JSON object and convert to Data
-        if container.contains(.state) {
+        // Decode state as arbitrary JSON object and convert to Data.
+        // The encoder writes `null` when state is an empty `{}` object, so treat
+        // an explicit null here as equivalent to "no state" (empty object).
+        if container.contains(.state), !(try container.decodeNil(forKey: .state)) {
             let stateContainer = try container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .state)
             let stateObject = try stateContainer.decodeJSONObject()
             state = try JSONSerialization.data(withJSONObject: stateObject)
