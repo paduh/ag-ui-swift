@@ -122,6 +122,14 @@ extension ChatAppStore {
         case let e as MessagesSnapshotEvent:
             rebuildMessages(from: e)
 
+        // MARK: A2UI surfaces (Phase 4)
+
+        case let e as ActivitySnapshotEvent where e.activityType == "a2ui-surface":
+            processA2UISnapshot(e)
+
+        case let e as ActivityDeltaEvent where e.activityType == "a2ui-surface":
+            processA2UIDelta(e)
+
         // MARK: Custom events (e.g. server-sent change_background)
 
         case let e as CustomEvent:

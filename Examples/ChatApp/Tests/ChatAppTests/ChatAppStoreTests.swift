@@ -503,4 +503,55 @@ final class ChatAppStoreTests: XCTestCase {
 
         XCTAssertTrue(store.agents.isEmpty)
     }
+
+    // MARK: - Phase 4: A2UI / Generative UI
+
+    func test_activitySnapshot_insertsA2UIDisplayMessage() throws {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        let content = try JSONSerialization.data(withJSONObject: ["type": "text", "content": "Hello"])
+        let event = ActivitySnapshotEvent(messageId: "act1", activityType: "a2ui-surface", content: content)
+
+        store.processEvent(event)
+
+        XCTAssertNotNil(store.state.a2uiSurfaces["act1"])
+        XCTAssertTrue(store.state.messages.contains { $0.id == "a2ui-act1" })
+        if let msg = store.state.messages.first(where: { $0.id == "a2ui-act1" }) {
+            if case .a2uiSurface(let messageId) = msg.role {
+                XCTAssertEqual(messageId, "act1")
+            } else {
+                XCTFail("Expected .a2uiSurface role")
+            }
+        }
+    }
+
+    func test_activityDelta_updatesA2UIState() throws {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        // Snapshot first
+        let content = try JSONSerialization.data(withJSONObject: ["type": "text", "content": "Hello"])
+        store.processEvent(ActivitySnapshotEvent(messageId: "act1", activityType: "a2ui-surface", content: content))
+
+        // Then delta
+        let patch = try JSONSerialization.data(withJSONObject: [["op": "replace", "path": "/content", "value": "World"]])
+        store.processEvent(ActivityDeltaEvent(messageId: "act1", activityType: "a2ui-surface", patch: patch))
+
+        let updatedData = try XCTUnwrap(store.state.a2uiSurfaces["act1"])
+        let dict = try XCTUnwrap(try JSONSerialization.jsonObject(with: updatedData) as? [String: Any])
+        XCTAssertEqual(dict["content"] as? String, "World")
+    }
+
+    func test_activitySnapshot_ignoredForNonA2UISurface() throws {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        let content = try JSONSerialization.data(withJSONObject: ["data": "whatever"])
+        store.processEvent(ActivitySnapshotEvent(messageId: "act1", activityType: "some-other-type", content: content))
+
+        // Non-a2ui-surface activity types should not create A2UI messages
+        XCTAssertNil(store.state.a2uiSurfaces["act1"])
+        XCTAssertFalse(store.state.messages.contains { $0.id == "a2ui-act1" })
+    }
 }
