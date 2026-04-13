@@ -36,19 +36,27 @@ struct DisplayMessage: Identifiable, Sendable {
     let timestamp: Date
     /// `true` while `TextMessageContent` events are still arriving.
     var isStreaming: Bool
+    /// `true` while the user message is waiting for agent confirmation.
+    ///
+    /// Set on the optimistic message created by `sendMessage`; cleared once the
+    /// agent echoes the message back in a `MessagesSnapshotEvent`, or on
+    /// cancellation / error.
+    var isSending: Bool
 
     init(
         id: String = UUID().uuidString,
         role: DisplayMessageRole,
         content: String,
         timestamp: Date = .now,
-        isStreaming: Bool = false
+        isStreaming: Bool = false,
+        isSending: Bool = false
     ) {
         self.id = id
         self.role = role
         self.content = content
         self.timestamp = timestamp
         self.isStreaming = isStreaming
+        self.isSending = isSending
     }
 }
 

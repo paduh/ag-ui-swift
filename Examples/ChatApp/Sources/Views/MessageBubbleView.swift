@@ -96,9 +96,18 @@ struct MessageBubbleView: View {
                 .background(bubbleColor)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-                Text(message.timestamp.formatted(date: .omitted, time: .shortened))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(message.timestamp.formatted(date: .omitted, time: .shortened))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    // Phase 1C: Optimistic send indicator — visible until agent confirms.
+                    if message.isSending {
+                        Image(systemName: "clock")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary.opacity(0.6))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
             }
 
             if !isUser { Spacer(minLength: 40) }

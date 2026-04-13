@@ -27,8 +27,13 @@ import Foundation
 /// Snapshot of the chat UI that `ChatAppStore` publishes to SwiftUI views.
 struct ChatUIState: Sendable {
     var messages: [DisplayMessage]
-    /// Shown in the ephemeral banner strip above the input — not in the message list.
-    var ephemeralMessage: DisplayMessage?
+    /// Active ephemeral banners, keyed by slot type.
+    ///
+    /// Multiple slots can coexist. `.step` dismisses immediately on `StepFinishedEvent`;
+    /// `.toolCall` dismisses 1 second after `ToolCallEndEvent`.
+    var ephemeralSlots: [EphemeralSlot: DisplayMessage]
+    /// System-level messages (connection status, inline errors) injected alongside chat messages.
+    var supplementalMessages: [SupplementalMessage]
     var isLoading: Bool
     /// `true` when an active agent is configured and ready to receive messages.
     var isConnected: Bool
@@ -39,7 +44,8 @@ struct ChatUIState: Sendable {
 
     init(
         messages: [DisplayMessage] = [],
-        ephemeralMessage: DisplayMessage? = nil,
+        ephemeralSlots: [EphemeralSlot: DisplayMessage] = [:],
+        supplementalMessages: [SupplementalMessage] = [],
         isLoading: Bool = false,
         isConnected: Bool = false,
         error: String? = nil,
@@ -47,11 +53,23 @@ struct ChatUIState: Sendable {
         activeAgent: AgentConfig? = nil
     ) {
         self.messages = messages
-        self.ephemeralMessage = ephemeralMessage
+        self.ephemeralSlots = ephemeralSlots
+        self.supplementalMessages = supplementalMessages
         self.isLoading = isLoading
         self.isConnected = isConnected
         self.error = error
         self.backgroundHex = backgroundHex
         self.activeAgent = activeAgent
+    }
+
+    /// Unified list of all rows shown in the chat message list.
+    ///
+    /// Merges agent `messages` and `supplementalMessages`, sorted by timestamp
+    /// so supplemental events (connection confirmation, inline errors) appear
+    /// at the correct point in the conversation timeline.
+    var chatRows: [ChatRow] {
+        let agentRows = messages.map { ChatRow.agent($0) }
+        let suppRows = supplementalMessages.map { ChatRow.supplemental($0) }
+        return (agentRows + suppRows).sorted { $0.timestamp < $1.timestamp }
     }
 }
