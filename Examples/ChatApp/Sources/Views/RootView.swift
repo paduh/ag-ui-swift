@@ -44,6 +44,19 @@ struct RootView: View {
             AgentFormView(mode: item.mode)
                 .environmentObject(store)
         }
+        // Phase 5: ClawgUI enterprise pairing sheet.
+        // Presented whenever pairingState != .idle; dismissed on success or user cancel.
+        .sheet(isPresented: Binding(
+            get: { store.state.clawgUIPairingState != .idle },
+            set: { if !$0 { store.resetPairing() } }
+        )) {
+            ClawgUIPairingView(
+                state: store.state.clawgUIPairingState,
+                onConfirm: { store.confirmPairing() },
+                onRetry: { store.retryPairing() },
+                onDismiss: { store.resetPairing() }
+            )
+        }
         // Repository error alert
         .alert(
             "Error",

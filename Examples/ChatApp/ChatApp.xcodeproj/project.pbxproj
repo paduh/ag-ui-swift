@@ -45,6 +45,12 @@
 		A50000000000000000000024 /* A2UIComponentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000020 /* A2UIComponentTests.swift */; };
 		A50000000000000000000025 /* A2UISurfaceStateManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000021 /* A2UISurfaceStateManagerTests.swift */; };
 		A50000000000000000000026 /* AGUIClient in Frameworks */ = {isa = PBXBuildFile; productRef = A8000000000000000000000A /* AGUIClient */; };
+		A50000000000000000000027 /* ClawgUIPairingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000022 /* ClawgUIPairingState.swift */; };
+		A50000000000000000000028 /* ClawgUIDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000023 /* ClawgUIDetector.swift */; };
+		A50000000000000000000029 /* ClawgUIPairingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000024 /* ClawgUIPairingManager.swift */; };
+		A5000000000000000000002A /* ClawgUIPairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000025 /* ClawgUIPairingView.swift */; };
+		A5000000000000000000002B /* ClawgUIDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000026 /* ClawgUIDetectorTests.swift */; };
+		A5000000000000000000002C /* ClawgUIPairingManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000027 /* ClawgUIPairingManagerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,6 +87,12 @@
 		A4000000000000000000001F /* A2UISurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A2UISurfaceView.swift; sourceTree = "<group>"; };
 		A40000000000000000000020 /* A2UIComponentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A2UIComponentTests.swift; sourceTree = "<group>"; };
 		A40000000000000000000021 /* A2UISurfaceStateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = A2UISurfaceStateManagerTests.swift; sourceTree = "<group>"; };
+		A40000000000000000000022 /* ClawgUIPairingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawgUIPairingState.swift; sourceTree = "<group>"; };
+		A40000000000000000000023 /* ClawgUIDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawgUIDetector.swift; sourceTree = "<group>"; };
+		A40000000000000000000024 /* ClawgUIPairingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawgUIPairingManager.swift; sourceTree = "<group>"; };
+		A40000000000000000000025 /* ClawgUIPairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawgUIPairingView.swift; sourceTree = "<group>"; };
+		A40000000000000000000026 /* ClawgUIDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawgUIDetectorTests.swift; sourceTree = "<group>"; };
+		A40000000000000000000027 /* ClawgUIPairingManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClawgUIPairingManagerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,6 +149,7 @@
 				A30000000000000000000008 /* Resources */,
 				A3000000000000000000000C /* Tools */,
 				A3000000000000000000000D /* A2UI */,
+				A3000000000000000000000F /* ClawgUI */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -184,6 +197,7 @@
 				A40000000000000000000019 /* TypingDotsView.swift */,
 				A4000000000000000000001A /* StreamingCursorView.swift */,
 				A3000000000000000000000E /* A2UI */,
+				A30000000000000000000010 /* ClawgUI */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -213,6 +227,8 @@
 				A40000000000000000000018 /* ChangeBackgroundToolExecutorTests.swift */,
 				A40000000000000000000020 /* A2UIComponentTests.swift */,
 				A40000000000000000000021 /* A2UISurfaceStateManagerTests.swift */,
+				A40000000000000000000026 /* ClawgUIDetectorTests.swift */,
+				A40000000000000000000027 /* ClawgUIPairingManagerTests.swift */,
 			);
 			path = ChatAppTests;
 			sourceTree = "<group>";
@@ -250,6 +266,24 @@
 				A4000000000000000000001F /* A2UISurfaceView.swift */,
 			);
 			path = A2UI;
+			sourceTree = "<group>";
+		};
+		A3000000000000000000000F /* ClawgUI */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000022 /* ClawgUIPairingState.swift */,
+				A40000000000000000000023 /* ClawgUIDetector.swift */,
+				A40000000000000000000024 /* ClawgUIPairingManager.swift */,
+			);
+			path = ClawgUI;
+			sourceTree = "<group>";
+		};
+		A30000000000000000000010 /* ClawgUI */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000025 /* ClawgUIPairingView.swift */,
+			);
+			path = ClawgUI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -382,6 +416,10 @@
 				A50000000000000000000021 /* ChatAppStore+A2UI.swift in Sources */,
 				A50000000000000000000022 /* A2UIComponentView.swift in Sources */,
 				A50000000000000000000023 /* A2UISurfaceView.swift in Sources */,
+				A50000000000000000000027 /* ClawgUIPairingState.swift in Sources */,
+				A50000000000000000000028 /* ClawgUIDetector.swift in Sources */,
+				A50000000000000000000029 /* ClawgUIPairingManager.swift in Sources */,
+				A5000000000000000000002A /* ClawgUIPairingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -394,6 +432,8 @@
 				A5000000000000000000001C /* ChangeBackgroundToolExecutorTests.swift in Sources */,
 				A50000000000000000000024 /* A2UIComponentTests.swift in Sources */,
 				A50000000000000000000025 /* A2UISurfaceStateManagerTests.swift in Sources */,
+				A5000000000000000000002B /* ClawgUIDetectorTests.swift in Sources */,
+				A5000000000000000000002C /* ClawgUIPairingManagerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
