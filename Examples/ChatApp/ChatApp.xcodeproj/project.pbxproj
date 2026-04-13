@@ -35,6 +35,8 @@
 		A5000000000000000000001A /* AGUITools in Frameworks */ = {isa = PBXBuildFile; productRef = A80000000000000000000008 /* AGUITools */; };
 		A5000000000000000000001B /* AGUITools in Frameworks */ = {isa = PBXBuildFile; productRef = A80000000000000000000009 /* AGUITools */; };
 		A5000000000000000000001C /* ChangeBackgroundToolExecutorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000018 /* ChangeBackgroundToolExecutorTests.swift */; };
+		A5000000000000000000001D /* TypingDotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A40000000000000000000019 /* TypingDotsView.swift */; };
+		A5000000000000000000001E /* StreamingCursorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4000000000000000000001A /* StreamingCursorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +64,8 @@
 		A40000000000000000000016 /* ChatAppToolRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatAppToolRegistry.swift; sourceTree = "<group>"; };
 		A40000000000000000000017 /* ChatAppStore+EventProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatAppStore+EventProcessing.swift"; sourceTree = "<group>"; };
 		A40000000000000000000018 /* ChangeBackgroundToolExecutorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeBackgroundToolExecutorTests.swift; sourceTree = "<group>"; };
+		A40000000000000000000019 /* TypingDotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingDotsView.swift; sourceTree = "<group>"; };
+		A4000000000000000000001A /* StreamingCursorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingCursorView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,6 +163,8 @@
 				A40000000000000000000009 /* MessageBubbleView.swift */,
 				A4000000000000000000000A /* AgentListView.swift */,
 				A4000000000000000000000B /* AgentFormView.swift */,
+				A40000000000000000000019 /* TypingDotsView.swift */,
+				A4000000000000000000001A /* StreamingCursorView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -329,6 +335,8 @@
 				A50000000000000000000017 /* ChangeBackgroundToolExecutor.swift in Sources */,
 				A50000000000000000000018 /* ChatAppToolRegistry.swift in Sources */,
 				A50000000000000000000019 /* ChatAppStore+EventProcessing.swift in Sources */,
+				A5000000000000000000001D /* TypingDotsView.swift in Sources */,
+				A5000000000000000000001E /* StreamingCursorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

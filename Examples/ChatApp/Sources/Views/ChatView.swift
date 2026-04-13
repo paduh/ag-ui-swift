@@ -57,11 +57,13 @@ struct ChatView: View {
                     Divider()
                     inputArea
                 }
-                .background(background)
+                // Phase 3C: Animate background color changes smoothly.
+                .background(background.animation(.easeInOut(duration: 0.5), value: state.backgroundHex))
             }
         }
-        .animation(.default, value: state.chatRows.count)
-        .animation(.default, value: state.ephemeralSlots.count)
+        // Phase 3B: Spring animation for new message rows entering the list.
+        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: state.chatRows.count)
+        .animation(.easeInOut(duration: 0.22), value: state.ephemeralSlots.count)
     }
 
     // MARK: - Sub-views
@@ -81,6 +83,13 @@ struct ChatView: View {
                             }
                         }
                         .id(row.id)
+                        // Phase 3B: New rows slide up from below and fade in.
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .bottom).combined(with: .opacity),
+                                removal: .opacity
+                            )
+                        )
                     }
                 }
                 .padding(.horizontal)

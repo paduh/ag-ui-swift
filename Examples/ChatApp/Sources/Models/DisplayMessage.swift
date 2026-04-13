@@ -58,6 +58,18 @@ struct DisplayMessage: Identifiable, Sendable {
         self.isStreaming = isStreaming
         self.isSending = isSending
     }
+
+    // MARK: - Phase 3: Animation state helpers
+
+    /// `true` when the agent has started responding but no tokens have arrived yet.
+    ///
+    /// Drives the animated typing indicator in `MessageBubbleView`.
+    var showsTypingIndicator: Bool { isStreaming && content.isEmpty }
+
+    /// `true` when tokens are actively streaming in and there is content to show.
+    ///
+    /// Drives the blinking cursor appended to streaming text in `MessageBubbleView`.
+    var showsStreamingCursor: Bool { isStreaming && !content.isEmpty }
 }
 
 // MARK: - DisplayMessageRole

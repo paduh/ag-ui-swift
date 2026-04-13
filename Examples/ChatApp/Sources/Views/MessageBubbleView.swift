@@ -72,23 +72,30 @@ struct MessageBubbleView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    if message.content.isEmpty, message.isStreaming {
-                        ProgressView()
-                            .scaleEffect(0.75)
+                    // Phase 3A: Typing indicator while waiting for first token;
+                    // inline blinking cursor once text is arriving.
+                    if message.showsTypingIndicator {
+                        TypingDotsView()
                     } else {
-                        Markdown(message.content)
-                            .markdownTheme(.basic)
-                            .markdownTextStyle(\.text) {
-                                ForegroundColor(textColor)
+                        HStack(alignment: .bottom, spacing: 4) {
+                            Markdown(message.content)
+                                .markdownTheme(.basic)
+                                .markdownTextStyle(\.text) {
+                                    ForegroundColor(textColor)
+                                }
+                                .markdownTextStyle(\.strong) {
+                                    FontWeight(.heavy)
+                                    ForegroundColor(textColor)
+                                }
+                                .markdownTextStyle(\.link) {
+                                    ForegroundColor(textColor)
+                                }
+                                .textSelection(.enabled)
+
+                            if message.showsStreamingCursor {
+                                StreamingCursorView()
                             }
-                            .markdownTextStyle(\.strong) {
-                                FontWeight(.heavy)
-                                ForegroundColor(textColor)
-                            }
-                            .markdownTextStyle(\.link) {
-                                ForegroundColor(textColor)
-                            }
-                            .textSelection(.enabled)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: isUser ? .trailing : .leading)
