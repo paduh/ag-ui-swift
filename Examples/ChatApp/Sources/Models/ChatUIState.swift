@@ -41,6 +41,11 @@ struct ChatUIState: Sendable {
     /// Hex color string for the chat background (e.g. `"FF5733"` or `"FF5733CC"`).
     var backgroundHex: String?
     var activeAgent: AgentConfig?
+    /// Phase 4: Raw JSON data for each A2UI surface, keyed by `messageId`.
+    ///
+    /// Populated by `ActivitySnapshotEvent` and updated on each `ActivityDeltaEvent`.
+    /// Surfaces are cleared when the active agent changes.
+    var a2uiSurfaces: [String: Data]
 
     init(
         messages: [DisplayMessage] = [],
@@ -50,7 +55,8 @@ struct ChatUIState: Sendable {
         isConnected: Bool = false,
         error: String? = nil,
         backgroundHex: String? = nil,
-        activeAgent: AgentConfig? = nil
+        activeAgent: AgentConfig? = nil,
+        a2uiSurfaces: [String: Data] = [:]
     ) {
         self.messages = messages
         self.ephemeralSlots = ephemeralSlots
@@ -60,6 +66,7 @@ struct ChatUIState: Sendable {
         self.error = error
         self.backgroundHex = backgroundHex
         self.activeAgent = activeAgent
+        self.a2uiSurfaces = a2uiSurfaces
     }
 
     /// Unified list of all rows shown in the chat message list.

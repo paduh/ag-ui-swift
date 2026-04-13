@@ -81,4 +81,7 @@ enum DisplayMessageRole: Sendable, Hashable {
     case error
     case toolCall(name: String)
     case stepInfo(name: String)
+    /// An A2UI generative-UI surface. The associated `messageId` keys into
+    /// `ChatUIState.a2uiSurfaces` for the raw JSON data.
+    case a2uiSurface(messageId: String)
 }

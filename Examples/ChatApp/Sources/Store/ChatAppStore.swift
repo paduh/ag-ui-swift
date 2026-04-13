@@ -61,6 +61,8 @@ final class ChatAppStore: ObservableObject {
     /// Populated on `ToolCallStartEvent`, appended on `ToolCallArgsEvent`,
     /// removed on `ToolCallEndEvent`. Marked `internal` for test inspection.
     var toolCallArgBuffer: [String: String] = [:]
+    /// Phase 4: Manages raw JSON state for each A2UI surface.
+    let surfaceManager = A2UISurfaceStateManager()
 
     // MARK: - Persistence
 
@@ -165,6 +167,7 @@ final class ChatAppStore: ObservableObject {
         cancelStreaming()
         streamingMessageIndices.removeAll()
         toolCallArgBuffer.removeAll()
+        surfaceManager.reset()
 
         if let id, let config = agents.first(where: { $0.id == id }) {
             buildAgent(from: config)
@@ -239,6 +242,7 @@ final class ChatAppStore: ObservableObject {
         ephemeralDismissTasks.removeAll()
         toolCallArgBuffer.removeAll()
         pendingUserMessageId = nil
+        surfaceManager.reset()
     }
 
     /// Injects an optimistic user message for unit tests without going through `sendMessage`.

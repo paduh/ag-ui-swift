@@ -26,6 +26,7 @@ import MarkdownUI
 import SwiftUI
 
 struct MessageBubbleView: View {
+    @EnvironmentObject private var store: ChatAppStore
     let message: DisplayMessage
 
     private var isUser: Bool { message.role == .user }
@@ -38,6 +39,7 @@ struct MessageBubbleView: View {
         case .error: return Color.red.opacity(0.15)
         case .toolCall: return Color.yellow.opacity(0.2)
         case .stepInfo: return Color.blue.opacity(0.12)
+        case .a2uiSurface: return .clear
         }
     }
 
@@ -57,10 +59,27 @@ struct MessageBubbleView: View {
         case .error: return "exclamationmark.triangle"
         case .toolCall: return "wrench.adjustable"
         case .stepInfo: return "bolt.fill"
+        case .a2uiSurface: return nil
         }
     }
 
     var body: some View {
+        // Phase 4: A2UI surfaces render full-width without a standard bubble.
+        if case .a2uiSurface(let messageId) = message.role {
+            A2UISurfaceView(
+                messageId: messageId,
+                surfaceData: store.state.a2uiSurfaces[messageId]
+            ) { mId, actionId, payload in
+                store.handleA2UIAction(messageId: mId, actionId: actionId, payload: payload)
+            }
+        } else {
+            standardBubble
+        }
+    }
+
+    // MARK: - Standard bubble layout
+
+    private var standardBubble: some View {
         HStack {
             if isUser { Spacer(minLength: 40) }
 
