@@ -38,14 +38,14 @@ struct ActivityDeltaEventDTO {
             )
         }
 
-        guard let messageId = jsonObject["messageId"] as? String else {
+        guard let messageId = jsonObject["messageId"] as? String ?? jsonObject["message_id"] as? String else {
             throw DecodingError.keyNotFound(
                 CodingKeys.messageId,
                 DecodingError.Context(codingPath: [], debugDescription: "Missing messageId field")
             )
         }
 
-        guard let activityType = jsonObject["activityType"] as? String else {
+        guard let activityType = jsonObject["activityType"] as? String ?? jsonObject["activity_type"] as? String else {
             throw DecodingError.keyNotFound(
                 CodingKeys.activityType,
                 DecodingError.Context(codingPath: [], debugDescription: "Missing activityType field")

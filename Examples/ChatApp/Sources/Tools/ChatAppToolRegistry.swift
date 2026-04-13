@@ -37,11 +37,12 @@ enum ChatAppToolRegistry {
     /// Builds and returns a fully configured tool registry.
     ///
     /// - Parameter onBackground: Async closure invoked when the agent calls
-    ///   `change_background`. Receives the raw hex string from the tool arguments.
+    ///   `change_background`. Receives the color string, or `nil` when resetting
+    ///   to the default background.
     /// - Returns: A `ToolRegistry` with `change_background` registered.
     /// - Throws: `ToolRegistryError` if registration fails.
     static func makeRegistry(
-        onBackground: @escaping @Sendable (String) async -> Void
+        onBackground: @escaping @Sendable (String?) async -> Void
     ) async throws -> any ToolRegistry {
         let registry = DefaultToolRegistry()
         let executor = ChangeBackgroundToolExecutor(onBackground: onBackground)

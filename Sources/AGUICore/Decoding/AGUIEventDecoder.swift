@@ -199,7 +199,11 @@ public struct AGUIEventDecoder {
     /// ```
     public init(
         config: Configuration = .init(),
-        makeDecoder: @escaping @Sendable () -> JSONDecoder = { JSONDecoder() },
+        makeDecoder: @escaping @Sendable () -> JSONDecoder = {
+            let d = JSONDecoder()
+            d.keyDecodingStrategy = .convertFromSnakeCase
+            return d
+        },
         registry: [EventType: DecodeHandler] = AGUIEventDecoder.defaultRegistry()
     ) {
         self.config = config

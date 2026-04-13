@@ -50,11 +50,17 @@ extension ChatAppStore {
 
     // MARK: - Action routing
 
-    /// Sends a user-initiated A2UI action back to the agent as a structured message.
+    /// Handles a user-initiated A2UI action.
     ///
-    /// The payload is JSON-serialized and prefixed with `[A2UI Action]` so the
-    /// agent can distinguish these from plain user messages.
+    /// "cancel" is treated as a local action that stops the in-flight stream
+    /// without sending anything to the server. All other actions are serialized
+    /// as a structured `[A2UI Action]` message and forwarded to the agent.
     func handleA2UIAction(messageId: String, actionId: String, payload: [String: String]) {
+        if actionId == "cancel" {
+            cancelStreaming()
+            return
+        }
+
         let body: [String: Any] = [
             "messageId": messageId,
             "action": actionId,

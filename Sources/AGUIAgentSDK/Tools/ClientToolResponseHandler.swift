@@ -54,12 +54,17 @@ import Foundation
 public final class ClientToolResponseHandler: ToolResponseHandler, @unchecked Sendable {
 
     private let httpAgent: HttpAgent
+    private let endpoint: String?
 
     /// Creates a handler that routes tool responses through the given agent.
     ///
-    /// - Parameter httpAgent: The HTTP agent used to deliver tool results
-    public init(httpAgent: HttpAgent) {
+    /// - Parameters:
+    ///   - httpAgent: The HTTP agent used to deliver tool results
+    ///   - endpoint: The endpoint path to POST tool results to (e.g. `"/agentic_chat"`).
+    ///     Defaults to the agent's own default when `nil`.
+    public init(httpAgent: HttpAgent, endpoint: String? = nil) {
         self.httpAgent = httpAgent
+        self.endpoint = endpoint
     }
 
     public func sendToolResponse(
@@ -74,6 +79,6 @@ public final class ClientToolResponseHandler: ToolResponseHandler, @unchecked Se
         )
         // Drive the full pipeline; discard resulting events.
         // Use the AbstractAgent pipeline override (run(input:) with external label).
-        for try await _ in httpAgent.run(input: input) { }
+        for try await _ in try await httpAgent.run(input, endpoint: endpoint) { }
     }
 }
