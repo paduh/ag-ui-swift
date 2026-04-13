@@ -413,6 +413,61 @@ final class ChatAppStoreTests: XCTestCase {
         XCTAssertNil(store.toolCallArgBuffer["tc1"])
     }
 
+    // MARK: - Phase 3A: DisplayMessage animation state helpers
+
+    func test_showsTypingIndicator_trueWhenStreamingWithEmptyContent() {
+        let msg = DisplayMessage(role: .assistant, content: "", isStreaming: true)
+        XCTAssertTrue(msg.showsTypingIndicator)
+    }
+
+    func test_showsTypingIndicator_falseWhenNotStreaming() {
+        let msg = DisplayMessage(role: .assistant, content: "", isStreaming: false)
+        XCTAssertFalse(msg.showsTypingIndicator)
+    }
+
+    func test_showsTypingIndicator_falseWhenStreamingWithContent() {
+        let msg = DisplayMessage(role: .assistant, content: "Hello", isStreaming: true)
+        XCTAssertFalse(msg.showsTypingIndicator)
+    }
+
+    func test_showsStreamingCursor_trueWhenStreamingWithContent() {
+        let msg = DisplayMessage(role: .assistant, content: "Hello", isStreaming: true)
+        XCTAssertTrue(msg.showsStreamingCursor)
+    }
+
+    func test_showsStreamingCursor_falseWhenNotStreaming() {
+        let msg = DisplayMessage(role: .assistant, content: "Hello", isStreaming: false)
+        XCTAssertFalse(msg.showsStreamingCursor)
+    }
+
+    func test_showsStreamingCursor_falseWhenEmptyContent() {
+        let msg = DisplayMessage(role: .assistant, content: "", isStreaming: true)
+        XCTAssertFalse(msg.showsStreamingCursor)
+    }
+
+    func test_streamingMessage_transitionsFromTypingToCursor() {
+        let store = makeStore()
+        store.setupForTesting(agent: testConfig())
+
+        // On TextMessageStart, message has empty content → typing indicator
+        store.processEvent(TextMessageStartEvent(messageId: "m1", role: "assistant"))
+        let streaming = store.state.messages.last
+        XCTAssertTrue(streaming?.showsTypingIndicator == true)
+        XCTAssertFalse(streaming?.showsStreamingCursor == true)
+
+        // After first content delta → cursor indicator
+        store.processEvent(TextMessageContentEvent(messageId: "m1", delta: "Hi"))
+        let withContent = store.state.messages.last
+        XCTAssertFalse(withContent?.showsTypingIndicator == true)
+        XCTAssertTrue(withContent?.showsStreamingCursor == true)
+
+        // After TextMessageEnd → no animation state
+        store.processEvent(TextMessageEndEvent(messageId: "m1"))
+        let finished = store.state.messages.last
+        XCTAssertFalse(finished?.showsTypingIndicator == true)
+        XCTAssertFalse(finished?.showsStreamingCursor == true)
+    }
+
     // MARK: - Agent lifecycle
 
     func test_presentCreateAgent_setsDraft() {
