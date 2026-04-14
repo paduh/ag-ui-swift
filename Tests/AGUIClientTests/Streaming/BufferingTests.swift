@@ -378,6 +378,64 @@ final class BufferingTests: XCTestCase {
         XCTAssertGreaterThan(receivedBatches, 0)
     }
 
+    // MARK: - Time-Window Correctness Tests
+
+    func testTimeBatchedWindowFiresEvenWhenUpstreamIsIdle() async throws {
+        // Upstream yields one element then pauses 500 ms before the second.
+        // A 50 ms window must return the first batch after ~50 ms — NOT block for 500 ms.
+        let source = AsyncThrowingStream<String, Error> { continuation in
+            Task {
+                continuation.yield("a")
+                try await Task.sleep(for: .milliseconds(500))
+                continuation.yield("b")
+                continuation.finish()
+            }
+        }
+
+        let start = ContinuousClock.now
+        var batches: [[String]] = []
+        for try await batch in source.batched(timeWindow: 0.05) {
+            batches.append(batch)
+            // After the first batch arrives, check elapsed wall time
+            if batches.count == 1 {
+                let elapsed = ContinuousClock.now - start
+                // Must have returned within 200 ms (50 ms window + generous tolerance)
+                XCTAssertLessThan(
+                    elapsed,
+                    .milliseconds(200),
+                    "First batch must not block for the full 500 ms upstream pause"
+                )
+            }
+        }
+
+        XCTAssertGreaterThanOrEqual(batches.count, 2)
+        XCTAssertEqual(batches.flatMap { $0 }, ["a", "b"])
+    }
+
+    func testTimeBatchedGroupsFastElementsIntoBatch() async throws {
+        // Upstream yields 6 elements at 10 ms intervals — well within a 50 ms window.
+        // At least some elements should land in the same batch.
+        let source = AsyncStream<Int> { continuation in
+            Task {
+                for i in 0 ..< 6 {
+                    continuation.yield(i)
+                    try? await Task.sleep(for: .milliseconds(10))
+                }
+                continuation.finish()
+            }
+        }
+
+        var batches: [[Int]] = []
+        for try await batch in source.batched(timeWindow: 0.05) {
+            batches.append(batch)
+        }
+
+        // At 10 ms per element and a 50 ms window, at least 2 elements should batch together
+        let hasMultiElementBatch = batches.contains { $0.count > 1 }
+        XCTAssertTrue(hasMultiElementBatch, "Fast elements must be grouped within the window")
+        XCTAssertEqual(batches.flatMap { $0 }, [0, 1, 2, 3, 4, 5])
+    }
+
     // MARK: - Cancellation Tests
 
     func testBufferedCancellation() async throws {

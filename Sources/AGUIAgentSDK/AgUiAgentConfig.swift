@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+import AGUIClient
 import AGUICore
 import AGUITools
 import Foundation
@@ -85,6 +86,11 @@ public struct AgUiAgentConfig: Sendable {
     /// Default: `600`
     public var requestTimeout: TimeInterval
 
+    /// Retry policy applied to failed HTTP requests.
+    ///
+    /// Default: `.none`
+    public var retryPolicy: HttpAgentConfiguration.RetryPolicy
+
     /// Connection timeout in seconds.
     ///
     /// Default: `30`
@@ -137,6 +143,7 @@ public struct AgUiAgentConfig: Sendable {
         apiKeyHeader = "X-API-Key"
         headers = [:]
         requestTimeout = 600
+        retryPolicy = .none
         connectTimeout = 30
         systemPrompt = nil
         debug = false

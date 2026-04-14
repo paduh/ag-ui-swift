@@ -36,7 +36,7 @@ import XCTest
 /// - `.midStreamFailure(sseText:error:)` — streams bytes then throws mid-stream
 actor SequencedHTTPClient: HTTPClient {
 
-    enum Response: @unchecked Sendable {
+    enum Response: Sendable {
         case success(HTTPResponse)
         case failure(Error)
         /// Streams `sseText` as bytes, then throws `error` — simulates a network drop
@@ -443,7 +443,8 @@ final class SseReconnectionTests: XCTestCase {
 
         for try await _ in stream {}
 
-        XCTAssertEqual(stream.lastEventId, "second-id", "Must track the LAST seen SSE id")
+        let lastId = await stream.lastEventId
+        XCTAssertEqual(lastId, "second-id", "Must track the LAST seen SSE id")
     }
 
     func testEventStream_lastEventIdIsNil_whenStreamHasNoIds() async throws {
@@ -457,7 +458,8 @@ final class SseReconnectionTests: XCTestCase {
 
         for try await _ in stream {}
 
-        XCTAssertNil(stream.lastEventId, "lastEventId must be nil when no id: fields appear")
+        let lastId = await stream.lastEventId
+        XCTAssertNil(lastId, "lastEventId must be nil when no id: fields appear")
     }
 
     func testEventStream_lastEventIdUpdatesAcrossEvents() async throws {
@@ -478,12 +480,13 @@ final class SseReconnectionTests: XCTestCase {
         for try await _ in stream {
             eventCount += 1
             if eventCount == 1 {
-                idAfterFirst = stream.lastEventId
+                idAfterFirst = await stream.lastEventId
             }
         }
 
         XCTAssertEqual(idAfterFirst, "alpha", "After first event, id should be 'alpha'")
-        XCTAssertEqual(stream.lastEventId, "beta", "After all events, id should be 'beta'")
+        let finalId = await stream.lastEventId
+        XCTAssertEqual(finalId, "beta", "After all events, id should be 'beta'")
     }
 
     func testEventStream_lastEventIdIsSetEvenWhenEventFailsToDecode() async throws {
@@ -499,8 +502,9 @@ final class SseReconnectionTests: XCTestCase {
 
         for try await _ in stream {}
 
+        let lastId = await stream.lastEventId
         XCTAssertEqual(
-            stream.lastEventId,
+            lastId,
             "orphan-id",
             "id must be captured even when event data fails to decode"
         )

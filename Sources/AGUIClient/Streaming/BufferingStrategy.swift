@@ -67,22 +67,4 @@ public enum BufferingStrategy: Sendable {
     /// Result: [1, 2, 3, 4, 5] // Dropped 6
     /// ```
     case dropNewest
-
-    /// Block the producer when buffer is full (natural backpressure).
-    ///
-    /// This strategy applies backpressure by suspending the producer
-    /// until the consumer frees space in the buffer.
-    ///
-    /// **Use case**: When all events must be processed and loss is unacceptable.
-    ///
-    /// ## Example
-    ///
-    /// ```
-    /// Buffer: [1, 2, 3, 4, 5] (limit: 5)
-    /// New: 6 (producer suspends until consumer reads)
-    /// ```
-    ///
-    /// **Note**: This is the natural behavior of AsyncSequence iteration
-    /// and doesn't require explicit buffering.
-    case suspend
 }

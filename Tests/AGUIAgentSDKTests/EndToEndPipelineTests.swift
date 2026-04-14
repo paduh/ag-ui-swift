@@ -28,34 +28,28 @@ import AGUITools
 import XCTest
 @testable import AGUIAgentSDK
 
-// MARK: - MockAbstractAgent
+// MARK: - MockAgentTransport
 
-/// `AbstractAgent` subclass that emits a preset sequence of events.
-///
-/// Each call to `run(input:)` pops the next event sequence from `eventSequences`.
-/// When the queue is empty, subsequent calls emit an empty stream.
-private final class MockAbstractAgent: AbstractAgent, @unchecked Sendable {
-    private let lock = NSLock()
+actor MockAgentTransport: AgentTransport {
     private var _eventSequences: [[any AGUIEvent]] = []
 
-    /// Enqueue event sequences to be emitted on successive `run(input:)` calls.
     func enqueue(_ events: [any AGUIEvent]) {
-        lock.lock()
         _eventSequences.append(events)
-        lock.unlock()
     }
 
-    override func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
-        lock.lock()
-        let events: [any AGUIEvent] = _eventSequences.isEmpty ? [] : _eventSequences.removeFirst()
-        lock.unlock()
-
-        return AsyncThrowingStream { continuation in
-            for event in events {
-                continuation.yield(event)
+    nonisolated func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let events = await self.dequeue()
+                for event in events { continuation.yield(event) }
+                continuation.finish()
             }
-            continuation.finish()
+            continuation.onTermination = { _ in task.cancel() }
         }
+    }
+
+    private func dequeue() -> [any AGUIEvent] {
+        _eventSequences.isEmpty ? [] : _eventSequences.removeFirst()
     }
 }
 
@@ -65,10 +59,9 @@ final class EndToEndPipelineTests: XCTestCase {
 
     // MARK: - Text-only conversation
 
-    /// Full text-message pipeline: events accumulate into an `AssistantMessage` in `agent.messages`.
     func testTextOnlyConversationBuildsMessages() async throws {
-        let agent = MockAbstractAgent()
-        agent.enqueue([
+        let mockTransport = MockAgentTransport()
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             TextMessageStartEvent(messageId: "msg1"),
             TextMessageContentEvent(messageId: "msg1", delta: "Hello"),
@@ -77,6 +70,7 @@ final class EndToEndPipelineTests: XCTestCase {
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let messages = await agent.messages
@@ -88,22 +82,20 @@ final class EndToEndPipelineTests: XCTestCase {
 
     // MARK: - State snapshot & delta
 
-    /// `STATE_SNAPSHOT` sets initial state; `STATE_DELTA` patches it.
     func testStateDeltaIsAppliedCorrectly() async throws {
-        let agent = MockAbstractAgent()
+        let mockTransport = MockAgentTransport()
 
-        // Initial state: {"count": 0}
         let initialJSON = Data("{\"count\":0}".utf8)
-        // Delta: [{"op":"replace","path":"/count","value":5}]
         let patchJSON = Data("[{\"op\":\"replace\",\"path\":\"/count\",\"value\":5}]".utf8)
 
-        agent.enqueue([
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             StateSnapshotEvent(snapshot: initialJSON),
             StateDeltaEvent(delta: patchJSON),
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let finalState = await agent.state
@@ -116,15 +108,16 @@ final class EndToEndPipelineTests: XCTestCase {
     }
 
     func testStateSnapshotReplacesState() async throws {
-        let agent = MockAbstractAgent()
+        let mockTransport = MockAgentTransport()
         let snapshotJSON = Data("{\"mode\":\"creative\"}".utf8)
 
-        agent.enqueue([
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             StateSnapshotEvent(snapshot: snapshotJSON),
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let state = await agent.state
@@ -138,10 +131,9 @@ final class EndToEndPipelineTests: XCTestCase {
 
     // MARK: - Thinking telemetry
 
-    /// Full thinking sequence builds `ThinkingTelemetryState`.
     func testThinkingSequenceBuildsThinkingState() async throws {
-        let agent = MockAbstractAgent()
-        agent.enqueue([
+        let mockTransport = MockAgentTransport()
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             ThinkingStartEvent(title: "Step 1"),
             ThinkingTextMessageStartEvent(),
@@ -151,6 +143,7 @@ final class EndToEndPipelineTests: XCTestCase {
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let thinking = await agent.thinking
@@ -161,10 +154,9 @@ final class EndToEndPipelineTests: XCTestCase {
     }
 
     func testRunStartedResetsThinkingState() async throws {
-        let agent = MockAbstractAgent()
+        let mockTransport = MockAgentTransport()
 
-        // First run leaves thinking state
-        agent.enqueue([
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             ThinkingStartEvent(),
             ThinkingTextMessageStartEvent(),
@@ -174,30 +166,31 @@ final class EndToEndPipelineTests: XCTestCase {
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
-        // Second run: thinking state should be reset on RUN_STARTED
-        agent.enqueue([
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r2"),
             RunFinishedEvent(threadId: "t1", runId: "r2"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let thinking = await agent.thinking
-        XCTAssertNotNil(thinking) // was set by first run
+        XCTAssertNotNil(thinking)
     }
 
     // MARK: - Sequential multi-run (state persists)
 
     func testSequentialRunsMaintainState() async throws {
-        let agent = MockAbstractAgent()
+        let mockTransport = MockAgentTransport()
 
         let state1 = Data("{\"turn\":1}".utf8)
-        agent.enqueue([
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             StateSnapshotEvent(snapshot: state1),
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let stateAfterRun1 = await agent.state
@@ -209,7 +202,7 @@ final class EndToEndPipelineTests: XCTestCase {
         XCTAssertEqual(turn1, 1)
 
         let state2 = Data("{\"turn\":2}".utf8)
-        agent.enqueue([
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r2"),
             StateSnapshotEvent(snapshot: state2),
             RunFinishedEvent(threadId: "t1", runId: "r2"),
@@ -228,15 +221,14 @@ final class EndToEndPipelineTests: XCTestCase {
 
     // MARK: - Invalid event stream — EventVerifier
 
-    /// A stream that starts with a non-RUN_STARTED event must throw `AGUIProtocolError`.
     func testInvalidEventStreamThrowsProtocolError() async throws {
-        let agent = MockAbstractAgent()
+        let mockTransport = MockAgentTransport()
 
-        // Intentionally wrong: TextMessageStart without RUN_STARTED
-        agent.enqueue([
+        await mockTransport.enqueue([
             TextMessageStartEvent(messageId: "msg1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         do {
             try await agent.runAgent()
             XCTFail("Expected AGUIProtocolError to be thrown")
@@ -248,15 +240,15 @@ final class EndToEndPipelineTests: XCTestCase {
     }
 
     func testRunAfterRunErrorThrows() async throws {
-        let agent = MockAbstractAgent()
+        let mockTransport = MockAgentTransport()
 
-        agent.enqueue([
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             RunErrorEvent(message: "fatal error", code: "FATAL"),
-            // Any event after RUN_ERROR should cause a protocol error
             TextMessageStartEvent(messageId: "msg1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         do {
             try await agent.runAgent()
             XCTFail("Expected AGUIProtocolError to be thrown")
@@ -269,10 +261,9 @@ final class EndToEndPipelineTests: XCTestCase {
 
     // MARK: - Tool call accumulation
 
-    /// Tool call events (START/ARGS/END) build an `AssistantMessage` with `toolCalls`.
     func testToolCallSequenceBuildsAssistantMessageWithToolCalls() async throws {
-        let agent = MockAbstractAgent()
-        agent.enqueue([
+        let mockTransport = MockAgentTransport()
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             ToolCallStartEvent(toolCallId: "tc1", toolCallName: "get_weather"),
             ToolCallArgsEvent(toolCallId: "tc1", delta: "{\"city\":"),
@@ -281,6 +272,7 @@ final class EndToEndPipelineTests: XCTestCase {
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let messages = await agent.messages
@@ -300,14 +292,15 @@ final class EndToEndPipelineTests: XCTestCase {
     // MARK: - Custom & raw events
 
     func testRawEventsAccumulate() async throws {
-        let agent = MockAbstractAgent()
-        agent.enqueue([
+        let mockTransport = MockAgentTransport()
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             RawEvent(data: Data("{\"event\":\"raw_1\"}".utf8)),
             RawEvent(data: Data("{\"event\":\"raw_2\"}".utf8)),
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let rawEvents = await agent.rawEvents
@@ -315,14 +308,15 @@ final class EndToEndPipelineTests: XCTestCase {
     }
 
     func testCustomEventsAccumulate() async throws {
-        let agent = MockAbstractAgent()
-        agent.enqueue([
+        let mockTransport = MockAgentTransport()
+        await mockTransport.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             CustomEvent(name: "ping", value: Data("{\"ts\":1}".utf8)),
             CustomEvent(name: "pong", value: Data("{\"ts\":2}".utf8)),
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
+        let agent = AbstractAgent(transport: mockTransport)
         try await agent.runAgent()
 
         let customEvents = await agent.customEvents
@@ -363,7 +357,7 @@ final class EndToEndPipelineTests: XCTestCase {
 
 // MARK: - SimpleMockExecutor
 
-private final class SimpleMockExecutor: ToolExecutor, @unchecked Sendable {
+private final class SimpleMockExecutor: ToolExecutor, Sendable {
     let tool: Tool
 
     init(toolName: String, description: String) {

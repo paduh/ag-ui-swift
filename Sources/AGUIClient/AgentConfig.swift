@@ -73,18 +73,35 @@ public struct HttpAgentConfig: Sendable {
     public var requestTimeout: TimeInterval
     /// Connection timeout in seconds. Default: 30.
     public var connectTimeout: TimeInterval
-    /// Bearer token — automatically added as `Authorization: Bearer <token>`.
-    public var bearerToken: String? {
-        didSet {
-            if let token = bearerToken {
-                headers["Authorization"] = "Bearer \(token)"
-            }
-        }
-    }
+    /// Bearer token for authentication.
+    ///
+    /// When set, ``buildHeaders()`` includes `Authorization: Bearer <token>`.
+    /// This property does **not** mutate ``headers`` — use ``buildHeaders()``.
+    public var bearerToken: String?
     /// API key value.
     public var apiKey: String?
     /// Header name for the API key. Default: "X-API-Key".
     public var apiKeyHeader: String
+
+    // MARK: - Header builder
+
+    /// Returns the merged HTTP header dictionary.
+    ///
+    /// Applies `bearerToken` and `apiKey` on top of ``headers``.
+    /// Explicit ``headers`` entries override auto-generated auth headers.
+    public func buildHeaders() -> [String: String] {
+        var result: [String: String] = [:]
+        if let key = apiKey {
+            result[apiKeyHeader] = key
+        }
+        if let token = bearerToken {
+            result["Authorization"] = "Bearer \(token)"
+        }
+        for (k, v) in headers {
+            result[k] = v
+        }
+        return result
+    }
 
     public init(url: String, base: AgentConfig = AgentConfig()) {
         self.base = base

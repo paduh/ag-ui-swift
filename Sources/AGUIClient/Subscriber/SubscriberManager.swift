@@ -59,8 +59,16 @@ actor DefaultAgentSubscription: AgentSubscription {
 ///
 /// This actor maintains the list of active subscribers and provides
 /// methods to execute them in sequence with mutation chaining.
+///
+/// Subscribers are returned in **registration order** — the order in which
+/// `subscribe(_:)` was called. This is guaranteed even after interleaved
+/// `unsubscribe` calls. A parallel `insertionOrder` array tracks the sequence
+/// separately from the dictionary so that `Dictionary.values` (undefined order)
+/// is never used as an execution order.
 public actor SubscriberManager {
     private var subscribers: [UUID: any AgentSubscriber] = [:]
+    /// Tracks the order in which subscribers were registered.
+    private var insertionOrder: [UUID] = []
 
     public init() {}
 
@@ -71,6 +79,7 @@ public actor SubscriberManager {
     public func subscribe(_ subscriber: any AgentSubscriber) -> UUID {
         let id = UUID()
         subscribers[id] = subscriber
+        insertionOrder.append(id)
         return id
     }
 
@@ -79,13 +88,14 @@ public actor SubscriberManager {
     /// - Parameter id: The subscription ID to remove
     public func unsubscribe(_ id: UUID) {
         subscribers.removeValue(forKey: id)
+        insertionOrder.removeAll { $0 == id }
     }
 
-    /// Returns all active subscribers.
+    /// Returns all active subscribers in registration order.
     ///
-    /// - Returns: Array of all subscribers in registration order
+    /// - Returns: Array of all subscribers ordered by `subscribe(_:)` call sequence
     public func allSubscribers() -> [any AgentSubscriber] {
-        Array(subscribers.values)
+        insertionOrder.compactMap { subscribers[$0] }
     }
 }
 

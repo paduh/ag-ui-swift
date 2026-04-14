@@ -138,6 +138,61 @@ final class HttpAgentConfigurationTests: XCTestCase {
         }
     }
 
+    // MARK: - buildHeaders() Tests
+
+    func testBuildHeadersIncludesBearerToken() {
+        var config = HttpAgentConfiguration(baseURL: URL(string: "https://example.com")!)
+        config.bearerToken = "sk-test-token"
+        XCTAssertEqual(config.buildHeaders()["Authorization"], "Bearer sk-test-token")
+    }
+
+    func testBuildHeadersIncludesApiKey() {
+        var config = HttpAgentConfiguration(baseURL: URL(string: "https://example.com")!)
+        config.apiKey = "my-api-key"
+        XCTAssertEqual(config.buildHeaders()["X-API-Key"], "my-api-key")
+    }
+
+    func testBuildHeadersUsesCustomApiKeyHeader() {
+        var config = HttpAgentConfiguration(baseURL: URL(string: "https://example.com")!)
+        config.apiKeyHeader = "X-Custom-Key"
+        config.apiKey = "val"
+        XCTAssertEqual(config.buildHeaders()["X-Custom-Key"], "val")
+        XCTAssertNil(config.buildHeaders()["X-API-Key"])
+    }
+
+    func testBuildHeadersIncludesExplicitHeaders() {
+        var config = HttpAgentConfiguration(
+            baseURL: URL(string: "https://example.com")!,
+            headers: ["X-Trace": "abc123"]
+        )
+        XCTAssertEqual(config.buildHeaders()["X-Trace"], "abc123")
+    }
+
+    func testBearerTokenDoesNotSideEffectRawHeadersDict() {
+        // Setting bearerToken must NOT mutate the .headers dict directly —
+        // auth headers are only visible through buildHeaders().
+        var config = HttpAgentConfiguration(baseURL: URL(string: "https://example.com")!)
+        config.bearerToken = "sk-secret"
+        XCTAssertNil(config.headers["Authorization"],
+                     "bearerToken must not mutate headers via didSet; use buildHeaders()")
+    }
+
+    func testApiKeyDoesNotSideEffectRawHeadersDict() {
+        var config = HttpAgentConfiguration(baseURL: URL(string: "https://example.com")!)
+        config.apiKey = "key-secret"
+        XCTAssertNil(config.headers["X-API-Key"],
+                     "apiKey must not mutate headers via didSet; use buildHeaders()")
+    }
+
+    func testBuildHeadersMergesTokenOverApiKey() {
+        var config = HttpAgentConfiguration(baseURL: URL(string: "https://example.com")!)
+        config.bearerToken = "token"
+        config.apiKey = "key"
+        let built = config.buildHeaders()
+        XCTAssertEqual(built["Authorization"], "Bearer token")
+        XCTAssertEqual(built["X-API-Key"], "key")
+    }
+
     // MARK: - URL Construction Tests
 
     func testBaseURLWithPath() {

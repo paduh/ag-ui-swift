@@ -45,36 +45,51 @@ public struct HttpAgentConfiguration: Sendable {
 
     /// Bearer token for authentication.
     ///
-    /// When set, automatically adds `Authorization: Bearer <token>` to ``headers``.
-    /// Setting to `nil` does not remove a manually added `Authorization` header.
+    /// When set, ``buildHeaders()`` includes `Authorization: Bearer <token>`.
+    /// This property does **not** mutate ``headers`` directly — call
+    /// ``buildHeaders()`` to get the merged header dictionary for requests.
     ///
     /// Default: `nil`
-    public var bearerToken: String? {
-        didSet {
-            if let token = bearerToken {
-                headers["Authorization"] = "Bearer \(token)"
-            }
-        }
-    }
+    public var bearerToken: String?
 
     /// API key value.
     ///
-    /// When set, automatically adds the key to ``headers`` under ``apiKeyHeader``.
-    /// Setting to `nil` does not remove a manually added header.
+    /// When set, ``buildHeaders()`` includes the key under ``apiKeyHeader``.
+    /// This property does **not** mutate ``headers`` directly — call
+    /// ``buildHeaders()`` to get the merged header dictionary for requests.
     ///
     /// Default: `nil`
-    public var apiKey: String? {
-        didSet {
-            if let key = apiKey {
-                headers[apiKeyHeader] = key
-            }
-        }
-    }
+    public var apiKey: String?
 
     /// Header name used when adding the ``apiKey``.
     ///
     /// Default: `"X-API-Key"`
     public var apiKeyHeader: String
+
+    // MARK: - Header builder
+
+    /// Returns the final HTTP header dictionary, merging ``bearerToken`` and
+    /// ``apiKey`` into ``headers``.
+    ///
+    /// Priority (highest → lowest):
+    /// 1. Entries already in ``headers`` (override everything)
+    /// 2. `bearerToken` → `Authorization: Bearer <token>`
+    /// 3. `apiKey` → `<apiKeyHeader>: <key>`
+    ///
+    /// - Returns: Merged header dictionary ready for request construction.
+    public func buildHeaders() -> [String: String] {
+        var result: [String: String] = [:]
+        if let key = apiKey {
+            result[apiKeyHeader] = key
+        }
+        if let token = bearerToken {
+            result["Authorization"] = "Bearer \(token)"
+        }
+        for (k, v) in headers {
+            result[k] = v
+        }
+        return result
+    }
 
     /// Retry policy options.
     public enum RetryPolicy: Sendable {
