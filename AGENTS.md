@@ -33,3 +33,26 @@ Usage notes:
 <!-- SKILLS_TABLE_END -->
 
 </skills_system>
+
+### Concurrency Rules
+
+Swift 6 targets enable NonisolatedNonsendingByDefault and InferIsolatedConformances.
+
+- **No default `@MainActor` isolation** at module level. Apply `@MainActor` explicitly where needed (views, view models, UI-bound types).
+- **Use `@concurrent`** to mark a nonisolated async function that must run on the cooperative pool, not the caller's actor.
+- **Do not use `assumeIsolated`**. Use explicit isolation annotations (`@MainActor`) or restructure the code.
+- **Do not use `DispatchQueue.main.async` or `DispatchQueue.global().async`** in new code. Use `async/await` and `@MainActor` functions.
+- **Do not create custom actors.** Use `@MainActor`, `LeagueLocked`, or `NSLock` instead.
+- **Non-Sendable first.** Default to plain, nonisolated, non-`Sendable` types. `Sendable` and isolation are constraints — only add them when a type must cross an isolation boundary. Reach for `@MainActor`, `Sendable`, or `LeagueLocked` only when the compiler requires it.
+- **No `unsafe`/`unchecked` APIs.** Do not use `nonisolated(unsafe)`, `@unchecked Sendable`, `unsafeBitCast`, `unsafeDowncast`, `UnsafePointer` & friends, or `withUnsafe*`. For shared mutable state use `LeagueLocked` or `NSLock`. If genuinely needed (FFI, profiler-confirmed hot path), document why and open a decision record.
+- **No new `unsafe`/`unchecked` APIs in app code.** Do not introduce `nonisolated(unsafe)`, new ad hoc `@unchecked Sendable` conformances, `unsafeBitCast`, `unsafeDowncast`, `UnsafePointer` & friends, or `withUnsafe*`. `LeagueLocked` is an allowed, vetted wrapper for shared mutable state even though it uses `@unchecked Sendable` internally; otherwise use `NSLock`. If genuinely needed (FFI, profiler-confirmed hot path), document why and open a decision record.
+- **No `unsafe`/`unchecked` APIs.** Do not use `nonisolated(unsafe)`, `@unchecked Sendable`, `unsafeBitCast`, `unsafeDowncast`, `UnsafePointer` & friends, or `withUnsafe*`. For shared mutable state use `NSLock`, but keep lock-protected critical sections synchronous/non-suspending — never hold a lock across an `await` or any other suspension point. Prefer `NSLock {}`-style APIs where available to make that constraint obvious. If genuinely needed (FFI, profiler-confirmed hot path), document why and open a decision record.
+- **No `unsafe`/`unchecked` APIs.** Do not use `nonisolated(unsafe)`, `@unchecked Sendable`, `unsafeBitCast`, `unsafeDowncast`, `UnsafePointer` & friends, or `withUnsafe*`. For shared mutable state use `NSLock`. If genuinely needed (FFI, profiler-confirmed hot path), document why and open a decision record.
+
+### Unstructured `Task {}`
+
+Avoid `Task {}`. Prefer `async` functions, `async let`, and task groups.
+
+If you must use `Task {}`, store the handle and cancel it when the owner is deallocated.
+
+**Exception:** A one-shot `Task {}` that calls a single async function from a synchronous context (e.g. a button action) does not need to be stored:
