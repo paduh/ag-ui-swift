@@ -109,6 +109,18 @@ struct UserMessageDTO {
             case "binary":
                 let dto = try BinaryInputContentDTO.decode(from: itemData, decoder: decoder)
                 result.append(try dto.toDomain())
+            case "image":
+                let dto = try ImageInputContentDTO.decode(from: itemData, decoder: decoder)
+                result.append(dto.toDomain())
+            case "audio":
+                let dto = try AudioInputContentDTO.decode(from: itemData, decoder: decoder)
+                result.append(dto.toDomain())
+            case "video":
+                let dto = try VideoInputContentDTO.decode(from: itemData, decoder: decoder)
+                result.append(dto.toDomain())
+            case "document":
+                let dto = try DocumentInputContentDTO.decode(from: itemData, decoder: decoder)
+                result.append(dto.toDomain())
             default:
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(

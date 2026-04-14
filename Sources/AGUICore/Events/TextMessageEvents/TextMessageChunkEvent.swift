@@ -47,6 +47,11 @@ public struct TextMessageChunkEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// This field is typically only present in the first chunk of a message.
     public let role: String?
 
+    /// Optional display name for the message sender.
+    ///
+    /// Corresponds to the `name` field in the AG-UI TypeScript spec (events.ts:94).
+    public let name: String?
+
     /// The text content delta for this chunk.
     ///
     /// This contains the new text to append to the message. May be `nil` if
@@ -71,18 +76,21 @@ public struct TextMessageChunkEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// - Parameters:
     ///   - messageId: Optional identifier for the message (required for the first chunk)
     ///   - role: Optional role of the message sender (typically "assistant")
+    ///   - name: Optional display name for the message sender
     ///   - delta: Optional text content delta for this chunk
     ///   - timestamp: Optional timestamp in milliseconds since epoch
     ///   - rawEvent: Optional raw event data as received from the agent
     public init(
         messageId: String? = nil,
         role: String? = nil,
+        name: String? = nil,
         delta: String? = nil,
         timestamp: Int64? = nil,
         rawEvent: Data? = nil
     ) {
         self.messageId = messageId
         self.role = role
+        self.name = name
         self.delta = delta
         self.timestamp = timestamp
         self.rawEvent = rawEvent
@@ -98,6 +106,9 @@ extension TextMessageChunkEvent: CustomStringConvertible {
         }
         if let role = role {
             parts.append("role: \(role)")
+        }
+        if let name = name {
+            parts.append("name: \(name)")
         }
         if let delta = delta {
             let deltaPreview = delta.count > 50 ? String(delta.prefix(50)) + "..." : delta
@@ -117,6 +128,7 @@ extension TextMessageChunkEvent: CustomDebugStringConvertible {
         TextMessageChunkEvent {
             messageId: \(messageId.map { "\"\($0)\"" } ?? "nil")
             role: \(role.map { "\"\($0)\"" } ?? "nil")
+            name: \(name.map { "\"\($0)\"" } ?? "nil")
             delta: \(delta.map { "\"\($0)\"" } ?? "nil")
             timestamp: \(timestamp.map(String.init) ?? "nil")
             eventType: \(eventType.rawValue)

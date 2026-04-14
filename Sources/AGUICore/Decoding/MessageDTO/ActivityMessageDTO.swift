@@ -45,13 +45,13 @@ struct ActivityMessageDTO {
         let id = try MessageDecodingHelpers.extractRequiredString(from: jsonObject, key: "id")
         let activityType = try MessageDecodingHelpers.extractRequiredString(from: jsonObject, key: "activityType")
 
-        // Extract activityContent as JSON object
-        guard let activityContentValue = jsonObject["activityContent"] else {
+        // Extract content as JSON object (wire format key is "content")
+        guard let activityContentValue = jsonObject["content"] else {
             throw DecodingError.keyNotFound(
-                CodingKeys.activityContent,
+                CodingKeys.content,
                 DecodingError.Context(
                     codingPath: [],
-                    debugDescription: "Missing activityContent field"
+                    debugDescription: "Missing content field"
                 )
             )
         }
@@ -76,7 +76,7 @@ struct ActivityMessageDTO {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case activityContent
+        case content
     }
 }
 

@@ -39,7 +39,6 @@ import Foundation
 /// - **Activity**: `activitySnapshot`, `activityDelta`
 /// - **Special**: `raw`, `custom`
 
-@frozen
 public enum EventType: String, Codable, CaseIterable, Sendable {
     // MARK: - Lifecycle Events (5)
 
@@ -165,4 +164,15 @@ public enum EventType: String, Codable, CaseIterable, Sendable {
 
     /// Incremental activity update received
     case activityDelta = "ACTIVITY_DELTA"
+
+    // MARK: - Internal Sentinel (1)
+
+    /// Sentinel type returned by ``UnknownEvent`` for events that could not be decoded.
+    ///
+    /// The raw value `"__UNKNOWN__"` is deliberately not a valid AG-UI wire-format string,
+    /// ensuring it never collides with genuine ``EventType/raw`` events.
+    ///
+    /// - Note: This case is an implementation detail. Consumer code should check `event is UnknownEvent`
+    ///   rather than switching on `.unknown` directly.
+    case unknown = "__UNKNOWN__"
 }

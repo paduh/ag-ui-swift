@@ -44,6 +44,11 @@ public struct TextMessageStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// The role of the message sender (always "assistant" for agent messages).
     public let role: String
 
+    /// Optional display name for the message sender.
+    ///
+    /// Corresponds to the `name` field in the AG-UI TypeScript spec (events.ts:75).
+    public let name: String?
+
     /// Optional timestamp when the message generation started.
     ///
     /// Represented as milliseconds since Unix epoch.
@@ -62,16 +67,19 @@ public struct TextMessageStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// - Parameters:
     ///   - messageId: The unique identifier for this message
     ///   - role: The role of the message sender (typically "assistant")
+    ///   - name: Optional display name for the message sender
     ///   - timestamp: Optional timestamp in milliseconds since epoch
     ///   - rawEvent: Optional raw event data as received from the agent
     public init(
         messageId: String,
         role: String = "assistant",
+        name: String? = nil,
         timestamp: Int64? = nil,
         rawEvent: Data? = nil
     ) {
         self.messageId = messageId
         self.role = role
+        self.name = name
         self.timestamp = timestamp
         self.rawEvent = rawEvent
     }
@@ -80,7 +88,10 @@ public struct TextMessageStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
 // MARK: - CustomStringConvertible
 extension TextMessageStartEvent: CustomStringConvertible {
     public var description: String {
-        "TextMessageStartEvent(messageId: \(messageId), role: \(role), timestamp: \(timestamp?.description ?? "nil"))"
+        var parts = "TextMessageStartEvent(messageId: \(messageId), role: \(role)"
+        if let name = name { parts += ", name: \(name)" }
+        parts += ", timestamp: \(timestamp?.description ?? "nil"))"
+        return parts
     }
 }
 
@@ -91,6 +102,7 @@ extension TextMessageStartEvent: CustomDebugStringConvertible {
         TextMessageStartEvent {
             messageId: "\(messageId)"
             role: "\(role)"
+            name: \(name.map { "\"\($0)\"" } ?? "nil")
             timestamp: \(timestamp.map(String.init) ?? "nil")
             eventType: \(eventType.rawValue)
         }

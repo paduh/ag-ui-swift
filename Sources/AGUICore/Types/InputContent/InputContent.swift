@@ -32,15 +32,23 @@ import Foundation
 ///
 /// ## Content Types
 ///
-/// The AG-UI protocol defines two concrete content types:
-/// - ``TextInputContent``: Plain text fragments
-/// - ``BinaryInputContent``: Binary data (images, audio, documents) with MIME types
+/// The AG-UI protocol defines six concrete content types:
+/// - ``TextInputContent``: Plain text fragments (`"text"`)
+/// - ``BinaryInputContent``: Legacy catch-all binary data with MIME types (`"binary"`)
+/// - ``ImageInputContent``: Images with optional detail level (`"image"`)
+/// - ``AudioInputContent``: Audio with optional format (`"audio"`)
+/// - ``VideoInputContent``: Video data (`"video"`)
+/// - ``DocumentInputContent``: Documents with optional MIME type and title (`"document"`)
 ///
 /// ## Polymorphic Serialization
 ///
 /// Content types use the `type` field as a discriminator for JSON serialization:
 /// - `"text"`: Deserializes to ``TextInputContent``
 /// - `"binary"`: Deserializes to ``BinaryInputContent``
+/// - `"image"`: Deserializes to ``ImageInputContent``
+/// - `"audio"`: Deserializes to ``AudioInputContent``
+/// - `"video"`: Deserializes to ``VideoInputContent``
+/// - `"document"`: Deserializes to ``DocumentInputContent``
 ///
 /// ## Usage in UserMessage
 ///

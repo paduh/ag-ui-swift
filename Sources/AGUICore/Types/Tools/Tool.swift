@@ -142,23 +142,33 @@ public struct Tool: Sendable, Codable, Hashable {
     /// understand what arguments are needed without strict compile-time coupling.
     public let parameters: Data
 
+    /// Optional metadata as raw JSON bytes.
+    ///
+    /// Used by A2UI schema extensions and tool registry annotations. Stored as `Data`
+    /// for `Sendable` compliance; encoded and decoded via the same `AnyCodable` pattern
+    /// as `parameters`. Corresponds to the `metadata` field in the AG-UI protocol spec.
+    public let metadata: Data?
+
     /// Creates a new tool definition.
     ///
     /// - Parameters:
     ///   - name: Unique identifier for the tool
     ///   - description: Human-readable explanation of the tool's purpose
     ///   - parameters: JSON Schema defining the tool's parameters as Data
+    ///   - metadata: Optional metadata as raw JSON bytes
     ///
     /// - Note: The parameters should contain valid JSON Schema. Invalid schema
     ///   may cause validation errors during tool execution.
     public init(
         name: String,
         description: String,
-        parameters: Data
+        parameters: Data,
+        metadata: Data? = nil
     ) {
         self.name = name
         self.description = description
         self.parameters = parameters
+        self.metadata = metadata
     }
 
     // MARK: - Codable
@@ -167,6 +177,7 @@ public struct Tool: Sendable, Codable, Hashable {
         case name
         case description
         case parameters
+        case metadata
     }
 
     public init(from decoder: Decoder) throws {
@@ -179,6 +190,14 @@ public struct Tool: Sendable, Codable, Hashable {
         let parametersValue = try container.decode(AnyCodable.self, forKey: .parameters)
         let jsonData = try JSONSerialization.data(withJSONObject: parametersValue.value)
         parameters = jsonData
+
+        // Decode optional metadata using same AnyCodable pattern as parameters
+        if let metadataValue = try? container.decode(AnyCodable.self, forKey: .metadata),
+           !(metadataValue.value is NSNull) {
+            metadata = try JSONSerialization.data(withJSONObject: metadataValue.value)
+        } else {
+            metadata = nil
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -190,6 +209,12 @@ public struct Tool: Sendable, Codable, Hashable {
         // This maintains JSON compatibility with the protocol
         let jsonObject = try JSONSerialization.jsonObject(with: parameters)
         try container.encode(AnyCodable(jsonObject), forKey: .parameters)
+
+        // Encode optional metadata as nested JSON object (same pattern as parameters)
+        if let metadataData = metadata {
+            let metadataObject = try JSONSerialization.jsonObject(with: metadataData)
+            try container.encode(AnyCodable(metadataObject), forKey: .metadata)
+        }
     }
 }
 
