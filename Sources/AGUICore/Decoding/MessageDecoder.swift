@@ -195,7 +195,7 @@ public struct MessageDecoder: Sendable {
 
     // MARK: - Default Registry
 
-    /// Returns the default registry with handlers for all 6 message types.
+    /// Returns the default registry with handlers for all 7 message types.
     ///
     /// The default registry includes:
     /// - `.developer` → `DeveloperMessage`
@@ -204,6 +204,7 @@ public struct MessageDecoder: Sendable {
     /// - `.assistant` → `AssistantMessage`
     /// - `.tool` → `ToolMessage`
     /// - `.activity` → `ActivityMessage`
+    /// - `.reasoning` → `ReasoningMessage`
     ///
     /// - Returns: Dictionary mapping each role to its decode handler
     public static func defaultRegistry() -> [Role: DecodeHandler] {
@@ -225,6 +226,9 @@ public struct MessageDecoder: Sendable {
             },
             .activity: { data, decoder in
                 try ActivityMessageDTO.decode(from: data, decoder: decoder).toDomain()
+            },
+            .reasoning: { data, decoder in
+                try ReasoningMessageDTO.decode(from: data, decoder: decoder).toDomain()
             }
         ]
     }

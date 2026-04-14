@@ -95,20 +95,29 @@ public struct SystemMessage: Message, Sendable, Hashable {
     /// sets, or behavioral modes (e.g., "ProfessionalMode", "CasualAssistant").
     public let name: String?
 
+    /// Optional encrypted value associated with this message.
+    ///
+    /// When present, carries a cryptographic value produced by the agent's
+    /// reasoning process.
+    public let encryptedValue: String?
+
     /// Creates a new system message.
     ///
     /// - Parameters:
     ///   - id: Unique identifier for this message
     ///   - content: The system's instruction content (optional)
     ///   - name: Optional identifier for the system or instruction set
+    ///   - encryptedValue: Optional encrypted reasoning value
     public init(
         id: String,
         content: String? = nil,
-        name: String? = nil
+        name: String? = nil,
+        encryptedValue: String? = nil
     ) {
         self.id = id
         self.role = .system
         self.content = content
         self.name = name
+        self.encryptedValue = encryptedValue
     }
 }

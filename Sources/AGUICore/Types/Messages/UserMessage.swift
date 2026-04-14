@@ -90,6 +90,12 @@ public struct UserMessage: Message, Sendable, Hashable {
     /// InputContent for multimodal messages.
     public let contentParts: [any InputContent]?
 
+    /// Optional encrypted value associated with this message.
+    ///
+    /// When present, carries a cryptographic value produced by the agent's
+    /// reasoning process.
+    public let encryptedValue: String?
+
     /// Whether this message contains multimodal content.
     ///
     /// Returns `true` if the message has `contentParts`, `false` for text-only.
@@ -103,16 +109,19 @@ public struct UserMessage: Message, Sendable, Hashable {
     ///   - id: Unique identifier for the message
     ///   - content: The text content
     ///   - name: Optional name of the user
+    ///   - encryptedValue: Optional encrypted reasoning value
     public init(
         id: String,
         content: String,
-        name: String? = nil
+        name: String? = nil,
+        encryptedValue: String? = nil
     ) {
         self.id = id
         self.role = .user
         self.content = content
         self.name = name
         self.contentParts = nil
+        self.encryptedValue = encryptedValue
     }
 
     /// Creates a multimodal user message with mixed text and binary content.
@@ -121,18 +130,21 @@ public struct UserMessage: Message, Sendable, Hashable {
     ///   - id: Unique identifier for the message
     ///   - parts: Array of InputContent (text and/or binary)
     ///   - name: Optional name of the user
+    ///   - encryptedValue: Optional encrypted reasoning value
     /// - Returns: A multimodal UserMessage
     public static func multimodal(
         id: String,
         parts: [any InputContent],
-        name: String? = nil
+        name: String? = nil,
+        encryptedValue: String? = nil
     ) -> UserMessage {
         UserMessage(
             id: id,
             role: .user,
             content: "",
             name: name,
-            contentParts: parts
+            contentParts: parts,
+            encryptedValue: encryptedValue
         )
     }
 
@@ -142,13 +154,15 @@ public struct UserMessage: Message, Sendable, Hashable {
         role: Role,
         content: String,
         name: String?,
-        contentParts: [any InputContent]?
+        contentParts: [any InputContent]?,
+        encryptedValue: String? = nil
     ) {
         self.id = id
         self.role = role
         self.content = content
         self.name = name
         self.contentParts = contentParts
+        self.encryptedValue = encryptedValue
     }
 
     // MARK: - Hashable

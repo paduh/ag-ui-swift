@@ -112,6 +112,12 @@ public struct ToolMessage: Message, Sendable, Hashable {
     /// should contain a user-friendly error description.
     public let error: String?
 
+    /// Optional encrypted value associated with this tool result.
+    ///
+    /// When present, carries a cryptographic value for verified tool execution
+    /// workflows (e.g., from a ``ReasoningEncryptedValueEvent`` with subtype `.toolCall`).
+    public let encryptedValue: String?
+
     /// Creates a new tool message.
     ///
     /// - Parameters:
@@ -120,12 +126,14 @@ public struct ToolMessage: Message, Sendable, Hashable {
     ///   - toolCallId: The ID of the tool call this message responds to
     ///   - name: Optional name of the tool that generated this message
     ///   - error: Optional error message if tool execution failed
+    ///   - encryptedValue: Optional encrypted value for verified tool execution
     public init(
         id: String,
         content: String,
         toolCallId: String,
         name: String? = nil,
-        error: String? = nil
+        error: String? = nil,
+        encryptedValue: String? = nil
     ) {
         self.id = id
         self.role = .tool
@@ -133,5 +141,6 @@ public struct ToolMessage: Message, Sendable, Hashable {
         self.toolCallId = toolCallId
         self.name = name
         self.error = error
+        self.encryptedValue = encryptedValue
     }
 }

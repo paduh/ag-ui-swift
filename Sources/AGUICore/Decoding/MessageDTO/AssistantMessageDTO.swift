@@ -30,6 +30,7 @@ struct AssistantMessageDTO {
     let content: String?
     let name: String?
     let toolCalls: [ToolCall]?
+    let encryptedValue: String?
 
     static func decode(from data: Data, decoder: JSONDecoder = JSONDecoder()) throws -> AssistantMessageDTO {
         guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
@@ -48,6 +49,7 @@ struct AssistantMessageDTO {
         // Extract optional fields
         let content = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "content")
         let name = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "name")
+        let encryptedValue = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "encryptedValue")
 
         // Extract optional toolCalls array
         let toolCalls: [ToolCall]?
@@ -58,10 +60,10 @@ struct AssistantMessageDTO {
             toolCalls = nil
         }
 
-        return AssistantMessageDTO(id: id, content: content, name: name, toolCalls: toolCalls)
+        return AssistantMessageDTO(id: id, content: content, name: name, toolCalls: toolCalls, encryptedValue: encryptedValue)
     }
 
     func toDomain() -> AssistantMessage {
-        AssistantMessage(id: id, content: content, name: name, toolCalls: toolCalls)
+        AssistantMessage(id: id, content: content, name: name, toolCalls: toolCalls, encryptedValue: encryptedValue)
     }
 }

@@ -111,4 +111,10 @@ public protocol Message: Sendable {
     /// - Label different AI agents in multi-agent systems
     /// - Tag tool invocations with descriptive names
     var name: String? { get }
+
+    /// Optional encrypted value associated with this message.
+    ///
+    /// When present, carries a cryptographic value produced by the agent's
+    /// reasoning process (e.g., from a ``ReasoningEncryptedValueEvent``).
+    var encryptedValue: String? { get }
 }

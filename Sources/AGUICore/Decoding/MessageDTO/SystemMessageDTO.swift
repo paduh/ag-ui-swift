@@ -29,6 +29,7 @@ struct SystemMessageDTO {
     let id: String
     let content: String?
     let name: String?
+    let encryptedValue: String?
 
     static func decode(from data: Data, decoder: JSONDecoder = JSONDecoder()) throws -> SystemMessageDTO {
         guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
@@ -47,11 +48,12 @@ struct SystemMessageDTO {
         // Extract optional fields
         let content = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "content")
         let name = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "name")
+        let encryptedValue = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "encryptedValue")
 
-        return SystemMessageDTO(id: id, content: content, name: name)
+        return SystemMessageDTO(id: id, content: content, name: name, encryptedValue: encryptedValue)
     }
 
     func toDomain() -> SystemMessage {
-        SystemMessage(id: id, content: content, name: name)
+        SystemMessage(id: id, content: content, name: name, encryptedValue: encryptedValue)
     }
 }

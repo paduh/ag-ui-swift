@@ -103,21 +103,30 @@ public struct ToolCall: Sendable, Codable, Hashable {
     /// the call to the appropriate handler.
     public let function: FunctionCall
 
+    /// Optional encrypted value associated with this tool call.
+    ///
+    /// When present, carries a cryptographic value for verified tool-call
+    /// workflows (e.g., from a ``ReasoningEncryptedValueEvent`` with subtype `.toolCall`).
+    public let encryptedValue: String?
+
     /// Creates a new tool call.
     ///
     /// - Parameters:
     ///   - id: Unique identifier for this tool call
     ///   - function: The function call details including name and arguments
+    ///   - encryptedValue: Optional encrypted value for verified tool execution
     ///
     /// - Note: The `type` field is automatically set to "function" and does not
     ///   need to be specified.
     public init(
         id: String,
-        function: FunctionCall
+        function: FunctionCall,
+        encryptedValue: String? = nil
     ) {
         self.id = id
         self.type = "function"
         self.function = function
+        self.encryptedValue = encryptedValue
     }
 
     // MARK: - Codable
@@ -126,12 +135,14 @@ public struct ToolCall: Sendable, Codable, Hashable {
         case id
         case type
         case function
+        case encryptedValue
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         function = try container.decode(FunctionCall.self, forKey: .function)
+        encryptedValue = try container.decodeIfPresent(String.self, forKey: .encryptedValue)
 
         // Type should always be "function", decode if present but default to "function"
         type = try container.decodeIfPresent(String.self, forKey: .type) ?? "function"
@@ -142,5 +153,6 @@ public struct ToolCall: Sendable, Codable, Hashable {
         try container.encode(id, forKey: .id)
         try container.encode(type, forKey: .type)
         try container.encode(function, forKey: .function)
+        try container.encodeIfPresent(encryptedValue, forKey: .encryptedValue)
     }
 }
