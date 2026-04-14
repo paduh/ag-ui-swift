@@ -226,7 +226,7 @@ public actor DefaultToolRegistry: ToolRegistry {
         do {
             // Execute with timeout if specified
             if let maxTime = executor.maximumExecutionTime() {
-                result = try await withTimeout(maxTime) {
+                result = try await withTimeout(maxTime, toolName: toolName) {
                     try await executor.execute(context: context)
                 }
             } else {
@@ -323,6 +323,7 @@ private final class MutableToolExecutionStats: @unchecked Sendable {
 /// - Throws: ``ToolExecutionError/timeout(toolName:duration:)`` if timeout exceeded
 private func withTimeout<T>(
     _ duration: Duration,
+    toolName: String,
     operation: @escaping @Sendable () async throws -> T
 ) async throws -> T {
     try await withThrowingTaskGroup(of: T.self) { group in
@@ -332,7 +333,7 @@ private func withTimeout<T>(
 
         group.addTask {
             try await Task.sleep(for: duration)
-            throw ToolExecutionError.timeout(toolName: "unknown", duration: duration)
+            throw ToolExecutionError.timeout(toolName: toolName, duration: duration)
         }
 
         let result = try await group.next()!

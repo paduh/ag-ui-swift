@@ -33,7 +33,7 @@ final class RawEventTests: XCTestCase,
 
     var validEventFieldsWithoutType: [String: Any] {
         [
-            "data": ["arbitrary": "content", "can": "be", "anything": 123]
+            "event": ["arbitrary": "content", "can": "be", "anything": 123]
         ]
     }
 
@@ -48,7 +48,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": {
+          "event": {
             "customField": "value",
             "nested": {
               "prop": 123
@@ -80,7 +80,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": [1, 2, 3, "four", true]
+          "event": [1, 2, 3, "four", true]
         }
         """)
         let decoder = makeStrictDecoder()
@@ -100,7 +100,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": "simple string"
+          "event": "simple string"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -119,7 +119,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": 42
+          "event": 42
         }
         """)
         let decoder = makeStrictDecoder()
@@ -138,7 +138,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": null
+          "event": null
         }
         """)
         let decoder = makeStrictDecoder()
@@ -157,7 +157,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": { "value": 123 },
+          "event": { "value": 123 },
           "timestamp": \(EventTestData.timestamp)
         }
         """)
@@ -176,7 +176,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": { "key": "value" },
+          "event": { "key": "value" },
           "timestamp": \(EventTestData.timestamp)
         }
         """)
@@ -195,7 +195,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": { "key": "value" },
+          "event": { "key": "value" },
           "extraField": "ignored",
           "nested": { "x": 1 }
         }
@@ -228,7 +228,7 @@ final class RawEventTests: XCTestCase,
             guard case .decodingFailed(let message) = error as? EventDecodingError else {
                 return XCTFail("Expected decodingFailed, got \(error)")
             }
-            XCTAssertTrue(message.contains("data") || message.contains("Missing key"))
+            XCTAssertTrue(message.contains("event") || message.contains("Missing key"))
         }
     }
 
@@ -237,7 +237,7 @@ final class RawEventTests: XCTestCase,
         let data = jsonData("""
         {
           "type": "RAW",
-          "data": { "key": "value" },
+          "event": { "key": "value" },
           "timestamp": "not-a-number"
         }
         """)

@@ -193,11 +193,7 @@ final class ChatAppStoreTests: XCTestCase {
         let store = makeStore()
         store.setupForTesting(agent: testConfig())
 
-        store.processEvent(RunErrorEvent(
-            threadId: "t1",
-            runId: "r1",
-            error: .init(code: "TIMEOUT", message: "Request timed out")
-        ))
+        store.processEvent(RunErrorEvent(message: "Request timed out", code: "TIMEOUT"))
 
         XCTAssertEqual(store.state.error, "Request timed out")
     }
@@ -205,11 +201,7 @@ final class ChatAppStoreTests: XCTestCase {
     func test_dismissError_clearsError() {
         let store = makeStore()
         store.setupForTesting(agent: testConfig())
-        store.processEvent(RunErrorEvent(
-            threadId: "t1",
-            runId: "r1",
-            error: .init(code: "ERR", message: "boom")
-        ))
+        store.processEvent(RunErrorEvent(message: "boom", code: "ERR"))
 
         store.dismissError()
 
@@ -238,11 +230,7 @@ final class ChatAppStoreTests: XCTestCase {
         store.setupForTesting(agent: testConfig())
         let initialCount = store.state.supplementalMessages.count
 
-        store.processEvent(RunErrorEvent(
-            threadId: "t1",
-            runId: "r1",
-            error: .init(code: "ERR", message: "Network failed")
-        ))
+        store.processEvent(RunErrorEvent(message: "Network failed", code: "ERR"))
 
         XCTAssertEqual(store.state.supplementalMessages.count, initialCount + 1)
         if case .error(let msg) = store.state.supplementalMessages.last?.kind {
@@ -270,11 +258,7 @@ final class ChatAppStoreTests: XCTestCase {
         store.setupForTesting(agent: testConfig())
 
         // Add a supplemental message
-        store.processEvent(RunErrorEvent(
-            threadId: "t1",
-            runId: "r1",
-            error: .init(code: "ERR", message: "Oops")
-        ))
+        store.processEvent(RunErrorEvent(message: "Oops", code: "ERR"))
         // Add an agent message after
         store.processEvent(TextMessageStartEvent(messageId: "m1", role: "assistant"))
         store.processEvent(TextMessageEndEvent(messageId: "m1"))

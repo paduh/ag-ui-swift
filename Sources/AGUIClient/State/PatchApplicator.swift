@@ -339,8 +339,9 @@ public struct PatchApplicator: Sendable {
             throw PatchError.invalidOperation("Path must start with /: \(path)")
         }
 
+        // Per RFC 6901: "/" means the empty-string key "". Root is represented by "".
         if path == "/" {
-            return []
+            return [""]
         }
 
         return path.dropFirst().split(separator: "/").map { token in

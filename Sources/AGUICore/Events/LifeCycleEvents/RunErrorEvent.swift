@@ -34,14 +34,15 @@ public struct RunErrorEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties
 
-    /// The identifier for the conversation thread.
-    public let threadId: String
+    /// Human-readable error message.
+    ///
+    /// Matches the `message` field in the AG-UI protocol.
+    public let message: String
 
-    /// The unique identifier for the failed run.
-    public let runId: String
-
-    /// Error information.
-    public let error: ErrorInfo
+    /// Optional error code (e.g., "TIMEOUT", "TOOL_EXECUTION_FAILED").
+    ///
+    /// Matches the `code` field in the AG-UI protocol.
+    public let code: String?
 
     /// Optional timestamp when the error occurred.
     public let timestamp: Int64?
@@ -52,46 +53,23 @@ public struct RunErrorEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// The type of this event (always `.runError`).
     public var eventType: EventType { .runError }
 
-    // MARK: - Nested Types
-
-    /// Error information structure.
-    public struct ErrorInfo: Codable, Equatable, Hashable, Sendable {
-        /// Error code (e.g., "TOOL_EXECUTION_FAILED", "TIMEOUT")
-        public let code: String
-
-        /// Human-readable error message
-        public let message: String
-
-        /// Optional additional error details as JSON
-        public let details: [String: String]?
-
-        public init(code: String, message: String, details: [String: String]? = nil) {
-            self.code = code
-            self.message = message
-            self.details = details
-        }
-    }
-
     // MARK: - Initialization
 
     /// Creates a new `RunErrorEvent`.
     ///
     /// - Parameters:
-    ///   - threadId: The conversation thread identifier
-    ///   - runId: The unique run identifier
-    ///   - error: Error information
+    ///   - message: Human-readable error description
+    ///   - code: Optional error code
     ///   - timestamp: Optional timestamp in milliseconds since epoch
     ///   - rawEvent: Optional raw event data as received from the agent
     public init(
-        threadId: String,
-        runId: String,
-        error: ErrorInfo,
+        message: String,
+        code: String? = nil,
         timestamp: Int64? = nil,
         rawEvent: Data? = nil
     ) {
-        self.threadId = threadId
-        self.runId = runId
-        self.error = error
+        self.message = message
+        self.code = code
         self.timestamp = timestamp
         self.rawEvent = rawEvent
     }
@@ -101,8 +79,7 @@ public struct RunErrorEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
 extension RunErrorEvent: CustomStringConvertible {
     public var description: String {
-        "RunErrorEvent(threadId: \(threadId), runId: \(runId), " +
-        "error: \(error.code), timestamp: \(timestamp?.description ?? "nil"))"
+        "RunErrorEvent(message: \"\(message)\", code: \(code ?? "nil"), timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
 
@@ -111,9 +88,8 @@ extension RunErrorEvent: CustomDebugStringConvertible {
     public var debugDescription: String {
         """
         RunErrorEvent {
-            threadId: "\(threadId)"
-            runId: "\(runId)"
-            error: \(error.code)
+            message: "\(message)"
+            code: \(code ?? "nil")
             timestamp: \(timestamp.map(String.init) ?? "nil")
             eventType: \(eventType.rawValue)
         }

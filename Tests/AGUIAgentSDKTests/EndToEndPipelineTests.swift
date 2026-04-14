@@ -252,11 +252,7 @@ final class EndToEndPipelineTests: XCTestCase {
 
         agent.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
-            RunErrorEvent(
-                threadId: "t1",
-                runId: "r1",
-                error: RunErrorEvent.ErrorInfo(code: "FATAL", message: "fatal error")
-            ),
+            RunErrorEvent(message: "fatal error", code: "FATAL"),
             // Any event after RUN_ERROR should cause a protocol error
             TextMessageStartEvent(messageId: "msg1"),
         ])

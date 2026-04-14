@@ -399,13 +399,27 @@ extension HTTPResponse {
         let session = await URLSession.makeMockSession(registry: registry)
 
         // Execute request to get bytes
-        let (bytes, response) = try await session.bytes(for: URLRequest(url: url))
+        let (asyncBytes, response) = try await session.bytes(for: URLRequest(url: url))
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ClientError.invalidResponse
         }
 
-        return HTTPResponse(bytes: bytes, httpResponse: httpResponse)
+        // Bridge URLSession.AsyncBytes → AsyncThrowingStream<UInt8, Error>
+        let stream = AsyncThrowingStream<UInt8, Error> { continuation in
+            Task {
+                do {
+                    for try await byte in asyncBytes {
+                        continuation.yield(byte)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+
+        return HTTPResponse(bytes: stream, httpResponse: httpResponse)
     }
 }
 

@@ -59,9 +59,18 @@ public protocol HTTPClient: Sendable {
 }
 
 /// HTTP response containing streaming bytes and metadata.
+///
+/// `bytes` is typed as `AsyncThrowingStream<UInt8, Error>` rather than
+/// `URLSession.AsyncBytes` so that:
+/// - Mock `HTTPClient` implementations can produce byte streams without a live URLSession
+/// - The transport layer is testable in isolation
+/// - Consumers of `HTTPClient` are decoupled from URLSession internals
 public struct HTTPResponse: Sendable {
     /// Streaming response bytes.
-    public let bytes: URLSession.AsyncBytes
+    ///
+    /// Conforms to `AsyncSequence` producing `UInt8` values, allowing
+    /// incremental consumption of the response body.
+    public let bytes: AsyncThrowingStream<UInt8, Error>
 
     /// HTTP response metadata.
     public let httpResponse: HTTPURLResponse
@@ -79,9 +88,9 @@ public struct HTTPResponse: Sendable {
     /// Creates a new HTTP response.
     ///
     /// - Parameters:
-    ///   - bytes: Streaming response bytes
+    ///   - bytes: Streaming response bytes as an `AsyncThrowingStream<UInt8, Error>`
     ///   - httpResponse: HTTP response metadata
-    public init(bytes: URLSession.AsyncBytes, httpResponse: HTTPURLResponse) {
+    public init(bytes: AsyncThrowingStream<UInt8, Error>, httpResponse: HTTPURLResponse) {
         self.bytes = bytes
         self.httpResponse = httpResponse
     }

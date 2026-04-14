@@ -74,11 +74,7 @@ final class EventVerifierTests: XCTestCase {
     func testRunErrorAsFirstEventIsAllowed() async throws {
         // Given: A stream starting with RUN_ERROR
         let events: [any AGUIEvent] = [
-            RunErrorEvent(
-                threadId: "t1",
-                runId: "r1",
-                error: RunErrorEvent.ErrorInfo(code: "ERR", message: "Something failed")
-            ),
+            RunErrorEvent(message: "Something failed", code: "ERR"),
         ]
 
         // When: Verifying
@@ -184,11 +180,7 @@ final class EventVerifierTests: XCTestCase {
     func testEventsAfterRunErrorThrows() async throws {
         // Given: An event after RUN_ERROR
         let events: [any AGUIEvent] = [
-            RunErrorEvent(
-                threadId: "t1",
-                runId: "r1",
-                error: RunErrorEvent.ErrorInfo(code: "ERR", message: "Failure")
-            ),
+            RunErrorEvent(message: "Failure", code: "ERR"),
             TextMessageStartEvent(messageId: "msg1", role: "assistant"),
         ]
 

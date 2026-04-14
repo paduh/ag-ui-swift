@@ -211,7 +211,7 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
     public func run(
         _ input: RunAgentInput,
         endpoint: String? = nil
-    ) async throws -> EventStream<URLSession.AsyncBytes> {
+    ) async throws -> EventStream<AsyncThrowingStream<UInt8, Error>> {
         let bytes = try await transport.execute(
             endpoint: endpoint ?? defaultEndpoint,
             input: input
@@ -262,7 +262,7 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
         runId: String,
         endpoint: String? = nil,
         configure: (RunAgentInputBuilder) -> RunAgentInputBuilder = { $0 }
-    ) async throws -> EventStream<URLSession.AsyncBytes> {
+    ) async throws -> EventStream<AsyncThrowingStream<UInt8, Error>> {
         let input = try configure(
             RunAgentInput.builder()
                 .threadId(threadId)
