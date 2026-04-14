@@ -27,10 +27,6 @@ import Foundation
 
 // MARK: - AgentStorage
 
-/// Thread-safe mutable storage for an agent's runtime state.
-///
-/// All reads and writes are serialized through the actor executor,
-/// ensuring data-race-free access across concurrent tasks.
 internal actor AgentStorage {
     var messages: [any Message] = []
     var currentState: State = Data("{}".utf8)
@@ -55,48 +51,25 @@ internal extension AgentStorage {
 
 // MARK: - AbstractAgent
 
-/// Base class for AG-UI agents.
-///
-/// `AbstractAgent` provides the full lifecycle pipeline — including chunk
-/// transformation, protocol verification, state application, and subscriber
-/// notification — while delegating the raw event stream to subclasses via
-/// `run(input:)`.
-///
-/// ## Subclassing
-///
-/// Override `run(input:)` to return a stream of raw AG-UI events:
-///
-/// ```swift
-/// final class MyAgent: AbstractAgent {
-///     override func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
-///         // Return your event stream here
-///     }
-/// }
-/// ```
-///
-/// ## Thread Safety
-///
-/// The `@unchecked Sendable` annotation is required because `open class`
-/// with mutable stored properties cannot automatically synthesize `Sendable`
-/// conformance. Thread safety is provided by the internal `AgentStorage` actor.
-open class AbstractAgent: @unchecked Sendable {
+public final class AbstractAgent: Sendable {
 
     // MARK: - Internal storage
 
     internal let storage: AgentStorage
     internal let subscriberManager: SubscriberManager
 
+    // MARK: - Transport
+
+    private let transport: any AgentTransport
+
     // MARK: - Configuration (immutable after init)
 
-    /// When `true`, logs verbose pipeline output to stdout.
     public let debug: Bool
 
     // MARK: - Initialization
 
-    /// Creates a new abstract agent.
-    ///
-    /// - Parameter debug: When `true`, enables verbose pipeline logging.
-    public init(debug: Bool = false) {
+    public init(transport: any AgentTransport, debug: Bool = false) {
+        self.transport = transport
         self.storage = AgentStorage()
         self.subscriberManager = SubscriberManager()
         self.debug = debug
@@ -104,46 +77,24 @@ open class AbstractAgent: @unchecked Sendable {
 
     // MARK: - Async state accessors (cross actor boundary)
 
-    /// The current conversation message list.
     public var messages: [any Message] { get async { await storage.messages } }
 
-    /// The current JSON state.
     public var state: State { get async { await storage.currentState } }
 
-    /// The accumulated raw events received during runs.
     public var rawEvents: [RawEvent] { get async { await storage.rawEvents } }
 
-    /// The accumulated custom events received during runs.
     public var customEvents: [CustomEvent] { get async { await storage.customEvents } }
 
-    /// The current thinking/reasoning telemetry state, if any.
     public var thinking: ThinkingTelemetryState? { get async { await storage.thinking } }
 
-    // MARK: - Abstract run method (subclasses must override)
+    // MARK: - Run method
 
-    /// Returns a stream of raw decoded AG-UI events for the given input.
-    ///
-    /// Subclasses **must** override this method. The default implementation
-    /// triggers a `fatalError`.
-    ///
-    /// - Parameter input: The run agent input.
-    /// - Returns: An `AsyncThrowingStream` of AG-UI events.
-    open func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
-        fatalError("AbstractAgent subclasses must implement run(input:)")
+    public func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
+        transport.run(input: input)
     }
 
     // MARK: - Public pipeline methods
 
-    /// Executes the full pipeline and blocks until the run completes.
-    ///
-    /// The pipeline applies chunk transformation, protocol verification, and
-    /// state application. Registered subscribers (plus any one-off `subscriber`
-    /// passed here) are notified at each lifecycle hook.
-    ///
-    /// - Parameters:
-    ///   - parameters: Optional run parameters. When `nil`, defaults are used.
-    ///   - subscriber: Optional one-off subscriber for this run only.
-    /// - Throws: Rethrows any error produced by the event stream.
     public func runAgent(
         parameters: RunAgentParameters? = nil,
         subscriber: (any AgentSubscriber)? = nil
@@ -152,12 +103,10 @@ open class AbstractAgent: @unchecked Sendable {
 
         let input = buildInput(from: parameters)
 
-        // Collect all subscribers
         let registeredSubscribers = await subscriberManager.allSubscribers()
         var allSubscribers = registeredSubscribers
         if let s = subscriber { allSubscribers.append(s) }
 
-        // onRunInitialized
         let initMutation = await runSubscribersWithMutation(
             subscribers: allSubscribers,
             messages: await storage.messages,
@@ -184,7 +133,6 @@ open class AbstractAgent: @unchecked Sendable {
                     await self.applyAgentState(agentState, input: input, subscribers: allSubscribers)
                 }
 
-                // onRunFinalized
                 let finalMessages = await self.storage.messages
                 let finalState = await self.storage.currentState
                 _ = await runSubscribersWithMutation(
@@ -214,14 +162,6 @@ open class AbstractAgent: @unchecked Sendable {
         try await task.value
     }
 
-    /// Returns the processed event stream without driving the pipeline internally.
-    ///
-    /// Events pass through chunk transformation and protocol verification but
-    /// state is **not** applied internally. Callers are responsible for
-    /// consuming the stream and managing state.
-    ///
-    /// - Parameter input: The run agent input.
-    /// - Returns: A verified, chunk-transformed event stream.
     public func runAgentObservable(
         input: RunAgentInput
     ) -> AsyncThrowingStream<any AGUIEvent, Error> {
@@ -230,22 +170,14 @@ open class AbstractAgent: @unchecked Sendable {
             .verifyEvents(debug: debug)
     }
 
-    /// Cancels the current in-flight run task, if any.
     public func abortRun() {
         Task { await storage.currentTask?.cancel() }
     }
 
-    /// Prevents further runs from starting.
-    ///
-    /// Calling `runAgent` after `dispose()` is a no-op.
     public func dispose() {
         Task { await storage.setDisposed(true) }
     }
 
-    /// Subscribes to agent lifecycle events.
-    ///
-    /// - Parameter subscriber: The subscriber to register.
-    /// - Returns: A subscription handle that can be used to unsubscribe.
     public func subscribe(_ subscriber: any AgentSubscriber) async -> any AgentSubscription {
         let id = await subscriberManager.subscribe(subscriber)
         return DefaultAgentSubscription {

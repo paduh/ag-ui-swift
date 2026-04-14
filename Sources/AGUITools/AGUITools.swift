@@ -75,9 +75,4 @@ public struct AGUITools {
         self.core = AGUICore()
     }
 
-    /// Legacy tools functionality example
-    @available(*, deprecated, message: "Use ToolExecutor protocol instead")
-    public func toolsFunction() -> String {
-        "AGUITools is working with \(core.coreFunction())"
-    }
 }

@@ -28,9 +28,11 @@ import Foundation
 
 /// Test double for `ChatAgent`.
 ///
-/// Configured before the test (setup), then called sequentially — no concurrent
-/// access — so `@unchecked Sendable` without a lock is safe.
-final class MockChatAgent: ChatAgent, @unchecked Sendable {
+/// Configured and read exclusively from `@MainActor` context (both test classes
+/// are `@MainActor`), so `@MainActor` isolation satisfies the `Sendable` requirement
+/// without locks or `@unchecked`.
+@MainActor
+final class MockChatAgent: ChatAgent, Sendable {
 
     // MARK: - Configuration (set before each test)
 

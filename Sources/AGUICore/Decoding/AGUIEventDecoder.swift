@@ -110,7 +110,7 @@ import Foundation
 /// is immutable after initialization, and all configuration is `Sendable`.
 ///
 /// - SeeAlso: `AGUIEvent`, `EventType`, `EventDecodingError`, `UnknownEvent`
-public struct AGUIEventDecoder {
+public struct AGUIEventDecoder: Sendable {
 
     /// Handler function type for decoding a specific event type.
     ///

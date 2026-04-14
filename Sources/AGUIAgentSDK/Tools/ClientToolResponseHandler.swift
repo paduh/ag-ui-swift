@@ -51,7 +51,7 @@ import Foundation
 ///     responseHandler: handler
 /// )
 /// ```
-public final class ClientToolResponseHandler: ToolResponseHandler, @unchecked Sendable {
+public final class ClientToolResponseHandler: ToolResponseHandler, Sendable {
 
     private let httpAgent: HttpAgent
     private let endpoint: String?

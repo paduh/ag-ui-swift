@@ -81,8 +81,15 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
     /// Using a class (reference semantics) means every iterator created from the same
     /// stream updates the same location, so callers can read `lastEventId` on the
     /// stream value after an iterator throws.
-    final class LastEventIdBox: @unchecked Sendable {
+    ///
+    /// Declared as an `actor` so the compiler synthesises `Sendable` automatically
+    /// and serialises all reads and writes without manual locking.
+    actor LastEventIdBox {
         var value: String?
+
+        func set(_ newValue: String?) {
+            value = newValue
+        }
     }
 
     // MARK: - Stored properties
@@ -102,7 +109,7 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
     ///
     /// Read this after a mid-stream failure to obtain the resume cursor for
     /// `Last-Event-ID` on reconnect.
-    public var lastEventId: String? { lastEventIdBox.value }
+    public var lastEventId: String? { get async { await lastEventIdBox.value } }
 
     // MARK: - Initialization
 
@@ -200,7 +207,7 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
                         // The id is captured before decoding so it is available even
                         // when the accompanying data fails to decode.
                         if let id = sseEvent.id {
-                            lastEventIdBox.value = id
+                            await lastEventIdBox.set(id)
                         }
 
                         guard let data = sseEvent.data.data(using: .utf8) else {

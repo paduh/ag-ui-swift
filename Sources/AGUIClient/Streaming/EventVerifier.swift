@@ -249,7 +249,7 @@ extension AsyncSequence where Element == any AGUIEvent {
     /// - Returns: A throwing stream of verified events.
     public func verifyEvents(debug: Bool = false) -> AsyncThrowingStream<any AGUIEvent, Error> {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task {
                 let verifier = EventVerifier(debug: debug)
                 do {
                     for try await event in self {
@@ -261,6 +261,7 @@ extension AsyncSequence where Element == any AGUIEvent {
                     continuation.finish(throwing: error)
                 }
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

@@ -255,8 +255,8 @@ public actor DefaultToolRegistry: ToolRegistry {
     }
 
     public func clearStats() async {
-        for (_, stat) in stats {
-            stat.clear()
+        for key in stats.keys {
+            stats[key]?.clear()
         }
     }
 
@@ -269,31 +269,30 @@ public actor DefaultToolRegistry: ToolRegistry {
 
 /// Mutable version of ToolExecutionStats for internal tracking.
 ///
-/// This class is used internally by the registry to track and update
-/// statistics efficiently. It provides methods for recording successes
-/// and failures while maintaining accurate averages.
-private final class MutableToolExecutionStats: @unchecked Sendable {
-    private var executionCount: Int = 0
-    private var successCount: Int = 0
-    private var failureCount: Int = 0
-    private var totalExecutionTime: Duration = .zero
-    private var averageExecutionTime: Duration = .zero
+/// Value type: all mutation happens through the `DefaultToolRegistry` actor's
+/// dictionary subscript (inout), which serialises access — no `@unchecked Sendable` needed.
+private struct MutableToolExecutionStats {
+    private(set) var executionCount: Int = 0
+    private(set) var successCount: Int = 0
+    private(set) var failureCount: Int = 0
+    private(set) var totalExecutionTime: Duration = .zero
+    private(set) var averageExecutionTime: Duration = .zero
 
-    func recordSuccess(duration: Duration) {
+    mutating func recordSuccess(duration: Duration) {
         executionCount += 1
         successCount += 1
         totalExecutionTime += duration
         averageExecutionTime = totalExecutionTime / executionCount
     }
 
-    func recordFailure(duration: Duration) {
+    mutating func recordFailure(duration: Duration) {
         executionCount += 1
         failureCount += 1
         totalExecutionTime += duration
         averageExecutionTime = totalExecutionTime / executionCount
     }
 
-    func clear() {
+    mutating func clear() {
         executionCount = 0
         successCount = 0
         failureCount = 0
