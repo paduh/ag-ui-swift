@@ -234,7 +234,6 @@ public actor ToolExecutionManager {
 /// Builds a `ToolCall` from streaming events by accumulating argument deltas.
 ///
 /// Value type: all mutation happens inside the `ToolExecutionManager` actor,
-/// which serialises access — no `@unchecked Sendable` needed.
 private struct ToolCallBuilder {
     let id: String
     let name: String
