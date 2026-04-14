@@ -305,4 +305,72 @@ final class TextMessageStartEventTests: XCTestCase,
         XCTAssertEqual(event.messageId, "")
         XCTAssertEqual(event.eventType, .textMessageStart)
     }
+
+    // MARK: - Feature: name field (protocol spec)
+
+    func test_decodeTextMessageStart_withName_populatesName() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "TEXT_MESSAGE_START",
+          "messageId": "\(EventTestData.messageId)",
+          "role": "assistant",
+          "name": "Alice"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try XCTUnwrap(try decoder.decode(data) as? TextMessageStartEvent)
+
+        // Then
+        XCTAssertEqual(event.name, "Alice")
+    }
+
+    func test_decodeTextMessageStart_withoutName_nameIsNil() throws {
+        // Given — JSON with no "name" field
+        let data = jsonData("""
+        {
+          "type": "TEXT_MESSAGE_START",
+          "messageId": "\(EventTestData.messageId)",
+          "role": "assistant"
+        }
+        """)
+        let event = try XCTUnwrap(try makeStrictDecoder().decode(data) as? TextMessageStartEvent)
+
+        // Then
+        XCTAssertNil(event.name)
+    }
+
+    func test_textMessageStartEvent_init_acceptsName() {
+        // Given
+        let event = TextMessageStartEvent(
+            messageId: EventTestData.messageId,
+            role: "assistant",
+            name: "Bob",
+            timestamp: nil,
+            rawEvent: nil
+        )
+
+        // Then
+        XCTAssertEqual(event.name, "Bob")
+    }
+
+    func test_textMessageStartEvent_equalityDifferentNames_notEqual() {
+        let e1 = TextMessageStartEvent(
+            messageId: EventTestData.messageId,
+            role: "assistant",
+            name: "Alice",
+            timestamp: nil,
+            rawEvent: nil
+        )
+        let e2 = TextMessageStartEvent(
+            messageId: EventTestData.messageId,
+            role: "assistant",
+            name: "Bob",
+            timestamp: nil,
+            rawEvent: nil
+        )
+        XCTAssertNotEqual(e1, e2)
+    }
 }

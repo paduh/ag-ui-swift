@@ -24,21 +24,38 @@
 
 import Foundation
 
-struct TextMessageChunkEventDTO: Decodable {
-    let messageId: String?
-    let role: String?
-    let name: String?
-    let delta: String?
-    let timestamp: Int64?
+/// Represents video content in multimodal user input.
+///
+/// `VideoInputContent` carries video data either as a URL reference or as
+/// base64-encoded bytes.
+///
+/// - SeeAlso: ``InputContent``, ``UserMessage``
+public struct VideoInputContent: InputContent, Hashable, Sendable {
 
-    func toDomain(rawEvent: Data? = nil) -> TextMessageChunkEvent {
-        TextMessageChunkEvent(
-            messageId: messageId,
-            role: role,
-            name: name,
-            delta: delta,
-            timestamp: timestamp,
-            rawEvent: rawEvent
-        )
+    /// The content type discriminator (always `"video"`).
+    public let type: String
+
+    /// Optional URL pointing to the video file.
+    public let url: String?
+
+    /// Optional base64-encoded video data.
+    public let data: String?
+
+    /// Creates video content from a URL.
+    ///
+    /// - Parameter url: URL pointing to the video file
+    public init(url: String) {
+        self.type = "video"
+        self.url = url
+        self.data = nil
+    }
+
+    /// Creates video content from base64-encoded data.
+    ///
+    /// - Parameter data: Base64-encoded video bytes
+    public init(data: String) {
+        self.type = "video"
+        self.url = nil
+        self.data = data
     }
 }

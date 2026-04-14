@@ -63,7 +63,7 @@ import Foundation
 ///
 /// - `typeRaw`: The raw string value of the "type" field from the JSON
 /// - `rawEvent`: The complete original JSON data, preserved for inspection or forwarding
-/// - `eventType`: Always returns `.raw` to indicate this is an unknown event
+/// - `eventType`: Always returns `.unknown` — distinct from the genuine `.raw` wire event
 /// - `timestamp`: Always returns `nil` since unknown events cannot be parsed for timestamps
 ///
 /// ## Forward Compatibility
@@ -95,11 +95,13 @@ public struct UnknownEvent: AGUIEvent, Sendable {
     /// The data is guaranteed to be valid JSON (otherwise decoding would have failed earlier).
     public let rawEvent: Data?
 
-    /// The type of this event (always `.raw`).
+    /// The type of this event (always `.unknown`).
     ///
-    /// Unknown events are categorized as `.raw` to distinguish them from
-    /// properly decoded event types.
-    public var eventType: EventType { .raw }
+    /// Unknown events return the sentinel `.unknown` case, which is distinct from
+    /// the genuine `.raw` wire-format event type. This allows consumers to
+    /// differentiate between a real `RAW` event sent by an agent and an event
+    /// whose type string was not recognised by the decoder.
+    public var eventType: EventType { .unknown }
 
     /// Optional timestamp when the event occurred (always `nil`).
     ///

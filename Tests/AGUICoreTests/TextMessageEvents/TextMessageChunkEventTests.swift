@@ -232,4 +232,70 @@ final class TextMessageChunkEventTests: XCTestCase,
         // Then
         XCTAssertEqual(event1, event2)
     }
+
+    // MARK: - Feature: name field (protocol spec)
+
+    func test_decodeTextMessageChunk_withName_populatesName() throws {
+        // Given
+        let data = jsonData("""
+        {
+          "type": "TEXT_MESSAGE_CHUNK",
+          "messageId": "\(EventTestData.messageId)",
+          "role": "assistant",
+          "name": "Alice",
+          "delta": "Hello"
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When
+        let event = try XCTUnwrap(try decoder.decode(data) as? TextMessageChunkEvent)
+
+        // Then
+        XCTAssertEqual(event.name, "Alice")
+    }
+
+    func test_decodeTextMessageChunk_withoutName_nameIsNil() throws {
+        // Given — JSON with no "name" field
+        let data = jsonData("""
+        {
+          "type": "TEXT_MESSAGE_CHUNK",
+          "messageId": "\(EventTestData.messageId)",
+          "delta": "Hi"
+        }
+        """)
+        let event = try XCTUnwrap(try makeStrictDecoder().decode(data) as? TextMessageChunkEvent)
+
+        // Then
+        XCTAssertNil(event.name)
+    }
+
+    func test_textMessageChunkEvent_init_acceptsName() {
+        // Given
+        let event = TextMessageChunkEvent(
+            messageId: EventTestData.messageId,
+            role: "assistant",
+            name: "Carol",
+            delta: "Hi",
+            timestamp: nil,
+            rawEvent: nil
+        )
+
+        // Then
+        XCTAssertEqual(event.name, "Carol")
+    }
+
+    func test_textMessageChunkEvent_equalityDifferentNames_notEqual() {
+        let e1 = TextMessageChunkEvent(
+            messageId: EventTestData.messageId,
+            name: "Alice",
+            delta: "Hi"
+        )
+        let e2 = TextMessageChunkEvent(
+            messageId: EventTestData.messageId,
+            name: "Bob",
+            delta: "Hi"
+        )
+        XCTAssertNotEqual(e1, e2)
+    }
 }

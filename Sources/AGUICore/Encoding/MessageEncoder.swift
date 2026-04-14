@@ -306,6 +306,30 @@ private func encodeUserMessage(_ message: any Message, encoder: JSONEncoder) thr
                     binaryDict["filename"] = filename
                 }
                 contentArray.append(binaryDict)
+            } else if let imagePart = part as? ImageInputContent {
+                var d: [String: Any] = ["type": "image"]
+                if let url = imagePart.url { d["url"] = url }
+                if let data = imagePart.data { d["data"] = data }
+                if let detail = imagePart.detail { d["detail"] = detail }
+                contentArray.append(d)
+            } else if let audioPart = part as? AudioInputContent {
+                var d: [String: Any] = ["type": "audio"]
+                if let url = audioPart.url { d["url"] = url }
+                if let data = audioPart.data { d["data"] = data }
+                if let format = audioPart.format { d["format"] = format }
+                contentArray.append(d)
+            } else if let videoPart = part as? VideoInputContent {
+                var d: [String: Any] = ["type": "video"]
+                if let url = videoPart.url { d["url"] = url }
+                if let data = videoPart.data { d["data"] = data }
+                contentArray.append(d)
+            } else if let docPart = part as? DocumentInputContent {
+                var d: [String: Any] = ["type": "document"]
+                if let url = docPart.url { d["url"] = url }
+                if let data = docPart.data { d["data"] = data }
+                if let mimeType = docPart.mimeType { d["mimeType"] = mimeType }
+                if let title = docPart.title { d["title"] = title }
+                contentArray.append(d)
             }
         }
         dict["content"] = contentArray
@@ -378,7 +402,7 @@ private func encodeActivityMessage(_ message: any Message, encoder: JSONEncoder)
         "id": activityMsg.id,
         "role": activityMsg.role.rawValue,
         "activityType": activityMsg.activityType,
-        "activityContent": activityContentObj
+        "content": activityContentObj
     ]
     return try JSONSerialization.data(withJSONObject: dict)
 }

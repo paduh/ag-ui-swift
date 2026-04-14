@@ -111,7 +111,7 @@ final class ActivityMessageTests: XCTestCase {
             "id": "activity-decode-1",
             "role": "activity",
             "activityType": "progress",
-            "activityContent": {
+            "content": {
                 "percent": 75
             }
         }
@@ -138,7 +138,7 @@ final class ActivityMessageTests: XCTestCase {
             "id": "activity-decode-2",
             "role": "activity",
             "activityType": "visualization",
-            "activityContent": {
+            "content": {
                 "type": "chart",
                 "data": {
                     "labels": ["A", "B", "C"],
@@ -168,7 +168,7 @@ final class ActivityMessageTests: XCTestCase {
         {
             "role": "activity",
             "activityType": "test",
-            "activityContent": {}
+            "content": {}
         }
         """
 
@@ -183,7 +183,7 @@ final class ActivityMessageTests: XCTestCase {
         {
             "id": "activity-1",
             "role": "activity",
-            "activityContent": {}
+            "content": {}
         }
         """
 
@@ -247,7 +247,7 @@ final class ActivityMessageTests: XCTestCase {
             "id": original.id,
             "role": original.role.rawValue,
             "activityType": original.activityType,
-            "activityContent": activityContentDict as Any
+            "content": activityContentDict as Any
         ]
         let encoded = try JSONSerialization.data(withJSONObject: dict)
 
@@ -410,5 +410,48 @@ final class ActivityMessageTests: XCTestCase {
 
         XCTAssertEqual(status.activityType, "status")
         XCTAssertNil(status.content)
+    }
+
+    // MARK: - Wire Format Tests (Protocol Compliance)
+
+    func test_decodingUsesWireKey_content_notActivityContent() throws {
+        // The AG-UI spec sends "content", not "activityContent"
+        let json = """
+        {
+            "id": "wire-format-1",
+            "role": "activity",
+            "activityType": "progress",
+            "content": {
+                "percent": 80
+            }
+        }
+        """
+
+        let decoder = MessageDecoder()
+        let message = try decoder.decode(Data(json.utf8))
+
+        XCTAssertTrue(message is ActivityMessage)
+        let activityMessage = message as! ActivityMessage
+        XCTAssertEqual(activityMessage.id, "wire-format-1")
+        XCTAssertEqual(activityMessage.activityType, "progress")
+        let parsedContent = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
+        XCTAssertEqual(parsedContent?["percent"] as? Int, 80)
+    }
+
+    func test_encodingWritesWireKey_content() throws {
+        // The AG-UI spec expects "content" in the encoded output
+        let rawContent = Data("{\"percent\":90}".utf8)
+        let message = ActivityMessage(
+            id: "wire-encode-1",
+            activityType: "progress",
+            activityContent: rawContent
+        )
+
+        let encoder = MessageEncoder()
+        let encoded = try encoder.encode(message)
+        let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+
+        XCTAssertNotNil(json?["content"], "Encoded JSON must contain 'content' key (wire format)")
+        XCTAssertNil(json?["activityContent"], "Encoded JSON must NOT contain old 'activityContent' key")
     }
 }
