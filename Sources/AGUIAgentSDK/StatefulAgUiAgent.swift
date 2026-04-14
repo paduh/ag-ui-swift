@@ -308,12 +308,13 @@ public final class StatefulAgUiAgent: Sendable {
             )
         } else {
             eventStream = AsyncThrowingStream { continuation in
-                Task {
+                let task = Task {
                     do {
                         for try await event in rawStream { continuation.yield(event) }
                         continuation.finish()
                     } catch { continuation.finish(throwing: error) }
                 }
+                continuation.onTermination = { _ in task.cancel() }
             }
         }
 
@@ -361,7 +362,7 @@ public final class StatefulAgUiAgent: Sendable {
         threadId: String
     ) -> AsyncThrowingStream<any AGUIEvent, Error> where S.Element == any AGUIEvent {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task {
                 var currentAssistantMessage: AssistantMessage?
                 let patchApplicator = PatchApplicator()
                 let messageDecoder = MessageDecoder()
@@ -501,6 +502,7 @@ public final class StatefulAgUiAgent: Sendable {
                     continuation.finish(throwing: error)
                 }
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

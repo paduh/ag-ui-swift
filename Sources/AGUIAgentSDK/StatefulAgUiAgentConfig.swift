@@ -105,17 +105,12 @@ public struct StatefulAgUiAgentConfig: Sendable {
 
     /// Bearer token for authentication.
     ///
-    /// When set, automatically adds an `Authorization: Bearer <token>` header
-    /// to every request.
+    /// When set, ``buildHeaders()`` includes `Authorization: Bearer <token>`.
+    /// This property does **not** mutate ``headers`` directly — use
+    /// ``buildHeaders()`` to get the merged dictionary for request construction.
     ///
     /// Default: `nil`
-    public var bearerToken: String? {
-        didSet {
-            if let token = bearerToken {
-                headers["Authorization"] = "Bearer \(token)"
-            }
-        }
-    }
+    public var bearerToken: String?
 
     /// API key value.
     ///
@@ -142,6 +137,31 @@ public struct StatefulAgUiAgentConfig: Sendable {
     ///
     /// Default: `"/run"`
     public var endpoint: String
+
+    // MARK: - Header builder
+
+    /// Returns the final HTTP header dictionary, merging ``bearerToken`` and
+    /// ``apiKey`` into ``headers``.
+    ///
+    /// Priority (highest → lowest):
+    /// 1. Entries already in ``headers``
+    /// 2. `bearerToken` → `Authorization: Bearer <token>`
+    /// 3. `apiKey` → `<apiKeyHeader>: <key>`
+    ///
+    /// - Returns: Merged header dictionary ready for `HttpAgentConfiguration`.
+    public func buildHeaders() -> [String: String] {
+        var result: [String: String] = [:]
+        if let key = apiKey {
+            result[apiKeyHeader] = key
+        }
+        if let token = bearerToken {
+            result["Authorization"] = "Bearer \(token)"
+        }
+        for (k, v) in headers {
+            result[k] = v
+        }
+        return result
+    }
 
     /// Creates a new stateful agent configuration.
     ///

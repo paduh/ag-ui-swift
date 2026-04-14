@@ -22,13 +22,9 @@
  * SOFTWARE.
  */
 
-import XCTest
-@testable import AGUITools
+import AGUICore
+import Foundation
 
-final class AGUIToolsTests: XCTestCase {
-    func testAGUIToolsIsInstantiable() {
-        // AGUITools is deprecated; verify it still compiles and instantiates.
-        let tools = AGUITools()
-        _ = tools
-    }
+public protocol AgentTransport: Sendable {
+    func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error>
 }

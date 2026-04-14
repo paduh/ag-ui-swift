@@ -75,10 +75,11 @@ public struct ChunkTransformer {
         _ events: S
     ) -> AsyncThrowingStream<any AGUIEvent, Error> where S.Element == any AGUIEvent {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task {
                 let transformer = EventTransformer(continuation: continuation)
                 await transformer.processEvents(events)
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

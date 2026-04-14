@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+import AGUIClient
 import AGUICore
 import AGUITools
 import XCTest
@@ -29,32 +30,28 @@ import XCTest
 
 // MARK: - Test helpers
 
-/// Subclass of `AgUiAgent` that captures every `RunAgentInput` passed to `run(input:)`.
-private final class CapturingAgent: AgUiAgent, @unchecked Sendable {
-    private let lock = NSLock()
-    private var _inputs: [RunAgentInput] = []
-
-    var capturedInputs: [RunAgentInput] {
-        lock.lock()
-        defer { lock.unlock() }
-        return _inputs
-    }
-
-    /// Events yielded by the mock `run(input:)`.
+actor CapturingTransport: AgentTransport {
+    private(set) var capturedInputs: [RunAgentInput] = []
     var mockEvents: [any AGUIEvent] = []
 
-    override func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
-        lock.lock()
-        _inputs.append(input)
-        lock.unlock()
+    func setMockEvents(_ events: [any AGUIEvent]) {
+        mockEvents = events
+    }
 
-        let events = mockEvents
-        return AsyncThrowingStream { continuation in
-            for event in events {
-                continuation.yield(event)
+    nonisolated func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                await self.record(input)
+                let events = await self.mockEvents
+                for event in events { continuation.yield(event) }
+                continuation.finish()
             }
-            continuation.finish()
+            continuation.onTermination = { _ in task.cancel() }
         }
+    }
+
+    private func record(_ input: RunAgentInput) {
+        capturedInputs.append(input)
     }
 }
 
@@ -96,31 +93,41 @@ final class AgUiAgentTests: XCTestCase {
 
     private let agentURL = URL(string: "https://agent.example.com")!
 
+    private func makeCapturingAgent(
+        configure: (inout AgUiAgentConfig) -> Void = { _ in }
+    ) -> (AgUiAgent, CapturingTransport) {
+        var cfg = AgUiAgentConfig()
+        configure(&cfg)
+        let transport = CapturingTransport()
+        let agent = AgUiAgent(transport: transport, config: cfg)
+        return (agent, transport)
+    }
+
     // MARK: - sendMessage constructs correct RunAgentInput
 
     func testSendMessageProducesUserMessage() async throws {
-        let agent = CapturingAgent(url: agentURL)
+        let (agent, transport) = makeCapturingAgent()
         let stream = agent.sendMessage("Hello!")
         for try await _ in stream {}
 
-        let inputs = agent.capturedInputs
+        let inputs = await transport.capturedInputs
         XCTAssertEqual(inputs.count, 1)
 
         let input = try XCTUnwrap(inputs.first)
-        // Only user message (no system prompt configured)
         XCTAssertEqual(input.messages.count, 1)
         XCTAssertEqual(input.messages[0].role, .user)
         XCTAssertEqual(input.messages[0].content, "Hello!")
     }
 
     func testSendMessagePrependsSystemPromptWhenConfigured() async throws {
-        let agent = CapturingAgent(url: agentURL) { config in
+        let (agent, transport) = makeCapturingAgent { config in
             config.systemPrompt = "Be concise."
         }
         let stream = agent.sendMessage("Hi", includeSystemPrompt: true)
         for try await _ in stream {}
 
-        let input = try XCTUnwrap(agent.capturedInputs.first)
+        let captured1 = await transport.capturedInputs
+        let input = try XCTUnwrap(captured1.first)
         XCTAssertEqual(input.messages.count, 2)
         XCTAssertEqual(input.messages[0].role, .system)
         XCTAssertEqual(input.messages[0].content, "Be concise.")
@@ -128,49 +135,50 @@ final class AgUiAgentTests: XCTestCase {
     }
 
     func testSendMessageOmitsSystemPromptWhenDisabled() async throws {
-        let agent = CapturingAgent(url: agentURL) { config in
+        let (agent, transport) = makeCapturingAgent { config in
             config.systemPrompt = "Be concise."
         }
         let stream = agent.sendMessage("Hi", includeSystemPrompt: false)
         for try await _ in stream {}
 
-        let input = try XCTUnwrap(agent.capturedInputs.first)
+        let captured2 = await transport.capturedInputs
+        let input = try XCTUnwrap(captured2.first)
         XCTAssertEqual(input.messages.count, 1)
         XCTAssertEqual(input.messages[0].role, .user)
     }
 
     func testSendMessageUsesProvidedThreadId() async throws {
-        let agent = CapturingAgent(url: agentURL)
+        let (agent, transport) = makeCapturingAgent()
         let stream = agent.sendMessage("Hello", threadId: "my-thread")
         for try await _ in stream {}
 
-        let input = try XCTUnwrap(agent.capturedInputs.first)
+        let captured3 = await transport.capturedInputs
+        let input = try XCTUnwrap(captured3.first)
         XCTAssertEqual(input.threadId, "my-thread")
     }
 
     func testSendMessageUsesProvidedState() async throws {
         let customState = Data("{\"mode\":\"test\"}".utf8)
-        let agent = CapturingAgent(url: agentURL)
+        let (agent, transport) = makeCapturingAgent()
         let stream = agent.sendMessage("Hello", state: customState)
         for try await _ in stream {}
 
-        let input = try XCTUnwrap(agent.capturedInputs.first)
+        let captured4 = await transport.capturedInputs
+        let input = try XCTUnwrap(captured4.first)
         XCTAssertEqual(input.state, customState)
     }
 
     func testSendMessageEachCallIsFreshNoHistory() async throws {
-        let agent = CapturingAgent(url: agentURL)
+        let (agent, transport) = makeCapturingAgent()
 
-        // First call
         for try await _ in agent.sendMessage("Message 1") {}
-        // Second call
         for try await _ in agent.sendMessage("Message 2") {}
 
-        XCTAssertEqual(agent.capturedInputs.count, 2)
+        let capturedAll = await transport.capturedInputs
+        XCTAssertEqual(capturedAll.count, 2)
 
-        // Each call should only contain its own user message
-        let first = agent.capturedInputs[0]
-        let second = agent.capturedInputs[1]
+        let first = capturedAll[0]
+        let second = capturedAll[1]
 
         XCTAssertEqual(first.messages.count, 1)
         XCTAssertEqual(first.messages[0].content, "Message 1")
@@ -186,25 +194,27 @@ final class AgUiAgentTests: XCTestCase {
         let tool2 = Tool(name: "search_web", description: "Search the web", parameters: Data("{}".utf8))
         let registry = MockToolRegistry(tools: [tool1, tool2])
 
-        let agent = CapturingAgent(url: agentURL) { config in
+        let (agent, transport) = makeCapturingAgent { config in
             config.toolRegistry = registry
         }
 
         let stream = agent.sendMessage("What's the weather?")
         for try await _ in stream {}
 
-        let input = try XCTUnwrap(agent.capturedInputs.first)
+        let captured5 = await transport.capturedInputs
+        let input = try XCTUnwrap(captured5.first)
         XCTAssertEqual(input.tools.count, 2)
         XCTAssertEqual(input.tools[0].name, "get_weather")
         XCTAssertEqual(input.tools[1].name, "search_web")
     }
 
     func testSendMessageHasEmptyToolsWhenNoRegistry() async throws {
-        let agent = CapturingAgent(url: agentURL)
+        let (agent, transport) = makeCapturingAgent()
         let stream = agent.sendMessage("Hello")
         for try await _ in stream {}
 
-        let input = try XCTUnwrap(agent.capturedInputs.first)
+        let captured6 = await transport.capturedInputs
+        let input = try XCTUnwrap(captured6.first)
         XCTAssertTrue(input.tools.isEmpty)
     }
 
@@ -212,13 +222,14 @@ final class AgUiAgentTests: XCTestCase {
 
     func testSendMessageIncludesContext() async throws {
         let ctx = Context(description: "timezone", value: "America/New_York")
-        let agent = CapturingAgent(url: agentURL) { config in
+        let (agent, transport) = makeCapturingAgent { config in
             config.context = [ctx]
         }
         let stream = agent.sendMessage("What time is it?")
         for try await _ in stream {}
 
-        let input = try XCTUnwrap(agent.capturedInputs.first)
+        let captured7 = await transport.capturedInputs
+        let input = try XCTUnwrap(captured7.first)
         XCTAssertEqual(input.context.count, 1)
         XCTAssertEqual(input.context[0].description, "timezone")
     }
@@ -226,12 +237,11 @@ final class AgUiAgentTests: XCTestCase {
     // MARK: - Event passthrough
 
     func testSendMessageYieldsEventsFromRun() async throws {
-        let agentURL = URL(string: "https://agent.example.com")!
-        let agent = CapturingAgent(url: agentURL)
-        agent.mockEvents = [
+        let (agent, transport) = makeCapturingAgent()
+        await transport.setMockEvents([
             RunStartedEvent(threadId: "t1", runId: "r1"),
             RunFinishedEvent(threadId: "t1", runId: "r1"),
-        ]
+        ])
 
         var received: [any AGUIEvent] = []
         for try await event in agent.sendMessage("Hi") {
@@ -247,13 +257,12 @@ final class AgUiAgentTests: XCTestCase {
 
     func testCloseDoesNotCrash() {
         let agent = AgUiAgent(url: agentURL)
-        // Verify close() completes without throwing or crashing
         agent.close()
     }
 
     func testCloseCanBeCalledMultipleTimes() {
         let agent = AgUiAgent(url: agentURL)
         agent.close()
-        agent.close() // second call must not crash
+        agent.close()
     }
 }

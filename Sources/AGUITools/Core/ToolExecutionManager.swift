@@ -105,7 +105,7 @@ public actor ToolExecutionManager {
         runId: String?
     ) -> AsyncThrowingStream<any AGUIEvent, Error> where S.Element == any AGUIEvent {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task {
                 do {
                     for try await event in events {
                         continuation.yield(event)
@@ -117,6 +117,7 @@ public actor ToolExecutionManager {
                     continuation.finish(throwing: error)
                 }
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
@@ -231,17 +232,19 @@ public actor ToolExecutionManager {
 // MARK: - ToolCallBuilder
 
 /// Builds a `ToolCall` from streaming events by accumulating argument deltas.
-private final class ToolCallBuilder: @unchecked Sendable {
+///
+/// Value type: all mutation happens inside the `ToolExecutionManager` actor,
+private struct ToolCallBuilder {
     let id: String
     let name: String
-    private var arguments: String = ""
+    private(set) var arguments: String = ""
 
     init(id: String, name: String) {
         self.id = id
         self.name = name
     }
 
-    func appendArguments(_ delta: String) {
+    mutating func appendArguments(_ delta: String) {
         arguments += delta
     }
 

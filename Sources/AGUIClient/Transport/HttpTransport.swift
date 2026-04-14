@@ -99,8 +99,10 @@ public actor HttpTransport {
             sessionConfig.timeoutIntervalForRequest = max(configuration.timeout, 300)
             sessionConfig.timeoutIntervalForResource = max(configuration.timeout, 3600)
 
-            // Set additional headers
-            var headers = configuration.headers
+            // Merge auth + explicit headers, then add User-Agent.
+            // buildHeaders() unifies bearerToken, apiKey, and headers in one call
+            // so auth is always applied even when set after init.
+            var headers = configuration.buildHeaders()
             headers["User-Agent"] = "AGUISwift/1.0"
             sessionConfig.httpAdditionalHeaders = headers
 
