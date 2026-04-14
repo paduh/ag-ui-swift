@@ -278,7 +278,7 @@ final class ChatAppStoreTests: XCTestCase {
         store.setupForTesting(agent: testConfig())
 
         let payload = try JSONSerialization.data(withJSONObject: ["hex": "FF5733"])
-        store.processEvent(CustomEvent(customType: "change_background", data: payload))
+        store.processEvent(CustomEvent(name: "change_background", value: payload))
 
         XCTAssertEqual(store.state.backgroundHex, "FF5733")
     }

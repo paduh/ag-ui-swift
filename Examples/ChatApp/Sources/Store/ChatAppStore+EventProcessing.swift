@@ -215,7 +215,7 @@ extension ChatAppStore {
     // MARK: - Custom event handling
 
     private func handleCustomEvent(_ event: CustomEvent) {
-        guard event.customType == "change_background",
+        guard event.name == "change_background",
               let payload = try? event.parsedData() as? [String: Any],
               let hex = payload["hex"] as? String ?? payload["color"] as? String
         else { return }
