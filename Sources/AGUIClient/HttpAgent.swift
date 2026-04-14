@@ -114,6 +114,9 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
     /// Default endpoint for agent runs.
     private let defaultEndpoint: String
 
+    /// Agent configuration — stored so retry helpers can read `retryPolicy`.
+    private let configuration: HttpAgentConfiguration
+
     /// Creates a new HTTP agent with a base URL.
     ///
     /// This convenience initializer creates an agent with default configuration.
@@ -126,7 +129,9 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
     /// let agent = HttpAgent(baseURL: URL(string: "https://agent.example.com")!)
     /// ```
     public init(baseURL: URL) {
-        self.transport = HttpTransport(configuration: HttpAgentConfiguration(baseURL: baseURL))
+        let config = HttpAgentConfiguration(baseURL: baseURL)
+        self.configuration = config
+        self.transport = HttpTransport(configuration: config)
         self.decoder = AGUIEventDecoder()
         self.defaultEndpoint = "/run"
         super.init()
@@ -146,6 +151,7 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
     /// let agent = HttpAgent(configuration: config)
     /// ```
     public init(configuration: HttpAgentConfiguration) {
+        self.configuration = configuration
         self.transport = HttpTransport(configuration: configuration)
         self.decoder = AGUIEventDecoder()
         self.defaultEndpoint = "/run"
@@ -174,6 +180,7 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
         configuration: HttpAgentConfiguration,
         httpClient: any HTTPClient
     ) {
+        self.configuration = configuration
         self.transport = HttpTransport(
             configuration: configuration,
             httpClient: httpClient
@@ -274,30 +281,119 @@ public final class HttpAgent: AbstractAgent, @unchecked Sendable {
 
     // MARK: - AbstractAgent override
 
-    /// Returns a stream of raw AG-UI events by executing an HTTP POST to the agent endpoint.
+    /// Returns a stream of raw AG-UI events with automatic retry on transient failures.
     ///
     /// This override bridges `AbstractAgent.run(input:)` to the underlying
-    /// `HttpTransport`, allowing the `runAgent` pipeline to drive the HTTP request.
+    /// `HttpTransport` and applies the retry policy configured in
+    /// `HttpAgentConfiguration.retryPolicy`. On each retry, the `Last-Event-ID`
+    /// header is sent with the most recent SSE event id so compliant servers can
+    /// resume the stream from where it dropped.
+    ///
+    /// ### Retry behaviour
+    ///
+    /// | Policy | Behaviour |
+    /// |--------|-----------|
+    /// | `.none` (default) | No retry — errors propagate immediately |
+    /// | `.fixed(maxAttempts:delay:)` | Up to `maxAttempts` retries, each preceded by a fixed `delay` |
+    /// | `.exponentialBackoff(maxAttempts:baseDelay:)` | Up to `maxAttempts` retries, delay doubles each attempt (capped at 60 s) |
+    ///
+    /// ### Retryable errors
+    ///
+    /// Only transient, network-level errors trigger a retry:
+    /// - `ClientError.timeout`
+    /// - `ClientError.networkError`
+    ///
+    /// Server errors (`httpError`, `invalidResponse`) are not retried.
     ///
     /// - Parameter input: The run agent input.
     /// - Returns: An `AsyncThrowingStream` of AG-UI events from the server.
     public override func run(input: RunAgentInput) -> AsyncThrowingStream<any AGUIEvent, Error> {
         AsyncThrowingStream { continuation in
             Task {
-                do {
-                    let stream = try await self.transport.execute(
-                        endpoint: self.defaultEndpoint,
-                        input: input
-                    )
-                    let eventStream = EventStream(bytes: stream, decoder: self.decoder)
-                    for try await event in eventStream {
-                        continuation.yield(event)
+                var lastEventId: String? = nil
+                var attempt = 0
+                // Hold a reference to the current EventStream so we can read
+                // lastEventId after a mid-stream failure (the stream is a struct but
+                // its lastEventIdBox is a reference type — still readable after throw).
+                var currentStream: EventStream<AsyncThrowingStream<UInt8, Error>>? = nil
+
+                while true {
+                    do {
+                        let bytes = try await self.transport.execute(
+                            endpoint: self.defaultEndpoint,
+                            input: input,
+                            lastEventId: lastEventId
+                        )
+                        let eventStream = EventStream(bytes: bytes, decoder: self.decoder)
+                        currentStream = eventStream
+                        for try await event in eventStream {
+                            continuation.yield(event)
+                        }
+                        continuation.finish()
+                        return
+                    } catch {
+                        // Capture the last-event-id from the stream that just failed
+                        // (nil when the failure happened before streaming began).
+                        if let stream = currentStream {
+                            lastEventId = stream.lastEventId ?? lastEventId
+                        }
+                        currentStream = nil
+
+                        guard self.shouldRetry(error: error, attempt: attempt) else {
+                            continuation.finish(throwing: error)
+                            return
+                        }
+
+                        let delay = self.retryDelay(for: attempt)
+                        attempt += 1
+
+                        if delay > 0 {
+                            try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                        }
                     }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
                 }
             }
+        }
+    }
+
+    // MARK: - Retry helpers
+
+    /// Returns `true` when `error` is a transient network failure and the retry
+    /// policy permits another attempt.
+    private func shouldRetry(error: Error, attempt: Int) -> Bool {
+        guard isRetryable(error) else { return false }
+        switch configuration.retryPolicy {
+        case .none:
+            return false
+        case .fixed(let maxAttempts, _):
+            return attempt < maxAttempts
+        case .exponentialBackoff(let maxAttempts, _):
+            return attempt < maxAttempts
+        }
+    }
+
+    /// Returns `true` for errors that represent a transient network condition
+    /// (not a deliberate server-side rejection).
+    private func isRetryable(_ error: Error) -> Bool {
+        guard let clientError = error as? ClientError else { return false }
+        switch clientError {
+        case .timeout, .networkError:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Returns the sleep interval (in seconds) before attempt `attempt`.
+    private func retryDelay(for attempt: Int) -> TimeInterval {
+        switch configuration.retryPolicy {
+        case .none:
+            return 0
+        case .fixed(_, let delay):
+            return delay
+        case .exponentialBackoff(_, let baseDelay):
+            // 2^attempt * baseDelay, capped at 60 s to avoid unbounded waits
+            return min(baseDelay * pow(2.0, Double(attempt)), 60.0)
         }
     }
 }

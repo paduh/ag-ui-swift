@@ -114,6 +114,9 @@ public actor HttpTransport {
     /// - Parameters:
     ///   - endpoint: The endpoint path (e.g., "/run")
     ///   - input: The run agent input to send
+    ///   - lastEventId: When provided, sets the `Last-Event-ID` header so the server
+    ///     can resume the stream from the last processed event (SSE reconnection).
+    ///     Pass `nil` (the default) for a fresh stream with no resume cursor.
     /// - Returns: An async sequence of bytes from the server
     /// - Throws: `ClientError` if the request fails
     ///
@@ -125,6 +128,7 @@ public actor HttpTransport {
     /// - Headers:
     ///   - Content-Type: application/json
     ///   - Accept: text/event-stream
+    ///   - Last-Event-ID: `lastEventId` (when non-nil)
     /// - Body: JSON-encoded `RunAgentInput`
     ///
     /// ## Response Validation
@@ -142,7 +146,8 @@ public actor HttpTransport {
     /// - Network errors → `.networkError`, `.timeout`, `.cancelled`
     public func execute(
         endpoint: String,
-        input: RunAgentInput
+        input: RunAgentInput,
+        lastEventId: String? = nil
     ) async throws -> AsyncThrowingStream<UInt8, Error> {
         // Construct URL
         let url = configuration.baseURL.appendingPathComponent(endpoint)
@@ -152,6 +157,11 @@ public actor HttpTransport {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+
+        // SSE reconnection resume cursor — only set when the caller has a prior event id
+        if let lastEventId {
+            request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID")
+        }
 
         // Encode RunAgentInput to JSON
         let encoder = JSONEncoder()
