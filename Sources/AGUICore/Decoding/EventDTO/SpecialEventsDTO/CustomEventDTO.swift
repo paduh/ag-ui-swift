@@ -85,8 +85,8 @@ struct CustomEventDTO {
 
     func toDomain(rawEvent: Data? = nil) -> CustomEvent {
         CustomEvent(
-            customType: customType,
-            data: data,
+            name: customType,
+            value: data,
             timestamp: timestamp,
             rawEvent: rawEvent
         )

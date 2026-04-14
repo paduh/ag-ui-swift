@@ -250,7 +250,7 @@ final class DefaultApplyEventsTests: XCTestCase {
         let customData = Data("{\"action\":\"click\"}".utf8)
         let events: [any AGUIEvent] = [
             RunStartedEvent(threadId: "t1", runId: "r1"),
-            CustomEvent(customType: "com.example.click", data: customData),
+            CustomEvent(name: "com.example.click", value: customData),
         ]
         let input = makeInput()
 
@@ -261,7 +261,7 @@ final class DefaultApplyEventsTests: XCTestCase {
         let customState = states.first(where: { $0.customEvents != nil })
         XCTAssertNotNil(customState)
         XCTAssertEqual(customState?.customEvents?.count, 1)
-        XCTAssertEqual(customState?.customEvents?.first?.customType, "com.example.click")
+        XCTAssertEqual(customState?.customEvents?.first?.name, "com.example.click")
     }
 }
 

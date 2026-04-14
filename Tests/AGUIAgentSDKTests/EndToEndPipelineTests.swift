@@ -318,8 +318,8 @@ final class EndToEndPipelineTests: XCTestCase {
         let agent = MockAbstractAgent()
         agent.enqueue([
             RunStartedEvent(threadId: "t1", runId: "r1"),
-            CustomEvent(customType: "ping", data: Data("{\"ts\":1}".utf8)),
-            CustomEvent(customType: "pong", data: Data("{\"ts\":2}".utf8)),
+            CustomEvent(name: "ping", value: Data("{\"ts\":1}".utf8)),
+            CustomEvent(name: "pong", value: Data("{\"ts\":2}".utf8)),
             RunFinishedEvent(threadId: "t1", runId: "r1"),
         ])
 
@@ -327,8 +327,8 @@ final class EndToEndPipelineTests: XCTestCase {
 
         let customEvents = await agent.customEvents
         XCTAssertEqual(customEvents.count, 2)
-        XCTAssertEqual(customEvents[0].customType, "ping")
-        XCTAssertEqual(customEvents[1].customType, "pong")
+        XCTAssertEqual(customEvents[0].name, "ping")
+        XCTAssertEqual(customEvents[1].name, "pong")
     }
 
     // MARK: - getAllExecutors()
