@@ -334,6 +334,7 @@ public struct AGUIEventDecoder {
             StateEventRegistry.registry(),
             SpecialEventRegistry.registry(),
             ThinkingEventRegistry.registry(),
+            ReasoningEventRegistry.registry(),
             ActivityEventRegistry.registry()
         )
     }

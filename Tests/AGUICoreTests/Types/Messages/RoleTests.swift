@@ -147,7 +147,7 @@ final class RoleTests: XCTestCase {
     // MARK: - CaseIterable Tests
 
     func testAllRolesCount() {
-        XCTAssertEqual(Role.allCases.count, 6, "Role enum should have exactly 6 cases")
+        XCTAssertEqual(Role.allCases.count, 7, "Role enum should have exactly 6 cases")
     }
 
     func testAllRolesContainsAllValues() {

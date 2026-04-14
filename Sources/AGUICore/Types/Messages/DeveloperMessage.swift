@@ -87,20 +87,29 @@ public struct DeveloperMessage: Message, Sendable, Hashable {
     /// configuration module generated the message.
     public let name: String?
 
+    /// Optional encrypted value associated with this message.
+    ///
+    /// When present, carries a cryptographic value produced by the agent's
+    /// reasoning process.
+    public let encryptedValue: String?
+
     /// Creates a new developer message.
     ///
     /// - Parameters:
     ///   - id: Unique identifier for this message
     ///   - content: The developer's message content
     ///   - name: Optional identifier for the developer or system
+    ///   - encryptedValue: Optional encrypted reasoning value
     public init(
         id: String,
         content: String,
-        name: String? = nil
+        name: String? = nil,
+        encryptedValue: String? = nil
     ) {
         self.id = id
         self.role = .developer
         self.content = content
         self.name = name
+        self.encryptedValue = encryptedValue
     }
 }

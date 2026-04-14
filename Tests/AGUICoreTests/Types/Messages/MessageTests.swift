@@ -35,12 +35,14 @@ final class MessageTests: XCTestCase {
         let role: Role
         let content: String?
         let name: String?
+        let encryptedValue: String?
 
-        init(id: String = "test-id", role: Role = .user, content: String? = "Test content", name: String? = nil) {
+        init(id: String = "test-id", role: Role = .user, content: String? = "Test content", name: String? = nil, encryptedValue: String? = nil) {
             self.id = id
             self.role = role
             self.content = content
             self.name = name
+            self.encryptedValue = encryptedValue
         }
     }
 

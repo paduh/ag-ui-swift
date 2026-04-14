@@ -137,6 +137,11 @@ public struct ActivityMessage: Message, Sendable, Hashable {
     /// Optional sender name (always `nil` for activity messages).
     public let name: String? = nil
 
+    /// Encrypted value (always `nil` for activity messages).
+    ///
+    /// The AG-UI protocol does not define `encryptedValue` for activity messages.
+    public let encryptedValue: String? = nil
+
     /// Creates a new activity message.
     ///
     /// - Parameters:

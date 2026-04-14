@@ -124,6 +124,12 @@ public struct AssistantMessage: Message, Sendable, Hashable {
     /// - Conditionally (based on previous results)
     public let toolCalls: [ToolCall]?
 
+    /// Optional encrypted value associated with this message.
+    ///
+    /// When present, carries a cryptographic value produced by the agent's
+    /// reasoning process.
+    public let encryptedValue: String?
+
     /// Creates a new assistant message.
     ///
     /// - Parameters:
@@ -131,16 +137,19 @@ public struct AssistantMessage: Message, Sendable, Hashable {
     ///   - content: The agent's text response (optional)
     ///   - name: Optional identifier for the assistant
     ///   - toolCalls: Optional array of tool calls to execute
+    ///   - encryptedValue: Optional encrypted reasoning value
     public init(
         id: String,
         content: String? = nil,
         name: String? = nil,
-        toolCalls: [ToolCall]? = nil
+        toolCalls: [ToolCall]? = nil,
+        encryptedValue: String? = nil
     ) {
         self.id = id
         self.role = .assistant
         self.content = content
         self.name = name
         self.toolCalls = toolCalls
+        self.encryptedValue = encryptedValue
     }
 }

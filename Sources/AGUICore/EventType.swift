@@ -34,7 +34,8 @@ import Foundation
 /// - **Text Messages**: `textMessageStart`, `textMessageContent`, `textMessageEnd`, `textMessageChunk`
 /// - **Tool Calls**: `toolCallStart`, `toolCallArgs`, `toolCallEnd`, `toolCallResult`, `toolCallChunk`
 /// - **State**: `stateSnapshot`, `stateDelta`, `messagesSnapshot`
-/// - **Thinking**: `thinkingStart`, `thinkingEnd`, `thinkingTextMessageStart`, `thinkingTextMessageContent`, `thinkingTextMessageEnd`
+/// - **Thinking** *(deprecated)*: `thinkingStart`, `thinkingEnd`, `thinkingTextMessageStart`, `thinkingTextMessageContent`, `thinkingTextMessageEnd`
+/// - **Reasoning**: `reasoningStart`, `reasoningMessageStart`, `reasoningMessageContent`, `reasoningMessageEnd`, `reasoningMessageChunk`, `reasoningEnd`, `reasoningEncryptedValue`
 /// - **Activity**: `activitySnapshot`, `activityDelta`
 /// - **Special**: `raw`, `custom`
 
@@ -99,22 +100,55 @@ public enum EventType: String, Codable, CaseIterable, Sendable {
     /// Messages snapshot received
     case messagesSnapshot = "MESSAGES_SNAPSHOT"
 
-    // MARK: - Thinking Events (5)
+    // MARK: - Thinking Events (5) — Deprecated
 
-    /// Thinking phase started
+    /// Thinking phase started.
+    ///
+    /// - Note: Deprecated. Use ``reasoningStart`` instead. Will be removed in 1.0.0.
     case thinkingStart = "THINKING_START"
 
-    /// Thinking phase ended
+    /// Thinking phase ended.
+    ///
+    /// - Note: Deprecated. Use ``reasoningEnd`` instead. Will be removed in 1.0.0.
     case thinkingEnd = "THINKING_END"
 
-    /// Thinking text message generation started
+    /// Thinking text message generation started.
+    ///
+    /// - Note: Deprecated. Use ``reasoningMessageStart`` instead. Will be removed in 1.0.0.
     case thinkingTextMessageStart = "THINKING_TEXT_MESSAGE_START"
 
-    /// Thinking text message content received
+    /// Thinking text message content received.
+    ///
+    /// - Note: Deprecated. Use ``reasoningMessageContent`` instead. Will be removed in 1.0.0.
     case thinkingTextMessageContent = "THINKING_TEXT_MESSAGE_CONTENT"
 
-    /// Thinking text message generation finished
+    /// Thinking text message generation finished.
+    ///
+    /// - Note: Deprecated. Use ``reasoningMessageEnd`` instead. Will be removed in 1.0.0.
     case thinkingTextMessageEnd = "THINKING_TEXT_MESSAGE_END"
+
+    // MARK: - Reasoning Events (7)
+
+    /// Reasoning phase started.
+    case reasoningStart = "REASONING_START"
+
+    /// Reasoning message generation started.
+    case reasoningMessageStart = "REASONING_MESSAGE_START"
+
+    /// Reasoning message content received.
+    case reasoningMessageContent = "REASONING_MESSAGE_CONTENT"
+
+    /// Reasoning message generation finished.
+    case reasoningMessageEnd = "REASONING_MESSAGE_END"
+
+    /// Chunk of reasoning message received.
+    case reasoningMessageChunk = "REASONING_MESSAGE_CHUNK"
+
+    /// Reasoning phase ended.
+    case reasoningEnd = "REASONING_END"
+
+    /// Encrypted reasoning value attached to a message or tool call.
+    case reasoningEncryptedValue = "REASONING_ENCRYPTED_VALUE"
 
     // MARK: - Special Events (2)
 

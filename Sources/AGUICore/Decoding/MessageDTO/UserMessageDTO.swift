@@ -30,6 +30,7 @@ struct UserMessageDTO {
     let content: String
     let name: String?
     let contentParts: [any InputContent]?
+    let encryptedValue: String?
 
     static func decode(from data: Data, decoder: JSONDecoder = JSONDecoder()) throws -> UserMessageDTO {
         guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
@@ -45,8 +46,9 @@ struct UserMessageDTO {
         // Extract required fields
         let id = try MessageDecodingHelpers.extractRequiredString(from: jsonObject, key: "id")
 
-        // Extract optional name
+        // Extract optional fields
         let name = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "name")
+        let encryptedValue = MessageDecodingHelpers.extractOptionalString(from: jsonObject, key: "encryptedValue")
 
         // Handle polymorphic content (String or Array of InputContent)
         guard let contentValue = jsonObject["content"] else {
@@ -77,7 +79,7 @@ struct UserMessageDTO {
             )
         }
 
-        return UserMessageDTO(id: id, content: content, name: name, contentParts: contentParts)
+        return UserMessageDTO(id: id, content: content, name: name, contentParts: contentParts, encryptedValue: encryptedValue)
     }
 
     /// Decodes an array of InputContent from JSON dictionaries using DTOs.
@@ -122,9 +124,9 @@ struct UserMessageDTO {
 
     func toDomain() -> UserMessage {
         if let parts = contentParts {
-            return UserMessage.multimodal(id: id, parts: parts, name: name)
+            return UserMessage.multimodal(id: id, parts: parts, name: name, encryptedValue: encryptedValue)
         } else {
-            return UserMessage(id: id, content: content, name: name)
+            return UserMessage(id: id, content: content, name: name, encryptedValue: encryptedValue)
         }
     }
 

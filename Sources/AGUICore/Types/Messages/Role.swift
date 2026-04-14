@@ -69,4 +69,11 @@ public enum Role: String, Sendable, Codable, CaseIterable, Hashable {
     /// Activity messages enable agents to stream structured JSON content
     /// that can be rendered in custom UI surfaces.
     case activity
+
+    /// Internal reasoning content produced by the agent.
+    ///
+    /// Reasoning messages contain the agent's chain-of-thought or internal
+    /// reasoning steps. They may optionally carry an encrypted value for
+    /// verified reasoning workflows.
+    case reasoning
 }
