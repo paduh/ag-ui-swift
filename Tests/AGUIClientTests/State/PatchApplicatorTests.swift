@@ -491,14 +491,15 @@ final class PatchApplicatorTests: XCTestCase {
     func testAddToRootPath() throws {
         let state = Data("{}".utf8)
         let patch = Data("""
-        [{"op":"add","path":"/","value":{"new":"object"}}]
+        [{"op":"add","path":"/","value":"myValue"}]
         """.utf8)
 
-        // This should replace the entire root object
+        // Per RFC 6901: "/" refers to the empty-string key "", not the root document.
+        // add with path "/" sets the member keyed by "" in the root object.
         let result = try applicator.apply(patch: patch, to: state)
         let json = try JSONSerialization.jsonObject(with: result) as! [String: Any]
 
-        XCTAssertEqual(json["new"] as? String, "object")
+        XCTAssertEqual(json[""] as? String, "myValue")
     }
 
     func testEscapedPathCharacters() throws {

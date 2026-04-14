@@ -110,10 +110,10 @@ extension ChatAppStore {
         // MARK: Run lifecycle
 
         case let e as RunErrorEvent:
-            state.error = e.error.message
+            state.error = e.message
             appendSupplemental(SupplementalMessage(
                 id: UUID().uuidString,
-                kind: .error(message: e.error.message),
+                kind: .error(message: e.message),
                 timestamp: .now
             ))
 

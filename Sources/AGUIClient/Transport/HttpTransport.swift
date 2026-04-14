@@ -143,7 +143,7 @@ public actor HttpTransport {
     public func execute(
         endpoint: String,
         input: RunAgentInput
-    ) async throws -> URLSession.AsyncBytes {
+    ) async throws -> AsyncThrowingStream<UInt8, Error> {
         // Construct URL
         let url = configuration.baseURL.appendingPathComponent(endpoint)
 

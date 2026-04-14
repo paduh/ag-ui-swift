@@ -110,13 +110,15 @@ public struct SseParser {
     /// - Very long lines are supported
     /// - Multiple events in one chunk are all returned
     public mutating func parse(_ chunk: String) -> [SseEvent] {
-        // Append chunk to buffer
-        buffer += chunk
+        // Normalize all line endings to \n per SSE spec (WHATWG):
+        // \r\n and \r are both valid line ending sequences.
+        let normalized = chunk.replacingOccurrences(of: "\r\n", with: "\n")
+                              .replacingOccurrences(of: "\r", with: "\n")
+        buffer += normalized
 
         var events: [SseEvent] = []
 
-        // Split on double newline (event separator)
-        // Note: We need to handle both \n\n and \r\n\r\n
+        // Split on double newline (event separator — handles \n\n after normalization)
         let parts = buffer.components(separatedBy: "\n\n")
 
         // Keep the last part in buffer (might be incomplete)

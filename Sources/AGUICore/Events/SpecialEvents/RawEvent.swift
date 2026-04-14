@@ -44,10 +44,16 @@ public struct RawEvent: AGUIEvent, Equatable, Sendable {
     ///
     /// This contains the unprocessed event data in its original form as JSON.
     /// The structure can be any valid JSON value (object, array, primitive, or null).
+    /// Corresponds to the `event` field in the AG-UI protocol wire format.
     ///
     /// To access the parsed data, use `parsedData()` or parse the data
     /// using `JSONSerialization.jsonObject(with:)`.
     public let data: Data
+
+    /// Optional source identifier for the raw event.
+    ///
+    /// Corresponds to the `source` field in the AG-UI protocol.
+    public let source: String?
 
     /// Optional timestamp when the event was created.
     ///
@@ -65,15 +71,18 @@ public struct RawEvent: AGUIEvent, Equatable, Sendable {
     /// Creates a new `RawEvent`.
     ///
     /// - Parameters:
-    ///   - data: The raw event data as JSON bytes
+    ///   - data: The raw event data as JSON bytes (wire field: `event`)
+    ///   - source: Optional source identifier (wire field: `source`)
     ///   - timestamp: Optional timestamp in milliseconds since epoch
     ///   - rawEvent: Optional raw event data as received from the agent
     public init(
         data: Data,
+        source: String? = nil,
         timestamp: Int64? = nil,
         rawEvent: Data? = nil
     ) {
         self.data = data
+        self.source = source
         self.timestamp = timestamp
         self.rawEvent = rawEvent
     }

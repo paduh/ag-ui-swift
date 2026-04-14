@@ -40,6 +40,12 @@ public struct RunFinishedEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// The unique identifier for the completed run.
     public let runId: String
 
+    /// Optional run result as raw JSON.
+    ///
+    /// Corresponds to `result: z.any().optional()` in the AG-UI protocol.
+    /// Stored as opaque `Data` because the result schema is arbitrary JSON.
+    public let result: Data?
+
     /// Optional timestamp when the run finished.
     public let timestamp: Int64?
 
@@ -56,16 +62,19 @@ public struct RunFinishedEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// - Parameters:
     ///   - threadId: The conversation thread identifier
     ///   - runId: The unique run identifier
+    ///   - result: Optional run result as raw JSON data
     ///   - timestamp: Optional timestamp in milliseconds since epoch
     ///   - rawEvent: Optional raw event data as received from the agent
     public init(
         threadId: String,
         runId: String,
+        result: Data? = nil,
         timestamp: Int64? = nil,
         rawEvent: Data? = nil
     ) {
         self.threadId = threadId
         self.runId = runId
+        self.result = result
         self.timestamp = timestamp
         self.rawEvent = rawEvent
     }

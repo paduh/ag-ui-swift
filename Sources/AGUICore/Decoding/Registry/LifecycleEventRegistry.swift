@@ -30,13 +30,13 @@ enum LifecycleEventRegistry {
     static func registry() -> [EventType: DecodeHandler] {
         [
             .runStarted: { data, decoder in
-                try decoder.decode(RunStartedEventDTO.self, from: data).toDomain(rawEvent: data)
+                try RunStartedEventDTO.decode(from: data, decoder: decoder).toDomain(rawEvent: data)
             },
             .runFinished: { data, decoder in
-                try decoder.decode(RunFinishedEventDTO.self, from: data).toDomain(rawEvent: data)
+                try RunFinishedEventDTO.decode(from: data, decoder: decoder).toDomain(rawEvent: data)
             },
             .runError: { data, decoder in
-                try decoder.decode(RunErrorEventDTO.self, from: data).toDomain(rawEvent: data)
+                try RunErrorEventDTO.decode(from: data, decoder: decoder).toDomain(rawEvent: data)
             },
             .stepStarted: { data, decoder in
                 try decoder.decode(StepStartedEventDTO.self, from: data).toDomain(rawEvent: data)

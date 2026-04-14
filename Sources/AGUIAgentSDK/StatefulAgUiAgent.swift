@@ -445,16 +445,22 @@ public final class StatefulAgUiAgent: Sendable {
                                 )
                             }
 
-                        case let end as ToolCallEndEvent:
-                            // Save the current assistant message (with completed tool calls so far).
-                            // A new ToolCallStartEvent for a subsequent call will update it further,
-                            // but we persist the snapshot here so history is never lost.
-                            if let msg = currentAssistantMessage {
-                                _ = end // tool call ID not needed here
-                                await self.historyManager.append(message: msg, to: threadId)
-                            }
+                        case is ToolCallEndEvent:
+                            // Do NOT append the assistant message here. For multi-tool-call sequences
+                            // (ToolCallStart→ToolCallEnd×N), appending at every ToolCallEnd caused N
+                            // duplicates in history. The assistant message is flushed at:
+                            //   • TextMessageEndEvent (text + optional tool calls)
+                            //   • The first ToolCallResultEvent (tool-call-only turns)
+                            break
 
                         case let result as ToolCallResultEvent:
+                            // Flush a pending tool-call-only assistant message before recording the
+                            // tool result. This handles turns where ToolCallStart/End events fire
+                            // without a surrounding TextMessageStart/End envelope.
+                            if let msg = currentAssistantMessage {
+                                await self.historyManager.append(message: msg, to: threadId)
+                                currentAssistantMessage = nil
+                            }
                             let toolMessage = ToolMessage(
                                 id: result.messageId,
                                 content: result.content,

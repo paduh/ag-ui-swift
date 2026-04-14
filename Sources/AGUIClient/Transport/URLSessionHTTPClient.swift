@@ -118,7 +118,22 @@ public actor URLSessionHTTPClient: HTTPClient {
             throw ClientError.invalidResponse
         }
 
-        return HTTPResponse(bytes: bytes, httpResponse: httpResponse)
+        // Bridge URLSession.AsyncBytes → AsyncThrowingStream<UInt8, Error> so that
+        // HTTPResponse is decoupled from URLSession and can be mocked in tests.
+        let stream = AsyncThrowingStream<UInt8, Error> { continuation in
+            Task {
+                do {
+                    for try await byte in bytes {
+                        continuation.yield(byte)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+
+        return HTTPResponse(bytes: stream, httpResponse: httpResponse)
     }
 
     /// Maps URLError to ClientError.

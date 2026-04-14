@@ -139,12 +139,12 @@ extension KeyedEncodingContainer where K == JSONCodingKeys {
 
                 if let stringValue = value as? String {
                     try encode(stringValue, forKey: codingKey)
+                } else if let boolValue = value as? Bool {
+                    try encode(boolValue, forKey: codingKey)
                 } else if let intValue = value as? Int {
                     try encode(intValue, forKey: codingKey)
                 } else if let doubleValue = value as? Double {
                     try encode(doubleValue, forKey: codingKey)
-                } else if let boolValue = value as? Bool {
-                    try encode(boolValue, forKey: codingKey)
                 } else if value is NSNull {
                     try encodeNil(forKey: codingKey)
                 } else if let nestedDict = value as? [String: Any] {
@@ -171,12 +171,12 @@ extension UnkeyedEncodingContainer {
         for value in array {
             if let stringValue = value as? String {
                 try encode(stringValue)
+            } else if let boolValue = value as? Bool {
+                try encode(boolValue)
             } else if let intValue = value as? Int {
                 try encode(intValue)
             } else if let doubleValue = value as? Double {
                 try encode(doubleValue)
-            } else if let boolValue = value as? Bool {
-                try encode(boolValue)
             } else if value is NSNull {
                 try encodeNil()
             } else if let nestedDict = value as? [String: Any] {
