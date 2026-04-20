@@ -51,6 +51,7 @@ public final class AgUiAgent: Sendable {
 
         var httpConfig = HttpAgentConfiguration(baseURL: url)
         httpConfig.timeout = cfg.requestTimeout
+        httpConfig.retryPolicy = cfg.retryPolicy
         httpConfig.headers = cfg.buildHeaders()
 
         let agent = HttpAgent(configuration: httpConfig)
