@@ -91,11 +91,6 @@ public struct AgUiAgentConfig: Sendable {
     /// Default: `.none`
     public var retryPolicy: HttpAgentConfiguration.RetryPolicy
 
-    /// Connection timeout in seconds.
-    ///
-    /// Default: `30`
-    public var connectTimeout: TimeInterval
-
     // MARK: - Agent behaviour
 
     /// Optional system prompt prepended to each call's message list.
@@ -144,7 +139,6 @@ public struct AgUiAgentConfig: Sendable {
         headers = [:]
         requestTimeout = 600
         retryPolicy = .none
-        connectTimeout = 30
         systemPrompt = nil
         debug = false
         toolRegistry = nil
