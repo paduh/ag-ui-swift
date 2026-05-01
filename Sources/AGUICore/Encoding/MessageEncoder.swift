@@ -157,7 +157,7 @@ public struct MessageEncoder: Sendable {
 
     // MARK: - Default Registry
 
-    /// Returns the default registry with handlers for all 6 message types.
+    /// Returns the default registry with handlers for all 7 message types.
     ///
     /// The default registry includes:
     /// - `.developer` → Encodes `DeveloperMessage`
@@ -166,6 +166,7 @@ public struct MessageEncoder: Sendable {
     /// - `.assistant` → Encodes `AssistantMessage`
     /// - `.tool` → Encodes `ToolMessage`
     /// - `.activity` → Encodes `ActivityMessage`
+    /// - `.reasoning` → Encodes `ReasoningMessage`
     ///
     /// - Returns: Dictionary mapping each role to its encode handler
     public static func defaultRegistry() -> [Role: EncodeHandler] {
@@ -187,6 +188,9 @@ public struct MessageEncoder: Sendable {
             },
             .activity: { message, encoder in
                 try encodeActivityMessage(message, encoder: encoder)
+            },
+            .reasoning: { message, encoder in
+                try encodeReasoningMessage(message, encoder: encoder)
             }
         ]
     }
@@ -407,5 +411,24 @@ private func encodeActivityMessage(_ message: any Message, encoder: JSONEncoder)
         "activityType": activityMsg.activityType,
         "content": activityContentObj
     ]
+    return try JSONSerialization.data(withJSONObject: dict)
+}
+
+/// Encodes a ReasoningMessage to JSON data.
+private func encodeReasoningMessage(_ message: any Message, encoder: JSONEncoder) throws -> Data {
+    guard let reasoningMsg = message as? ReasoningMessage else {
+        throw MessageEncodingError.invalidMessageType(.reasoning, String(describing: type(of: message)))
+    }
+
+    var dict: [String: Any] = [
+        "id": reasoningMsg.id,
+        "role": reasoningMsg.role.rawValue
+    ]
+    if let content = reasoningMsg.content {
+        dict["content"] = content
+    }
+    if let encryptedValue = reasoningMsg.encryptedValue {
+        dict["encryptedValue"] = encryptedValue
+    }
     return try JSONSerialization.data(withJSONObject: dict)
 }
