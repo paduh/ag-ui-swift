@@ -38,6 +38,9 @@ public enum ClientError: Error {
     /// Network error occurred.
     case networkError(Error)
 
+    /// Failed to encode request body.
+    case encodingError(Error)
+
     /// Failed to decode event.
     case decodingError(Error)
 
@@ -62,6 +65,8 @@ extension ClientError: LocalizedError {
             return "HTTP error: \(code)"
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
+        case .encodingError(let error):
+            return "Failed to encode request: \(error.localizedDescription)"
         case .decodingError(let error):
             return "Failed to decode event: \(error.localizedDescription)"
         case .streamError(let message):
@@ -87,6 +92,8 @@ extension ClientError: Equatable {
         case (.streamError(let lmsg), .streamError(let rmsg)):
             return lmsg == rmsg
         case (.networkError(let lerr), .networkError(let rerr)):
+            return lerr.localizedDescription == rerr.localizedDescription
+        case (.encodingError(let lerr), .encodingError(let rerr)):
             return lerr.localizedDescription == rerr.localizedDescription
         case (.decodingError(let lerr), .decodingError(let rerr)):
             return lerr.localizedDescription == rerr.localizedDescription

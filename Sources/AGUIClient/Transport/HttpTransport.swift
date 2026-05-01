@@ -142,7 +142,7 @@ public actor HttpTransport {
     /// ## Error Handling
     ///
     /// Throws `ClientError` for:
-    /// - Encoding failures → `.decodingError`
+    /// - Encoding failures → `.encodingError`
     /// - Non-2xx status codes → `.httpError(statusCode:)`
     /// - Invalid responses → `.invalidResponse`
     /// - Network errors → `.networkError`, `.timeout`, `.cancelled`
@@ -170,7 +170,7 @@ public actor HttpTransport {
         do {
             request.httpBody = try encoder.encode(input)
         } catch {
-            throw ClientError.decodingError(error)
+            throw ClientError.encodingError(error)
         }
 
         // Execute request via injected HTTP client

@@ -110,27 +110,8 @@ public final class StatefulAgUiAgent: Sendable {
     /// ```swift
     /// let agent = StatefulAgUiAgent(baseURL: URL(string: "https://agent.example.com")!)
     /// ```
-    public init(baseURL: URL) {
-        let config = StatefulAgUiAgentConfig(baseURL: baseURL)
-        self.config = config
-        let agent = HttpAgent(configuration: HttpAgentConfiguration(
-            baseURL: config.baseURL,
-            timeout: config.timeout,
-            headers: config.headers,
-            debug: config.debug
-        ))
-        self.httpAgent = agent
-        self.agentTransport = nil
-        self.historyManager = ConversationHistoryManager()
-        self.stateManager = StateManager(initialState: config.initialState)
-        if let registry = config.toolRegistry {
-            self.toolExecutionManager = ToolExecutionManager(
-                toolRegistry: registry,
-                responseHandler: ClientToolResponseHandler(httpAgent: agent, endpoint: config.endpoint)
-            )
-        } else {
-            self.toolExecutionManager = nil
-        }
+    public convenience init(baseURL: URL) {
+        self.init(configuration: StatefulAgUiAgentConfig(baseURL: baseURL))
     }
 
     /// Creates a new stateful agent with custom configuration.

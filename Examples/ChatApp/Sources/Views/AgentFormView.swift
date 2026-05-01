@@ -97,7 +97,7 @@ struct AgentFormView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             case .apiKey:
-                TextField("API Key", text: bind(\.apiKey))
+                SecureField("API Key", text: bind(\.apiKey))
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                 TextField("Header Name", text: bind(\.apiHeaderName))

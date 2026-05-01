@@ -77,8 +77,11 @@ public final class ClientToolResponseHandler: ToolResponseHandler, Sendable {
             runId: runId ?? "run_\(UUID().uuidString)",
             messages: [message]
         )
-        // Drive the full pipeline; discard resulting events.
-        // Use the AbstractAgent pipeline override (run(input:) with external label).
-        for try await _ in try await httpAgent.run(input, endpoint: endpoint) { }
+        // Drive the full pipeline; surface any server-side errors.
+        for try await event in try await httpAgent.run(input, endpoint: endpoint) {
+            if let errorEvent = event as? RunErrorEvent {
+                throw ClientError.streamError(errorEvent.message)
+            }
+        }
     }
 }

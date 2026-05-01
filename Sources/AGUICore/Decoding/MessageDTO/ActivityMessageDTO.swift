@@ -79,35 +79,3 @@ struct ActivityMessageDTO {
         case content
     }
 }
-
-// Helper type to encode primitive JSON values
-private struct JSONPrimitiveWrapper: Encodable {
-    let value: Any
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-
-        switch value {
-        case let bool as Bool:
-            try container.encode(bool)
-        case let int as Int:
-            try container.encode(int)
-        case let int64 as Int64:
-            try container.encode(int64)
-        case let double as Double:
-            try container.encode(double)
-        case let string as String:
-            try container.encode(string)
-        case is NSNull:
-            try container.encodeNil()
-        default:
-            throw EncodingError.invalidValue(
-                value,
-                EncodingError.Context(
-                    codingPath: [],
-                    debugDescription: "Unsupported primitive type"
-                )
-            )
-        }
-    }
-}
