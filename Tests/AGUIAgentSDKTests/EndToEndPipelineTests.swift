@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import AGUIClient
 import AGUICore
@@ -127,55 +105,6 @@ final class EndToEndPipelineTests: XCTestCase {
             return
         }
         XCTAssertEqual(mode, "creative")
-    }
-
-    // MARK: - Thinking telemetry
-
-    func testThinkingSequenceBuildsThinkingState() async throws {
-        let mockTransport = MockAgentTransport()
-        await mockTransport.enqueue([
-            RunStartedEvent(threadId: "t1", runId: "r1"),
-            ThinkingStartEvent(title: "Step 1"),
-            ThinkingTextMessageStartEvent(),
-            ThinkingTextMessageContentEvent(delta: "I am thinking..."),
-            ThinkingTextMessageEndEvent(),
-            ThinkingEndEvent(),
-            RunFinishedEvent(threadId: "t1", runId: "r1"),
-        ])
-
-        let agent = AbstractAgent(transport: mockTransport)
-        try await agent.runAgent()
-
-        let thinking = await agent.thinking
-        let state = try XCTUnwrap(thinking)
-        XCTAssertFalse(state.isThinking, "Thinking should be finished after ThinkingEndEvent")
-        XCTAssertEqual(state.title, "Step 1")
-        XCTAssertTrue(state.messages.contains("I am thinking..."))
-    }
-
-    func testRunStartedResetsThinkingState() async throws {
-        let mockTransport = MockAgentTransport()
-
-        await mockTransport.enqueue([
-            RunStartedEvent(threadId: "t1", runId: "r1"),
-            ThinkingStartEvent(),
-            ThinkingTextMessageStartEvent(),
-            ThinkingTextMessageContentEvent(delta: "old thought"),
-            ThinkingTextMessageEndEvent(),
-            ThinkingEndEvent(),
-            RunFinishedEvent(threadId: "t1", runId: "r1"),
-        ])
-
-        await mockTransport.enqueue([
-            RunStartedEvent(threadId: "t1", runId: "r2"),
-            RunFinishedEvent(threadId: "t1", runId: "r2"),
-        ])
-
-        let agent = AbstractAgent(transport: mockTransport)
-        try await agent.runAgent()
-
-        let thinking = await agent.thinking
-        XCTAssertNotNil(thinking)
     }
 
     // MARK: - Sequential multi-run (state persists)

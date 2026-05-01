@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import Foundation
 
@@ -74,6 +52,14 @@ import Foundation
 ///
 /// SSE specification: https://html.spec.whatwg.org/multipage/server-sent-events.html
 public struct SseParser {
+    /// Maximum number of UTF-8 bytes the internal buffer may hold.
+    ///
+    /// If a stream sends data faster than complete events arrive — or sends a
+    /// pathologically large payload without a double-newline terminator — the
+    /// buffer is reset and parsing continues with the next chunk. This prevents
+    /// unbounded memory growth from malformed or malicious streams.
+    public static let maxBufferByteCount = 10 * 1_048_576 // 10 MB
+
     /// Internal buffer for incomplete events.
     private var buffer: String = ""
 
@@ -115,6 +101,12 @@ public struct SseParser {
         let normalized = chunk.replacingOccurrences(of: "\r\n", with: "\n")
                               .replacingOccurrences(of: "\r", with: "\n")
         buffer += normalized
+
+        // Guard against unbounded buffer growth from malformed/malicious streams.
+        guard buffer.utf8.count <= Self.maxBufferByteCount else {
+            buffer = ""
+            return []
+        }
 
         var events: [SseEvent] = []
 

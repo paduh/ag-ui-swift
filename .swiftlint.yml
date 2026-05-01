@@ -22,4 +22,5 @@ custom_rules:
     message: "Do not use assumeIsolated. Use explicit actor isolation or restructure the code to stay within structured concurrency."
     severity: error
 
-large_tuple: 3
+large_tuple:
+  warning_length: 3

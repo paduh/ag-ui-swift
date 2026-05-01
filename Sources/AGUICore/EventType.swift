@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import Foundation
 
@@ -34,7 +12,6 @@ import Foundation
 /// - **Text Messages**: `textMessageStart`, `textMessageContent`, `textMessageEnd`, `textMessageChunk`
 /// - **Tool Calls**: `toolCallStart`, `toolCallArgs`, `toolCallEnd`, `toolCallResult`, `toolCallChunk`
 /// - **State**: `stateSnapshot`, `stateDelta`, `messagesSnapshot`
-/// - **Thinking** *(deprecated)*: `thinkingStart`, `thinkingEnd`, `thinkingTextMessageStart`, `thinkingTextMessageContent`, `thinkingTextMessageEnd`
 /// - **Reasoning**: `reasoningStart`, `reasoningMessageStart`, `reasoningMessageContent`, `reasoningMessageEnd`, `reasoningMessageChunk`, `reasoningEnd`, `reasoningEncryptedValue`
 /// - **Activity**: `activitySnapshot`, `activityDelta`
 /// - **Special**: `raw`, `custom`
@@ -98,33 +75,6 @@ public enum EventType: String, Codable, CaseIterable, Sendable {
 
     /// Messages snapshot received
     case messagesSnapshot = "MESSAGES_SNAPSHOT"
-
-    // MARK: - Thinking Events (5) — Deprecated
-
-    /// Thinking phase started.
-    ///
-    /// - Note: Deprecated. Use ``reasoningStart`` instead. Will be removed in 1.0.0.
-    case thinkingStart = "THINKING_START"
-
-    /// Thinking phase ended.
-    ///
-    /// - Note: Deprecated. Use ``reasoningEnd`` instead. Will be removed in 1.0.0.
-    case thinkingEnd = "THINKING_END"
-
-    /// Thinking text message generation started.
-    ///
-    /// - Note: Deprecated. Use ``reasoningMessageStart`` instead. Will be removed in 1.0.0.
-    case thinkingTextMessageStart = "THINKING_TEXT_MESSAGE_START"
-
-    /// Thinking text message content received.
-    ///
-    /// - Note: Deprecated. Use ``reasoningMessageContent`` instead. Will be removed in 1.0.0.
-    case thinkingTextMessageContent = "THINKING_TEXT_MESSAGE_CONTENT"
-
-    /// Thinking text message generation finished.
-    ///
-    /// - Note: Deprecated. Use ``reasoningMessageEnd`` instead. Will be removed in 1.0.0.
-    case thinkingTextMessageEnd = "THINKING_TEXT_MESSAGE_END"
 
     // MARK: - Reasoning Events (7)
 

@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import AGUICore
 import Foundation
@@ -32,7 +10,6 @@ internal actor AgentStorage {
     var currentState: State = Data("{}".utf8)
     var rawEvents: [RawEvent] = []
     var customEvents: [CustomEvent] = []
-    var thinking: ThinkingTelemetryState?
     var currentTask: Task<Void, Error>?
     var isDisposed: Bool = false
 }
@@ -42,7 +19,6 @@ internal actor AgentStorage {
 internal extension AgentStorage {
     func setMessages(_ messages: [any Message]) { self.messages = messages }
     func setState(_ state: State) { self.currentState = state }
-    func setThinking(_ thinking: ThinkingTelemetryState?) { self.thinking = thinking }
     func setRawEvents(_ rawEvents: [RawEvent]) { self.rawEvents = rawEvents }
     func setCustomEvents(_ customEvents: [CustomEvent]) { self.customEvents = customEvents }
     func setCurrentTask(_ task: Task<Void, Error>?) { self.currentTask = task }
@@ -84,8 +60,6 @@ public final class AbstractAgent: Sendable {
     public var rawEvents: [RawEvent] { get async { await storage.rawEvents } }
 
     public var customEvents: [CustomEvent] { get async { await storage.customEvents } }
-
-    public var thinking: ThinkingTelemetryState? { get async { await storage.thinking } }
 
     // MARK: - Run method
 
@@ -215,9 +189,6 @@ public final class AbstractAgent: Sendable {
             let msgs = await storage.messages
             let params = AgentStateChangedParams(messages: msgs, state: state, input: input)
             for sub in subscribers { await sub.onStateChanged(params: params) }
-        }
-        if let thinking = agentState.thinking {
-            await storage.setThinking(thinking)
         }
         if let rawEvents = agentState.rawEvents {
             await storage.setRawEvents(rawEvents)
