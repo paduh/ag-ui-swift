@@ -27,6 +27,7 @@ import Foundation
 struct RunFinishedEventDTO {
     let threadId: String
     let runId: String
+    let outcome: RunFinishedOutcome
     let result: Data?
     let timestamp: Int64?
 
@@ -69,6 +70,16 @@ struct RunFinishedEventDTO {
             )
         }
 
+        // Decode outcome; unknown or missing values fall back to .completed for
+        // forward-compatibility with future protocol versions.
+        let outcome: RunFinishedOutcome
+        if let raw = jsonObject["outcome"] as? String,
+           let parsed = RunFinishedOutcome(rawValue: raw) {
+            outcome = parsed
+        } else {
+            outcome = .completed
+        }
+
         let timestamp = try EventDecodingHelpers.extractTimestamp(from: jsonObject)
 
         var resultData: Data?
@@ -76,14 +87,14 @@ struct RunFinishedEventDTO {
             resultData = try? JSONSerialization.data(withJSONObject: resultValue)
         }
 
-        return RunFinishedEventDTO(threadId: threadId, runId: runId, result: resultData, timestamp: timestamp)
+        return RunFinishedEventDTO(threadId: threadId, runId: runId, outcome: outcome, result: resultData, timestamp: timestamp)
     }
 
     func toDomain(rawEvent: Data? = nil) -> RunFinishedEvent {
-        RunFinishedEvent(threadId: threadId, runId: runId, result: result, timestamp: timestamp, rawEvent: rawEvent)
+        RunFinishedEvent(threadId: threadId, runId: runId, outcome: outcome, result: result, timestamp: timestamp, rawEvent: rawEvent)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case threadId, runId, result, timestamp
+        case threadId, runId, outcome, result, timestamp
     }
 }

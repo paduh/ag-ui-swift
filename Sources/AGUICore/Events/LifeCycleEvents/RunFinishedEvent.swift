@@ -40,6 +40,12 @@ public struct RunFinishedEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// The unique identifier for the completed run.
     public let runId: String
 
+    /// Why the run finished.
+    ///
+    /// Decoded from the `"outcome"` field in the AG-UI wire format.
+    /// Defaults to `.completed` when the field is absent or unrecognised.
+    public let outcome: RunFinishedOutcome
+
     /// Optional run result as raw JSON.
     ///
     /// Corresponds to `result: z.any().optional()` in the AG-UI protocol.
@@ -62,18 +68,21 @@ public struct RunFinishedEvent: AGUIEvent, Equatable, Hashable, Sendable {
     /// - Parameters:
     ///   - threadId: The conversation thread identifier
     ///   - runId: The unique run identifier
+    ///   - outcome: Why the run finished (defaults to `.completed`)
     ///   - result: Optional run result as raw JSON data
     ///   - timestamp: Optional timestamp in milliseconds since epoch
     ///   - rawEvent: Optional raw event data as received from the agent
     public init(
         threadId: String,
         runId: String,
+        outcome: RunFinishedOutcome = .completed,
         result: Data? = nil,
         timestamp: Int64? = nil,
         rawEvent: Data? = nil
     ) {
         self.threadId = threadId
         self.runId = runId
+        self.outcome = outcome
         self.result = result
         self.timestamp = timestamp
         self.rawEvent = rawEvent
@@ -85,6 +94,6 @@ public struct RunFinishedEvent: AGUIEvent, Equatable, Hashable, Sendable {
 extension RunFinishedEvent: CustomStringConvertible {
 
     public var description: String {
-        "RunFinishedEvent(threadId: \(threadId), runId: \(runId), timestamp: \(timestamp?.description ?? "nil"))"
+        "RunFinishedEvent(threadId: \(threadId), runId: \(runId), outcome: \(outcome.rawValue), timestamp: \(timestamp?.description ?? "nil"))"
     }
 }
