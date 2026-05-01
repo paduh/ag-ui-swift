@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import Foundation
 
@@ -47,16 +25,21 @@ public struct AudioInputContent: InputContent, Hashable, Sendable {
     /// Common values: `"mp3"`, `"wav"`, `"ogg"`, `"flac"`.
     public let format: String?
 
+    /// Optional MIME type of the audio (e.g., `"audio/mpeg"`, `"audio/wav"`).
+    public let mimeType: String?
+
     /// Creates audio content from a URL.
     ///
     /// - Parameters:
     ///   - url: URL pointing to the audio file
     ///   - format: Optional format identifier (e.g., `"mp3"`)
-    public init(url: String, format: String? = nil) {
+    ///   - mimeType: Optional MIME type (e.g., `"audio/mpeg"`)
+    public init(url: String, format: String? = nil, mimeType: String? = nil) {
         self.type = "audio"
         self.url = url
         self.data = nil
         self.format = format
+        self.mimeType = mimeType
     }
 
     /// Creates audio content from base64-encoded data.
@@ -64,10 +47,12 @@ public struct AudioInputContent: InputContent, Hashable, Sendable {
     /// - Parameters:
     ///   - data: Base64-encoded audio bytes
     ///   - format: Optional format identifier (e.g., `"wav"`)
-    public init(data: String, format: String? = nil) {
+    ///   - mimeType: Optional MIME type (e.g., `"audio/wav"`)
+    public init(data: String, format: String? = nil, mimeType: String? = nil) {
         self.type = "audio"
         self.url = nil
         self.data = data
         self.format = format
+        self.mimeType = mimeType
     }
 }

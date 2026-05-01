@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import AGUIClient
 import AGUICore
@@ -77,8 +55,11 @@ public final class ClientToolResponseHandler: ToolResponseHandler, Sendable {
             runId: runId ?? "run_\(UUID().uuidString)",
             messages: [message]
         )
-        // Drive the full pipeline; discard resulting events.
-        // Use the AbstractAgent pipeline override (run(input:) with external label).
-        for try await _ in try await httpAgent.run(input, endpoint: endpoint) { }
+        // Drive the full pipeline; surface any server-side errors.
+        for try await event in try await httpAgent.run(input, endpoint: endpoint) {
+            if let errorEvent = event as? RunErrorEvent {
+                throw ClientError.streamError(errorEvent.message)
+            }
+        }
     }
 }

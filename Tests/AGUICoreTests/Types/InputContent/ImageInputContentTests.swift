@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import XCTest
 @testable import AGUICore
@@ -160,6 +138,66 @@ final class ImageInputContentTests: XCTestCase {
         let c2 = ImageInputContent(url: "https://example.com/b.png")
         let set: Set<ImageInputContent> = [c1, c2]
         XCTAssertEqual(set.count, 2)
+    }
+
+    // MARK: - mimeType
+
+    func test_mimeType_isNilByDefault_url() {
+        let content = ImageInputContent(url: "https://example.com/img.png")
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_mimeType_isNilByDefault_data() {
+        let content = ImageInputContent(data: "base64abc")
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_mimeType_roundTripsViaURLInit() {
+        let content = ImageInputContent(url: "https://example.com/img.png", mimeType: "image/png")
+        XCTAssertEqual(content.mimeType, "image/png")
+    }
+
+    func test_mimeType_roundTripsViaDataInit() {
+        let content = ImageInputContent(data: "base64abc", mimeType: "image/jpeg")
+        XCTAssertEqual(content.mimeType, "image/jpeg")
+    }
+
+    func test_mimeType_decodesFromJSON() throws {
+        let json = Data("""
+        {"type":"image","url":"https://example.com/img.png","mimeType":"image/png"}
+        """.utf8)
+        let dto = try ImageInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertEqual(content.mimeType, "image/png")
+    }
+
+    func test_mimeType_isNilWhenAbsentInJSON() throws {
+        let json = Data("""
+        {"type":"image","url":"https://example.com/img.png"}
+        """.utf8)
+        let dto = try ImageInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_encodeUserMessage_withImageMimeType_includesMimeTypeInJSON() throws {
+        let image = ImageInputContent(url: "https://example.com/img.png", mimeType: "image/png")
+        let userMsg = UserMessage.multimodal(id: "msg-1", parts: [image])
+        let encoder = MessageEncoder()
+        let data = try encoder.encode(userMsg)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let contentArray = json?["content"] as? [[String: Any]]
+        XCTAssertEqual(contentArray?[0]["mimeType"] as? String, "image/png")
+    }
+
+    func test_encodeUserMessage_withNilImageMimeType_omitsMimeTypeFromJSON() throws {
+        let image = ImageInputContent(url: "https://example.com/img.png")
+        let userMsg = UserMessage.multimodal(id: "msg-1", parts: [image])
+        let encoder = MessageEncoder()
+        let data = try encoder.encode(userMsg)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let contentArray = json?["content"] as? [[String: Any]]
+        XCTAssertNil(contentArray?[0]["mimeType"])
     }
 
     // MARK: - Sendable

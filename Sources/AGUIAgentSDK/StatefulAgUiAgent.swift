@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import AGUIClient
 import AGUICore
@@ -86,6 +64,9 @@ public final class StatefulAgUiAgent: Sendable {
     /// The underlying HTTP agent for communication.
     private let httpAgent: HttpAgent
 
+    /// Injected transport used in place of `httpAgent` when present (test path).
+    private let agentTransport: (any AgentTransport)?
+
     /// Manager for conversation histories across threads.
     private let historyManager: ConversationHistoryManager
 
@@ -107,26 +88,8 @@ public final class StatefulAgUiAgent: Sendable {
     /// ```swift
     /// let agent = StatefulAgUiAgent(baseURL: URL(string: "https://agent.example.com")!)
     /// ```
-    public init(baseURL: URL) {
-        let config = StatefulAgUiAgentConfig(baseURL: baseURL)
-        self.config = config
-        let agent = HttpAgent(configuration: HttpAgentConfiguration(
-            baseURL: config.baseURL,
-            timeout: config.timeout,
-            headers: config.headers,
-            debug: config.debug
-        ))
-        self.httpAgent = agent
-        self.historyManager = ConversationHistoryManager()
-        self.stateManager = StateManager(initialState: config.initialState)
-        if let registry = config.toolRegistry {
-            self.toolExecutionManager = ToolExecutionManager(
-                toolRegistry: registry,
-                responseHandler: ClientToolResponseHandler(httpAgent: agent, endpoint: config.endpoint)
-            )
-        } else {
-            self.toolExecutionManager = nil
-        }
+    public convenience init(baseURL: URL) {
+        self.init(configuration: StatefulAgUiAgentConfig(baseURL: baseURL))
     }
 
     /// Creates a new stateful agent with custom configuration.
@@ -151,6 +114,7 @@ public final class StatefulAgUiAgent: Sendable {
             debug: configuration.debug
         ))
         self.httpAgent = agent
+        self.agentTransport = nil
         self.historyManager = ConversationHistoryManager()
         self.stateManager = StateManager(initialState: configuration.initialState)
         if let registry = configuration.toolRegistry {
@@ -161,6 +125,20 @@ public final class StatefulAgUiAgent: Sendable {
         } else {
             self.toolExecutionManager = nil
         }
+    }
+
+    /// Creates a stateful agent backed by a custom transport (test path).
+    ///
+    /// Use this initializer in tests to inject a mock transport instead of
+    /// making real HTTP connections.
+    init(transport: any AgentTransport, config: StatefulAgUiAgentConfig) {
+        self.config = config
+        let url = URL(string: "https://placeholder.local")!
+        self.httpAgent = HttpAgent(baseURL: url)
+        self.agentTransport = transport
+        self.historyManager = ConversationHistoryManager()
+        self.stateManager = StateManager(initialState: config.initialState)
+        self.toolExecutionManager = nil
     }
 
     /// Sends a chat message with automatic history management.
@@ -295,26 +273,40 @@ public final class StatefulAgUiAgent: Sendable {
             )
         }
 
-        // Execute the run
-        let rawStream = try await httpAgent.run(inputWithTools, endpoint: config.endpoint)
-
-        // Wrap through tool execution manager if present, otherwise pass through
+        // Execute the run and obtain an event stream
         let eventStream: AsyncThrowingStream<any AGUIEvent, Error>
-        if let manager = toolExecutionManager {
-            eventStream = await manager.processEventStream(
-                rawStream,
-                threadId: inputWithTools.threadId,
-                runId: inputWithTools.runId
-            )
+
+        if let transport = agentTransport {
+            // Test path: transport yields events directly
+            let rawStream = transport.run(input: inputWithTools)
+            if let manager = toolExecutionManager {
+                eventStream = await manager.processEventStream(
+                    rawStream,
+                    threadId: inputWithTools.threadId,
+                    runId: inputWithTools.runId
+                )
+            } else {
+                eventStream = rawStream
+            }
         } else {
-            eventStream = AsyncThrowingStream { continuation in
-                let task = Task {
-                    do {
-                        for try await event in rawStream { continuation.yield(event) }
-                        continuation.finish()
-                    } catch { continuation.finish(throwing: error) }
+            // Production path: httpAgent performs SSE over HTTP
+            let rawStream = try await httpAgent.run(inputWithTools, endpoint: config.endpoint)
+            if let manager = toolExecutionManager {
+                eventStream = await manager.processEventStream(
+                    rawStream,
+                    threadId: inputWithTools.threadId,
+                    runId: inputWithTools.runId
+                )
+            } else {
+                eventStream = AsyncThrowingStream { continuation in
+                    let task = Task {
+                        do {
+                            for try await event in rawStream { continuation.yield(event) }
+                            continuation.finish()
+                        } catch { continuation.finish(throwing: error) }
+                    }
+                    continuation.onTermination = { _ in task.cancel() }
                 }
-                continuation.onTermination = { _ in task.cancel() }
             }
         }
 

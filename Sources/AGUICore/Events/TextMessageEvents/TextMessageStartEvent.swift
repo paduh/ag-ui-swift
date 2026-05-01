@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import Foundation
 
@@ -82,6 +60,36 @@ public struct TextMessageStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
         self.name = name
         self.timestamp = timestamp
         self.rawEvent = rawEvent
+    }
+}
+
+// MARK: - Decodable
+
+extension TextMessageStartEvent: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case messageId
+        case role
+        case name
+        case timestamp
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        messageId = try container.decode(String.self, forKey: .messageId)
+        role = try container.decode(String.self, forKey: .role)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
+        rawEvent = nil
+    }
+
+    func withRawEvent(_ data: Data) -> Self {
+        TextMessageStartEvent(
+            messageId: messageId,
+            role: role,
+            name: name,
+            timestamp: timestamp,
+            rawEvent: data
+        )
     }
 }
 

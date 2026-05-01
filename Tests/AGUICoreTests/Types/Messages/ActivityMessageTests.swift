@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import XCTest
 @testable import AGUICore
@@ -39,13 +17,13 @@ final class ActivityMessageTests: XCTestCase {
         let message = ActivityMessage(
             id: "activity-1",
             activityType: "progress",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(message.id, "activity-1")
         XCTAssertEqual(message.activityType, "progress")
         XCTAssertEqual(message.role, .activity)
-        XCTAssertNil(message.content)
+        XCTAssertFalse(message.content.isEmpty)
         XCTAssertNil(message.name)
     }
 
@@ -63,11 +41,11 @@ final class ActivityMessageTests: XCTestCase {
         let message = ActivityMessage(
             id: "activity-2",
             activityType: "visualization",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(message.activityType, "visualization")
-        XCTAssertNotNil(message.activityContent)
+        XCTAssertNotNil(message.content)
     }
 
     // MARK: - Message Protocol Conformance Tests
@@ -77,12 +55,11 @@ final class ActivityMessageTests: XCTestCase {
         let message: any Message = ActivityMessage(
             id: "activity-3",
             activityType: "status",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(message.id, "activity-3")
         XCTAssertEqual(message.role, .activity)
-        XCTAssertNil(message.content)
         XCTAssertNil(message.name)
     }
 
@@ -91,7 +68,7 @@ final class ActivityMessageTests: XCTestCase {
         let message = ActivityMessage(
             id: "1",
             activityType: "test",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(message.role, .activity)
@@ -125,10 +102,10 @@ final class ActivityMessageTests: XCTestCase {
         XCTAssertEqual(activityMessage.id, "activity-decode-1")
         XCTAssertEqual(activityMessage.role, .activity)
         XCTAssertEqual(activityMessage.activityType, "progress")
-        XCTAssertNil(activityMessage.content)
+        XCTAssertFalse(activityMessage.content.isEmpty)
         XCTAssertNil(activityMessage.name)
 
-        let activityContent = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
+        let activityContent = try JSONSerialization.jsonObject(with: activityMessage.content) as? [String: Any]
         XCTAssertEqual(activityContent?["percent"] as? Int, 75)
     }
 
@@ -155,7 +132,7 @@ final class ActivityMessageTests: XCTestCase {
         let activityMessage = message as! ActivityMessage
         XCTAssertEqual(activityMessage.activityType, "visualization")
 
-        let content = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
+        let content = try JSONSerialization.jsonObject(with: activityMessage.content) as? [String: Any]
         XCTAssertEqual(content?["type"] as? String, "chart")
 
         let data = content?["data"] as? [String: Any]
@@ -238,7 +215,7 @@ final class ActivityMessageTests: XCTestCase {
         let original = ActivityMessage(
             id: "activity-rt-1",
             activityType: "status",
-            activityContent: content
+            content: content
         )
 
         // Encode via DTO (simulating what RunAgentInput does)
@@ -261,8 +238,8 @@ final class ActivityMessageTests: XCTestCase {
         XCTAssertEqual(activityMessage.activityType, original.activityType)
         XCTAssertEqual(activityMessage.role, original.role)
 
-        let originalContent = try JSONSerialization.jsonObject(with: original.activityContent) as? [String: Any]
-        let decodedContent = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
+        let originalContent = try JSONSerialization.jsonObject(with: original.content) as? [String: Any]
+        let decodedContent = try JSONSerialization.jsonObject(with: activityMessage.content) as? [String: Any]
         XCTAssertEqual(originalContent?["status"] as? String, decodedContent?["status"] as? String)
     }
 
@@ -281,11 +258,11 @@ final class ActivityMessageTests: XCTestCase {
         {"value": 2}
         """.utf8)
 
-        let message1 = ActivityMessage(id: "1", activityType: "test", activityContent: content1)
-        let message2 = ActivityMessage(id: "1", activityType: "test", activityContent: content2)
-        let message3 = ActivityMessage(id: "2", activityType: "test", activityContent: content1)
-        let message4 = ActivityMessage(id: "1", activityType: "other", activityContent: content1)
-        let message5 = ActivityMessage(id: "1", activityType: "test", activityContent: content3)
+        let message1 = ActivityMessage(id: "1", activityType: "test", content: content1)
+        let message2 = ActivityMessage(id: "1", activityType: "test", content: content2)
+        let message3 = ActivityMessage(id: "2", activityType: "test", content: content1)
+        let message4 = ActivityMessage(id: "1", activityType: "other", content: content1)
+        let message5 = ActivityMessage(id: "1", activityType: "test", content: content3)
 
         XCTAssertEqual(message1, message2)
         XCTAssertNotEqual(message1, message3)
@@ -304,8 +281,8 @@ final class ActivityMessageTests: XCTestCase {
         {"id": 2}
         """.utf8)
 
-        let message1 = ActivityMessage(id: "1", activityType: "test", activityContent: content1)
-        let message2 = ActivityMessage(id: "2", activityType: "test", activityContent: content2)
+        let message1 = ActivityMessage(id: "1", activityType: "test", content: content1)
+        let message2 = ActivityMessage(id: "2", activityType: "test", content: content2)
 
         let set: Set<ActivityMessage> = [message1, message2]
         XCTAssertEqual(set.count, 2)
@@ -320,7 +297,7 @@ final class ActivityMessageTests: XCTestCase {
         let message = ActivityMessage(
             id: "activity-concurrent",
             activityType: "test",
-            activityContent: content
+            content: content
         )
 
         Task {
@@ -344,7 +321,7 @@ final class ActivityMessageTests: XCTestCase {
         let progress = ActivityMessage(
             id: "progress-1",
             activityType: "progress",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(progress.activityType, "progress")
@@ -365,7 +342,7 @@ final class ActivityMessageTests: XCTestCase {
         let surface = ActivityMessage(
             id: "surface-1",
             activityType: "a2ui-form",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(surface.activityType, "a2ui-form")
@@ -387,7 +364,7 @@ final class ActivityMessageTests: XCTestCase {
         let chart = ActivityMessage(
             id: "viz-1",
             activityType: "chart",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(chart.activityType, "chart")
@@ -405,11 +382,11 @@ final class ActivityMessageTests: XCTestCase {
         let status = ActivityMessage(
             id: "status-1",
             activityType: "status",
-            activityContent: content
+            content: content
         )
 
         XCTAssertEqual(status.activityType, "status")
-        XCTAssertNil(status.content)
+        XCTAssertFalse(status.content.isEmpty)
     }
 
     // MARK: - Wire Format Tests (Protocol Compliance)
@@ -434,7 +411,7 @@ final class ActivityMessageTests: XCTestCase {
         let activityMessage = message as! ActivityMessage
         XCTAssertEqual(activityMessage.id, "wire-format-1")
         XCTAssertEqual(activityMessage.activityType, "progress")
-        let parsedContent = try JSONSerialization.jsonObject(with: activityMessage.activityContent) as? [String: Any]
+        let parsedContent = try JSONSerialization.jsonObject(with: activityMessage.content) as? [String: Any]
         XCTAssertEqual(parsedContent?["percent"] as? Int, 80)
     }
 
@@ -444,7 +421,7 @@ final class ActivityMessageTests: XCTestCase {
         let message = ActivityMessage(
             id: "wire-encode-1",
             activityType: "progress",
-            activityContent: rawContent
+            content: rawContent
         )
 
         let encoder = MessageEncoder()

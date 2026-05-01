@@ -44,23 +44,17 @@ jobs:
   lint:
     name: Lint
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      # SwiftLint temporarily disabled
-      # - name: Install SwiftLint
-      #   run: |
-      #     brew install swiftlint
-      #
-      # - name: Run SwiftLint
-      #   run: |
-      #     swiftlint lint
-      
-      - name: Check Package Format
-        run: swift package resolve
-      
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: swiftlint lint
+
       - name: Verify Package Structure
         run: |
           swift package dump-package > /dev/null

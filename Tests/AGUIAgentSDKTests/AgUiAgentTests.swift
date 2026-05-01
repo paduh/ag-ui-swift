@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import AGUIClient
 import AGUICore
@@ -55,38 +33,6 @@ actor CapturingTransport: AgentTransport {
     }
 }
 
-// MARK: - Mock ToolRegistry
-
-private actor MockToolRegistry: ToolRegistry {
-    private let tools: [Tool]
-
-    init(tools: [Tool]) {
-        self.tools = tools
-    }
-
-    func allTools() async -> [Tool] { tools }
-
-    func register(executor: any ToolExecutor) async throws {}
-
-    func unregister(toolName: String) async -> Bool { false }
-
-    func executor(for toolName: String) async -> (any ToolExecutor)? { nil }
-
-    func execute(context: ToolExecutionContext) async throws -> ToolExecutionResult {
-        ToolExecutionResult(success: false, message: "mock")
-    }
-
-    func isToolRegistered(toolName: String) async -> Bool { false }
-
-    func stats(for toolName: String) async -> ToolExecutionStats? { nil }
-
-    func getAllStats() async -> [String: ToolExecutionStats] { [:] }
-
-    func clearStats() async {}
-
-    func getAllExecutors() async -> [String: any ToolExecutor] { [:] }
-}
-
 // MARK: - AgUiAgentTests
 
 final class AgUiAgentTests: XCTestCase {
@@ -116,7 +62,7 @@ final class AgUiAgentTests: XCTestCase {
         let input = try XCTUnwrap(inputs.first)
         XCTAssertEqual(input.messages.count, 1)
         XCTAssertEqual(input.messages[0].role, .user)
-        XCTAssertEqual(input.messages[0].content, "Hello!")
+        XCTAssertEqual((input.messages[0] as? UserMessage)?.content, "Hello!")
     }
 
     func testSendMessagePrependsSystemPromptWhenConfigured() async throws {
@@ -130,7 +76,7 @@ final class AgUiAgentTests: XCTestCase {
         let input = try XCTUnwrap(captured1.first)
         XCTAssertEqual(input.messages.count, 2)
         XCTAssertEqual(input.messages[0].role, .system)
-        XCTAssertEqual(input.messages[0].content, "Be concise.")
+        XCTAssertEqual((input.messages[0] as? SystemMessage)?.content, "Be concise.")
         XCTAssertEqual(input.messages[1].role, .user)
     }
 
@@ -181,10 +127,10 @@ final class AgUiAgentTests: XCTestCase {
         let second = capturedAll[1]
 
         XCTAssertEqual(first.messages.count, 1)
-        XCTAssertEqual(first.messages[0].content, "Message 1")
+        XCTAssertEqual((first.messages[0] as? UserMessage)?.content, "Message 1")
 
         XCTAssertEqual(second.messages.count, 1)
-        XCTAssertEqual(second.messages[0].content, "Message 2")
+        XCTAssertEqual((second.messages[0] as? UserMessage)?.content, "Message 2")
     }
 
     // MARK: - Tool registry integration
@@ -255,14 +201,14 @@ final class AgUiAgentTests: XCTestCase {
 
     // MARK: - close()
 
-    func testCloseDoesNotCrash() {
+    func testCloseDoesNotCrash() async {
         let agent = AgUiAgent(url: agentURL)
-        agent.close()
+        await agent.close()
     }
 
-    func testCloseCanBeCalledMultipleTimes() {
+    func testCloseCanBeCalledMultipleTimes() async {
         let agent = AgUiAgent(url: agentURL)
-        agent.close()
-        agent.close()
+        await agent.close()
+        await agent.close()
     }
 }

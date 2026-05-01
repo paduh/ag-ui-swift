@@ -1,26 +1,4 @@
-/*
- * MIT License
- *
- * Copyright (c) 2025 Perfect Aduh
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+// Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
 import XCTest
 @testable import AGUICore
@@ -158,5 +136,53 @@ final class AudioInputContentTests: XCTestCase {
     func test_sendable() {
         let content = AudioInputContent(url: "https://example.com/clip.mp3")
         Task { XCTAssertEqual(content.type, "audio") }
+    }
+
+    // MARK: - mimeType
+
+    func test_mimeType_isNilByDefault_url() {
+        XCTAssertNil(AudioInputContent(url: "https://example.com/clip.mp3").mimeType)
+    }
+
+    func test_mimeType_isNilByDefault_data() {
+        XCTAssertNil(AudioInputContent(data: "base64audio").mimeType)
+    }
+
+    func test_mimeType_roundTripsViaURLInit() {
+        let content = AudioInputContent(url: "https://example.com/clip.mp3", mimeType: "audio/mpeg")
+        XCTAssertEqual(content.mimeType, "audio/mpeg")
+    }
+
+    func test_mimeType_roundTripsViaDataInit() {
+        let content = AudioInputContent(data: "base64audio", mimeType: "audio/wav")
+        XCTAssertEqual(content.mimeType, "audio/wav")
+    }
+
+    func test_mimeType_decodesFromJSON() throws {
+        let json = Data("""
+        {"type":"audio","url":"https://example.com/clip.mp3","mimeType":"audio/mpeg"}
+        """.utf8)
+        let dto = try AudioInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertEqual(content.mimeType, "audio/mpeg")
+    }
+
+    func test_mimeType_isNilWhenAbsentInJSON() throws {
+        let json = Data("""
+        {"type":"audio","url":"https://example.com/clip.mp3"}
+        """.utf8)
+        let dto = try AudioInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_encodeUserMessage_withAudioMimeType_includesMimeTypeInJSON() throws {
+        let audio = AudioInputContent(url: "https://example.com/clip.mp3", mimeType: "audio/mpeg")
+        let userMsg = UserMessage.multimodal(id: "msg-1", parts: [audio])
+        let encoder = MessageEncoder()
+        let data = try encoder.encode(userMsg)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let contentArray = json?["content"] as? [[String: Any]]
+        XCTAssertEqual(contentArray?[0]["mimeType"] as? String, "audio/mpeg")
     }
 }
