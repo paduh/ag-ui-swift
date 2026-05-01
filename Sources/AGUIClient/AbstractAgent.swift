@@ -119,9 +119,6 @@ public final class AbstractAgent: Sendable {
         if let st = initMutation.state { await storage.setState(st) }
 
         let task = Task<Void, Error> {
-            defer {
-                Task { await self.storage.setCurrentTask(nil) }
-            }
             do {
                 let eventStream = self.run(input: input)
                 let processedStream = eventStream
@@ -159,7 +156,9 @@ public final class AbstractAgent: Sendable {
         }
 
         await storage.setCurrentTask(task)
-        try await task.value
+        let result = await task.result
+        await storage.setCurrentTask(nil)
+        try result.get()
     }
 
     public func runAgentObservable(
@@ -170,12 +169,12 @@ public final class AbstractAgent: Sendable {
             .verifyEvents(debug: debug)
     }
 
-    public func abortRun() {
-        Task { await storage.currentTask?.cancel() }
+    public func abortRun() async {
+        await storage.currentTask?.cancel()
     }
 
-    public func dispose() {
-        Task { await storage.setDisposed(true) }
+    public func dispose() async {
+        await storage.setDisposed(true)
     }
 
     public func subscribe(_ subscriber: any AgentSubscriber) async -> any AgentSubscription {

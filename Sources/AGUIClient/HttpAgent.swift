@@ -107,12 +107,12 @@ public final class HttpAgent: Sendable {
     public var customEvents: [CustomEvent] { get async { await abstractAgent.customEvents } }
     public var thinking: ThinkingTelemetryState? { get async { await abstractAgent.thinking } }
 
-    public func abortRun() {
-        abstractAgent.abortRun()
+    public func abortRun() async {
+        await abstractAgent.abortRun()
     }
 
-    public func dispose() {
-        abstractAgent.dispose()
+    public func dispose() async {
+        await abstractAgent.dispose()
     }
 
     public func subscribe(_ subscriber: any AgentSubscriber) async -> any AgentSubscription {

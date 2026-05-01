@@ -160,12 +160,10 @@ public final class AgUiAgent: Sendable {
 
     // MARK: - Lifecycle
 
-    public func close() {
-        Task {
-            if let manager = self.toolExecutionManager {
-                await manager.cancelAllExecutions()
-            }
+    public func close() async {
+        if let manager = toolExecutionManager {
+            await manager.cancelAllExecutions()
         }
-        httpAgent.dispose()
+        await httpAgent.dispose()
     }
 }

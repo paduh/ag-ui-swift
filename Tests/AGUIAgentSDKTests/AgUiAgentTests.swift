@@ -255,14 +255,14 @@ final class AgUiAgentTests: XCTestCase {
 
     // MARK: - close()
 
-    func testCloseDoesNotCrash() {
+    func testCloseDoesNotCrash() async {
         let agent = AgUiAgent(url: agentURL)
-        agent.close()
+        await agent.close()
     }
 
-    func testCloseCanBeCalledMultipleTimes() {
+    func testCloseCanBeCalledMultipleTimes() async {
         let agent = AgUiAgent(url: agentURL)
-        agent.close()
-        agent.close()
+        await agent.close()
+        await agent.close()
     }
 }
