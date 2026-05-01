@@ -72,7 +72,7 @@ struct ActivityMessageDTO {
     }
 
     func toDomain() -> ActivityMessage {
-        ActivityMessage(id: id, activityType: activityType, activityContent: activityContent)
+        ActivityMessage(id: id, activityType: activityType, content: activityContent)
     }
 
     private enum CodingKeys: String, CodingKey {

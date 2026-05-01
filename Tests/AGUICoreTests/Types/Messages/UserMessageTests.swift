@@ -114,7 +114,7 @@ final class UserMessageTests: XCTestCase {
 
         XCTAssertEqual(message.id, "user-6")
         XCTAssertEqual(message.role, .user)
-        XCTAssertEqual(message.content, "Test message")
+        XCTAssertEqual((message as? UserMessage)?.content, "Test message")
     }
 
     func testRoleIsAlwaysUser() {

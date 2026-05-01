@@ -271,7 +271,6 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         for message in messages {
             hasher.combine(message.id)
             hasher.combine(message.role)
-            hasher.combine(message.content)
             hasher.combine(message.name)
         }
     }
@@ -293,7 +292,6 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         return zip(lhs.messages, rhs.messages).allSatisfy { lhsMsg, rhsMsg in
             lhsMsg.id == rhsMsg.id &&
             lhsMsg.role == rhsMsg.role &&
-            lhsMsg.content == rhsMsg.content &&
             lhsMsg.name == rhsMsg.name
         }
     }

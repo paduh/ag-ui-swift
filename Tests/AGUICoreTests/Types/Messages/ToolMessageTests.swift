@@ -85,7 +85,7 @@ final class ToolMessageTests: XCTestCase {
 
         XCTAssertEqual(message.id, "tool-msg-4")
         XCTAssertEqual(message.role, .tool)
-        XCTAssertEqual(message.content, "Success")
+        XCTAssertEqual((message as? ToolMessage)?.content, "Success")
     }
 
     func testRoleIsAlwaysTool() {

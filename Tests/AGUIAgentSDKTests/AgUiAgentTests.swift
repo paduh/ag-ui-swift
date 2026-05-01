@@ -116,7 +116,7 @@ final class AgUiAgentTests: XCTestCase {
         let input = try XCTUnwrap(inputs.first)
         XCTAssertEqual(input.messages.count, 1)
         XCTAssertEqual(input.messages[0].role, .user)
-        XCTAssertEqual(input.messages[0].content, "Hello!")
+        XCTAssertEqual((input.messages[0] as? UserMessage)?.content, "Hello!")
     }
 
     func testSendMessagePrependsSystemPromptWhenConfigured() async throws {
@@ -130,7 +130,7 @@ final class AgUiAgentTests: XCTestCase {
         let input = try XCTUnwrap(captured1.first)
         XCTAssertEqual(input.messages.count, 2)
         XCTAssertEqual(input.messages[0].role, .system)
-        XCTAssertEqual(input.messages[0].content, "Be concise.")
+        XCTAssertEqual((input.messages[0] as? SystemMessage)?.content, "Be concise.")
         XCTAssertEqual(input.messages[1].role, .user)
     }
 
@@ -181,10 +181,10 @@ final class AgUiAgentTests: XCTestCase {
         let second = capturedAll[1]
 
         XCTAssertEqual(first.messages.count, 1)
-        XCTAssertEqual(first.messages[0].content, "Message 1")
+        XCTAssertEqual((first.messages[0] as? UserMessage)?.content, "Message 1")
 
         XCTAssertEqual(second.messages.count, 1)
-        XCTAssertEqual(second.messages[0].content, "Message 2")
+        XCTAssertEqual((second.messages[0] as? UserMessage)?.content, "Message 2")
     }
 
     // MARK: - Tool registry integration

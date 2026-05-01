@@ -404,7 +404,7 @@ private func encodeActivityMessage(_ message: any Message, encoder: JSONEncoder)
         throw MessageEncodingError.invalidMessageType(.activity, String(describing: type(of: message)))
     }
 
-    let activityContentObj = try JSONSerialization.jsonObject(with: activityMsg.activityContent)
+    let activityContentObj = try JSONSerialization.jsonObject(with: activityMsg.content)
     let dict: [String: Any] = [
         "id": activityMsg.id,
         "role": activityMsg.role.rawValue,

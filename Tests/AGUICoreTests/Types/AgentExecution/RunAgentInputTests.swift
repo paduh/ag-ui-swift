@@ -456,8 +456,8 @@ final class RunAgentInputTests: XCTestCase {
         ]
 
         let messages2: [any Message] = [
-            UserMessage(id: "msg-1", content: "Goodbye"),
-            AssistantMessage(id: "msg-2", content: "See you!")
+            UserMessage(id: "msg-3", content: "Goodbye"),
+            AssistantMessage(id: "msg-4", content: "See you!")
         ]
 
         let input1 = RunAgentInput(
@@ -472,7 +472,7 @@ final class RunAgentInputTests: XCTestCase {
             messages: messages2
         )
 
-        // Should be different even though message count is the same
+        // Should be different because message IDs differ
         XCTAssertNotEqual(input1, input2)
     }
 

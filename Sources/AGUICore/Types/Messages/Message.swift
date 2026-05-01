@@ -36,7 +36,6 @@ import Foundation
 /// All messages share these properties:
 /// - ``id``: Unique identifier for the message instance
 /// - ``role``: The sender's role (developer, system, assistant, user, tool, activity)
-/// - ``content``: Optional text content of the message
 /// - ``name``: Optional identifier for the sender
 ///
 /// ## Message Types
@@ -94,15 +93,6 @@ public protocol Message: Sendable {
     ///
     /// - SeeAlso: ``Role``
     var role: Role { get }
-
-    /// The text content of the message.
-    ///
-    /// This property is optional because:
-    /// - Some message types may convey information through other fields
-    /// - SystemMessage content may be optional
-    /// - AssistantMessage may contain only tool calls without text
-    /// - UserMessage may use multimodal content instead
-    var content: String? { get }
 
     /// Optional identifier for the message sender.
     ///

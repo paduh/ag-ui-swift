@@ -76,7 +76,7 @@ final class SystemMessageTests: XCTestCase {
 
         XCTAssertEqual(message.id, "sys-4")
         XCTAssertEqual(message.role, .system)
-        XCTAssertEqual(message.content, "Test message")
+        XCTAssertEqual((message as? SystemMessage)?.content, "Test message")
     }
 
     func testRoleIsAlwaysSystem() {

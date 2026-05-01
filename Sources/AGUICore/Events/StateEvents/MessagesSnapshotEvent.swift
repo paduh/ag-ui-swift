@@ -110,7 +110,7 @@ public struct MessagesSnapshotEvent: AGUIEvent, Equatable, Sendable {
     ///     let content: String
     /// }
     ///
-    /// let messages = try event.parsedMessages(as: [Message].self)
+    /// let messages = try event.parsedMessages(as: [MyMessage].self)
     /// for message in messages {
     ///     print("\(message.role): \(message.content)")
     /// }

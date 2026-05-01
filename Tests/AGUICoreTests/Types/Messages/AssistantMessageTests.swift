@@ -107,7 +107,7 @@ final class AssistantMessageTests: XCTestCase {
 
         XCTAssertEqual(message.id, "asst-5")
         XCTAssertEqual(message.role, .assistant)
-        XCTAssertEqual(message.content, "Test")
+        XCTAssertEqual((message as? AssistantMessage)?.content, "Test")
     }
 
     func testRoleIsAlwaysAssistant() {

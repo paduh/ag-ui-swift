@@ -64,7 +64,7 @@ final class DeveloperMessageTests: XCTestCase {
 
         XCTAssertEqual(message.id, "dev-3")
         XCTAssertEqual(message.role, .developer)
-        XCTAssertEqual(message.content, "Test message")
+        XCTAssertEqual((message as? DeveloperMessage)?.content, "Test message")
     }
 
     func testRoleIsAlwaysDeveloper() {
