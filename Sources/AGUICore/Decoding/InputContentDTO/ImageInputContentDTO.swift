@@ -29,6 +29,7 @@ struct ImageInputContentDTO {
     let url: String?
     let data: String?
     let detail: String?
+    let mimeType: String?
 
     static func decode(from data: Data, decoder: JSONDecoder = JSONDecoder()) throws -> ImageInputContentDTO {
         guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
@@ -62,19 +63,20 @@ struct ImageInputContentDTO {
         return ImageInputContentDTO(
             url: url,
             data: dataStr,
-            detail: jsonObject["detail"] as? String
+            detail: jsonObject["detail"] as? String,
+            mimeType: jsonObject["mimeType"] as? String
         )
     }
 
     func toDomain() -> ImageInputContent {
         if let url = url {
-            return ImageInputContent(url: url, detail: detail)
+            return ImageInputContent(url: url, detail: detail, mimeType: mimeType)
         } else {
-            return ImageInputContent(data: data!, detail: detail)
+            return ImageInputContent(data: data!, detail: detail, mimeType: mimeType)
         }
     }
 
     private enum CodingKeys: String, CodingKey {
-        case type, url, data, detail
+        case type, url, data, detail, mimeType
     }
 }

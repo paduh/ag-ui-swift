@@ -47,16 +47,21 @@ public struct AudioInputContent: InputContent, Hashable, Sendable {
     /// Common values: `"mp3"`, `"wav"`, `"ogg"`, `"flac"`.
     public let format: String?
 
+    /// Optional MIME type of the audio (e.g., `"audio/mpeg"`, `"audio/wav"`).
+    public let mimeType: String?
+
     /// Creates audio content from a URL.
     ///
     /// - Parameters:
     ///   - url: URL pointing to the audio file
     ///   - format: Optional format identifier (e.g., `"mp3"`)
-    public init(url: String, format: String? = nil) {
+    ///   - mimeType: Optional MIME type (e.g., `"audio/mpeg"`)
+    public init(url: String, format: String? = nil, mimeType: String? = nil) {
         self.type = "audio"
         self.url = url
         self.data = nil
         self.format = format
+        self.mimeType = mimeType
     }
 
     /// Creates audio content from base64-encoded data.
@@ -64,10 +69,12 @@ public struct AudioInputContent: InputContent, Hashable, Sendable {
     /// - Parameters:
     ///   - data: Base64-encoded audio bytes
     ///   - format: Optional format identifier (e.g., `"wav"`)
-    public init(data: String, format: String? = nil) {
+    ///   - mimeType: Optional MIME type (e.g., `"audio/wav"`)
+    public init(data: String, format: String? = nil, mimeType: String? = nil) {
         self.type = "audio"
         self.url = nil
         self.data = data
         self.format = format
+        self.mimeType = mimeType
     }
 }

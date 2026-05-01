@@ -41,21 +41,30 @@ public struct VideoInputContent: InputContent, Hashable, Sendable {
     /// Optional base64-encoded video data.
     public let data: String?
 
+    /// Optional MIME type of the video (e.g., `"video/mp4"`, `"video/webm"`).
+    public let mimeType: String?
+
     /// Creates video content from a URL.
     ///
-    /// - Parameter url: URL pointing to the video file
-    public init(url: String) {
+    /// - Parameters:
+    ///   - url: URL pointing to the video file
+    ///   - mimeType: Optional MIME type (e.g., `"video/mp4"`)
+    public init(url: String, mimeType: String? = nil) {
         self.type = "video"
         self.url = url
         self.data = nil
+        self.mimeType = mimeType
     }
 
     /// Creates video content from base64-encoded data.
     ///
-    /// - Parameter data: Base64-encoded video bytes
-    public init(data: String) {
+    /// - Parameters:
+    ///   - data: Base64-encoded video bytes
+    ///   - mimeType: Optional MIME type (e.g., `"video/webm"`)
+    public init(data: String, mimeType: String? = nil) {
         self.type = "video"
         self.url = nil
         self.data = data
+        self.mimeType = mimeType
     }
 }

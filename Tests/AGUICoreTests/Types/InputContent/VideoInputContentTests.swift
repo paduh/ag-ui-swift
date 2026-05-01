@@ -149,4 +149,52 @@ final class VideoInputContentTests: XCTestCase {
         let content = VideoInputContent(url: "https://example.com/video.mp4")
         Task { XCTAssertEqual(content.type, "video") }
     }
+
+    // MARK: - mimeType
+
+    func test_mimeType_isNilByDefault_url() {
+        XCTAssertNil(VideoInputContent(url: "https://example.com/video.mp4").mimeType)
+    }
+
+    func test_mimeType_isNilByDefault_data() {
+        XCTAssertNil(VideoInputContent(data: "base64video").mimeType)
+    }
+
+    func test_mimeType_roundTripsViaURLInit() {
+        let content = VideoInputContent(url: "https://example.com/video.mp4", mimeType: "video/mp4")
+        XCTAssertEqual(content.mimeType, "video/mp4")
+    }
+
+    func test_mimeType_roundTripsViaDataInit() {
+        let content = VideoInputContent(data: "base64video", mimeType: "video/webm")
+        XCTAssertEqual(content.mimeType, "video/webm")
+    }
+
+    func test_mimeType_decodesFromJSON() throws {
+        let json = Data("""
+        {"type":"video","url":"https://example.com/video.mp4","mimeType":"video/mp4"}
+        """.utf8)
+        let dto = try VideoInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertEqual(content.mimeType, "video/mp4")
+    }
+
+    func test_mimeType_isNilWhenAbsentInJSON() throws {
+        let json = Data("""
+        {"type":"video","url":"https://example.com/video.mp4"}
+        """.utf8)
+        let dto = try VideoInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_encodeUserMessage_withVideoMimeType_includesMimeTypeInJSON() throws {
+        let video = VideoInputContent(url: "https://example.com/video.mp4", mimeType: "video/mp4")
+        let userMsg = UserMessage.multimodal(id: "msg-1", parts: [video])
+        let encoder = MessageEncoder()
+        let data = try encoder.encode(userMsg)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let contentArray = json?["content"] as? [[String: Any]]
+        XCTAssertEqual(contentArray?[0]["mimeType"] as? String, "video/mp4")
+    }
 }

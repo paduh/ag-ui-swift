@@ -162,6 +162,66 @@ final class ImageInputContentTests: XCTestCase {
         XCTAssertEqual(set.count, 2)
     }
 
+    // MARK: - mimeType
+
+    func test_mimeType_isNilByDefault_url() {
+        let content = ImageInputContent(url: "https://example.com/img.png")
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_mimeType_isNilByDefault_data() {
+        let content = ImageInputContent(data: "base64abc")
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_mimeType_roundTripsViaURLInit() {
+        let content = ImageInputContent(url: "https://example.com/img.png", mimeType: "image/png")
+        XCTAssertEqual(content.mimeType, "image/png")
+    }
+
+    func test_mimeType_roundTripsViaDataInit() {
+        let content = ImageInputContent(data: "base64abc", mimeType: "image/jpeg")
+        XCTAssertEqual(content.mimeType, "image/jpeg")
+    }
+
+    func test_mimeType_decodesFromJSON() throws {
+        let json = Data("""
+        {"type":"image","url":"https://example.com/img.png","mimeType":"image/png"}
+        """.utf8)
+        let dto = try ImageInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertEqual(content.mimeType, "image/png")
+    }
+
+    func test_mimeType_isNilWhenAbsentInJSON() throws {
+        let json = Data("""
+        {"type":"image","url":"https://example.com/img.png"}
+        """.utf8)
+        let dto = try ImageInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_encodeUserMessage_withImageMimeType_includesMimeTypeInJSON() throws {
+        let image = ImageInputContent(url: "https://example.com/img.png", mimeType: "image/png")
+        let userMsg = UserMessage.multimodal(id: "msg-1", parts: [image])
+        let encoder = MessageEncoder()
+        let data = try encoder.encode(userMsg)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let contentArray = json?["content"] as? [[String: Any]]
+        XCTAssertEqual(contentArray?[0]["mimeType"] as? String, "image/png")
+    }
+
+    func test_encodeUserMessage_withNilImageMimeType_omitsMimeTypeFromJSON() throws {
+        let image = ImageInputContent(url: "https://example.com/img.png")
+        let userMsg = UserMessage.multimodal(id: "msg-1", parts: [image])
+        let encoder = MessageEncoder()
+        let data = try encoder.encode(userMsg)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let contentArray = json?["content"] as? [[String: Any]]
+        XCTAssertNil(contentArray?[0]["mimeType"])
+    }
+
     // MARK: - Sendable
 
     func test_sendable() {

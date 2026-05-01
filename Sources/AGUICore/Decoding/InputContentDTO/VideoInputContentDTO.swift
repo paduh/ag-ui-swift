@@ -28,6 +28,7 @@ import Foundation
 struct VideoInputContentDTO {
     let url: String?
     let data: String?
+    let mimeType: String?
 
     static func decode(from data: Data, decoder: JSONDecoder = JSONDecoder()) throws -> VideoInputContentDTO {
         guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
@@ -58,18 +59,18 @@ struct VideoInputContentDTO {
             )
         }
 
-        return VideoInputContentDTO(url: url, data: dataStr)
+        return VideoInputContentDTO(url: url, data: dataStr, mimeType: jsonObject["mimeType"] as? String)
     }
 
     func toDomain() -> VideoInputContent {
         if let url = url {
-            return VideoInputContent(url: url)
+            return VideoInputContent(url: url, mimeType: mimeType)
         } else {
-            return VideoInputContent(data: data!)
+            return VideoInputContent(data: data!, mimeType: mimeType)
         }
     }
 
     private enum CodingKeys: String, CodingKey {
-        case type, url, data
+        case type, url, data, mimeType
     }
 }

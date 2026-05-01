@@ -159,4 +159,52 @@ final class AudioInputContentTests: XCTestCase {
         let content = AudioInputContent(url: "https://example.com/clip.mp3")
         Task { XCTAssertEqual(content.type, "audio") }
     }
+
+    // MARK: - mimeType
+
+    func test_mimeType_isNilByDefault_url() {
+        XCTAssertNil(AudioInputContent(url: "https://example.com/clip.mp3").mimeType)
+    }
+
+    func test_mimeType_isNilByDefault_data() {
+        XCTAssertNil(AudioInputContent(data: "base64audio").mimeType)
+    }
+
+    func test_mimeType_roundTripsViaURLInit() {
+        let content = AudioInputContent(url: "https://example.com/clip.mp3", mimeType: "audio/mpeg")
+        XCTAssertEqual(content.mimeType, "audio/mpeg")
+    }
+
+    func test_mimeType_roundTripsViaDataInit() {
+        let content = AudioInputContent(data: "base64audio", mimeType: "audio/wav")
+        XCTAssertEqual(content.mimeType, "audio/wav")
+    }
+
+    func test_mimeType_decodesFromJSON() throws {
+        let json = Data("""
+        {"type":"audio","url":"https://example.com/clip.mp3","mimeType":"audio/mpeg"}
+        """.utf8)
+        let dto = try AudioInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertEqual(content.mimeType, "audio/mpeg")
+    }
+
+    func test_mimeType_isNilWhenAbsentInJSON() throws {
+        let json = Data("""
+        {"type":"audio","url":"https://example.com/clip.mp3"}
+        """.utf8)
+        let dto = try AudioInputContentDTO.decode(from: json)
+        let content = dto.toDomain()
+        XCTAssertNil(content.mimeType)
+    }
+
+    func test_encodeUserMessage_withAudioMimeType_includesMimeTypeInJSON() throws {
+        let audio = AudioInputContent(url: "https://example.com/clip.mp3", mimeType: "audio/mpeg")
+        let userMsg = UserMessage.multimodal(id: "msg-1", parts: [audio])
+        let encoder = MessageEncoder()
+        let data = try encoder.encode(userMsg)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let contentArray = json?["content"] as? [[String: Any]]
+        XCTAssertEqual(contentArray?[0]["mimeType"] as? String, "audio/mpeg")
+    }
 }

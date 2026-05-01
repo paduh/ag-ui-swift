@@ -29,6 +29,7 @@ struct AudioInputContentDTO {
     let url: String?
     let data: String?
     let format: String?
+    let mimeType: String?
 
     static func decode(from data: Data, decoder: JSONDecoder = JSONDecoder()) throws -> AudioInputContentDTO {
         guard let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
@@ -62,19 +63,20 @@ struct AudioInputContentDTO {
         return AudioInputContentDTO(
             url: url,
             data: dataStr,
-            format: jsonObject["format"] as? String
+            format: jsonObject["format"] as? String,
+            mimeType: jsonObject["mimeType"] as? String
         )
     }
 
     func toDomain() -> AudioInputContent {
         if let url = url {
-            return AudioInputContent(url: url, format: format)
+            return AudioInputContent(url: url, format: format, mimeType: mimeType)
         } else {
-            return AudioInputContent(data: data!, format: format)
+            return AudioInputContent(data: data!, format: format, mimeType: mimeType)
         }
     }
 
     private enum CodingKeys: String, CodingKey {
-        case type, url, data, format
+        case type, url, data, format, mimeType
     }
 }
