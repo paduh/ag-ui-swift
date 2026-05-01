@@ -23,9 +23,6 @@
  */
 
 import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
 
 /// URLSession-based HTTP client implementation.
 ///
@@ -107,9 +104,8 @@ public actor URLSessionHTTPClient: HTTPClient {
     /// - `.cancelled` → `.cancelled`
     /// - Other errors → `.networkError`
     public func execute(_ request: URLRequest) async throws -> HTTPResponse {
-        #if canImport(Darwin)
-        // Apple platforms: use URLSession.AsyncBytes for true byte-level streaming.
         let (bytes, response): (URLSession.AsyncBytes, URLResponse)
+
         do {
             (bytes, response) = try await session.bytes(for: request)
         } catch let error as URLError {
@@ -136,38 +132,8 @@ public actor URLSessionHTTPClient: HTTPClient {
                 }
             }
         }
-        return HTTPResponse(bytes: stream, httpResponse: httpResponse)
-        #else
-        // Linux: URLSession.AsyncBytes is unavailable in swift-corelibs-foundation.
-        // Buffer the full response via dataTask, then stream bytes from memory.
-        // SSE reconnection is not supported in this path; use the Apple build for production.
-        let (data, urlResponse): (Data, URLResponse)
-        do {
-            (data, urlResponse) = try await withCheckedThrowingContinuation { cont in
-                session.dataTask(with: request) { d, r, e in
-                    if let e = e {
-                        cont.resume(throwing: e)
-                    } else {
-                        cont.resume(returning: (d ?? Data(), r!))
-                    }
-                }.resume()
-            }
-        } catch let error as URLError {
-            throw mapURLError(error)
-        } catch {
-            throw ClientError.networkError(error)
-        }
 
-        guard let httpResponse = urlResponse as? HTTPURLResponse else {
-            throw ClientError.invalidResponse
-        }
-
-        let stream = AsyncThrowingStream<UInt8, Error> { continuation in
-            for byte in data { continuation.yield(byte) }
-            continuation.finish()
-        }
         return HTTPResponse(bytes: stream, httpResponse: httpResponse)
-        #endif
     }
 
     /// Maps URLError to ClientError.

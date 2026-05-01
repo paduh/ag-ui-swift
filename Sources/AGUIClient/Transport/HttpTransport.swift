@@ -24,9 +24,6 @@
 
 import AGUICore
 import Foundation
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
 
 /// Low-level HTTP transport for AG-UI agent communication.
 ///

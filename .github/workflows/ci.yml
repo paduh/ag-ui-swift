@@ -40,26 +40,6 @@ jobs:
             -destination 'platform=macOS' \
             -quiet || true
 
-  # Build and test on Linux
-  test-linux:
-    name: Test Linux
-    runs-on: ubuntu-latest
-    container:
-      image: swift:latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Resolve Dependencies
-        run: swift package resolve
-
-      - name: Build Package
-        run: swift build
-
-      - name: Run Tests
-        run: swift test
-
   # Lint and format check
   lint:
     name: Lint
