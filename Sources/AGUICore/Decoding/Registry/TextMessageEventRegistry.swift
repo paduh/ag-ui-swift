@@ -30,10 +30,10 @@ enum TextMessageEventRegistry {
     static func registry() -> [EventType: DecodeHandler] {
         [
             .textMessageStart: { data, decoder in
-                try decoder.decode(TextMessageStartEventDTO.self, from: data).toDomain(rawEvent: data)
+                try decoder.decode(TextMessageStartEvent.self, from: data).withRawEvent(data)
             },
             .textMessageContent: { data, decoder in
-                try decoder.decode(TextMessageContentEventDTO.self, from: data).toDomain(rawEvent: data)
+                try decoder.decode(TextMessageContentEvent.self, from: data).withRawEvent(data)
             },
             .textMessageEnd: { data, decoder in
                 try decoder.decode(TextMessageEndEventDTO.self, from: data).toDomain(rawEvent: data)

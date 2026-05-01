@@ -153,3 +153,25 @@ public struct AssistantMessage: Message, Sendable, Hashable {
         self.encryptedValue = encryptedValue
     }
 }
+
+// MARK: - Decodable
+
+extension AssistantMessage: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case content
+        case name
+        case toolCalls
+        case encryptedValue
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        role = .assistant
+        content = try container.decodeIfPresent(String.self, forKey: .content)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        toolCalls = try container.decodeIfPresent([ToolCall].self, forKey: .toolCalls)
+        encryptedValue = try container.decodeIfPresent(String.self, forKey: .encryptedValue)
+    }
+}

@@ -83,6 +83,33 @@ public struct TextMessageContentEvent: AGUIEvent, Equatable, Hashable, Sendable 
     }
 }
 
+// MARK: - Decodable
+
+extension TextMessageContentEvent: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case messageId
+        case delta
+        case timestamp
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        messageId = try container.decode(String.self, forKey: .messageId)
+        delta = try container.decode(String.self, forKey: .delta)
+        timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
+        rawEvent = nil
+    }
+
+    func withRawEvent(_ data: Data) -> Self {
+        TextMessageContentEvent(
+            messageId: messageId,
+            delta: delta,
+            timestamp: timestamp,
+            rawEvent: data
+        )
+    }
+}
+
 // MARK: - CustomStringConvertible
 extension TextMessageContentEvent: CustomStringConvertible {
     public var description: String {

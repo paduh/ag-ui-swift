@@ -88,6 +88,36 @@ public struct ToolCallStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
     }
 }
 
+// MARK: - Decodable
+
+extension ToolCallStartEvent: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case toolCallId
+        case toolCallName
+        case parentMessageId
+        case timestamp
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        toolCallId = try container.decode(String.self, forKey: .toolCallId)
+        toolCallName = try container.decode(String.self, forKey: .toolCallName)
+        parentMessageId = try container.decodeIfPresent(String.self, forKey: .parentMessageId)
+        timestamp = try container.decodeIfPresent(Int64.self, forKey: .timestamp)
+        rawEvent = nil
+    }
+
+    func withRawEvent(_ data: Data) -> Self {
+        ToolCallStartEvent(
+            toolCallId: toolCallId,
+            toolCallName: toolCallName,
+            parentMessageId: parentMessageId,
+            timestamp: timestamp,
+            rawEvent: data
+        )
+    }
+}
+
 // MARK: - CustomStringConvertible
 extension ToolCallStartEvent: CustomStringConvertible {
     public var description: String {

@@ -30,10 +30,10 @@ enum ToolCallEventRegistry {
     static func registry() -> [EventType: DecodeHandler] {
         [
             .toolCallStart: { data, decoder in
-                try decoder.decode(ToolCallStartEventDTO.self, from: data).toDomain(rawEvent: data)
+                try decoder.decode(ToolCallStartEvent.self, from: data).withRawEvent(data)
             },
             .toolCallArgs: { data, decoder in
-                try decoder.decode(ToolCallArgsEventDTO.self, from: data).toDomain(rawEvent: data)
+                try decoder.decode(ToolCallArgsEvent.self, from: data).withRawEvent(data)
             },
             .toolCallEnd: { data, decoder in
                 try decoder.decode(ToolCallEndEventDTO.self, from: data).toDomain(rawEvent: data)

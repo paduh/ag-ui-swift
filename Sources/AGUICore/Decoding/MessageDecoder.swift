@@ -210,16 +210,16 @@ public struct MessageDecoder: Sendable {
     public static func defaultRegistry() -> [Role: DecodeHandler] {
         [
             .developer: { data, decoder in
-                try DeveloperMessageDTO.decode(from: data, decoder: decoder).toDomain()
+                try decoder.decode(DeveloperMessage.self, from: data)
             },
             .system: { data, decoder in
-                try SystemMessageDTO.decode(from: data, decoder: decoder).toDomain()
+                try decoder.decode(SystemMessage.self, from: data)
             },
             .user: { data, decoder in
                 try UserMessageDTO.decode(from: data, decoder: decoder).toDomain()
             },
             .assistant: { data, decoder in
-                try AssistantMessageDTO.decode(from: data, decoder: decoder).toDomain()
+                try decoder.decode(AssistantMessage.self, from: data)
             },
             .tool: { data, decoder in
                 try ToolMessageDTO.decode(from: data, decoder: decoder).toDomain()

@@ -121,3 +121,23 @@ public struct SystemMessage: Message, Sendable, Hashable {
         self.encryptedValue = encryptedValue
     }
 }
+
+// MARK: - Decodable
+
+extension SystemMessage: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case content
+        case name
+        case encryptedValue
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        role = .system
+        content = try container.decodeIfPresent(String.self, forKey: .content)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        encryptedValue = try container.decodeIfPresent(String.self, forKey: .encryptedValue)
+    }
+}
