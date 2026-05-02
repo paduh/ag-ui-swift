@@ -7,7 +7,6 @@ import Foundation
 /// `VideoInputContent` carries video data either as a URL reference or as
 /// base64-encoded bytes.
 ///
-/// - SeeAlso: ``InputContent``, ``UserMessage``
 public struct VideoInputContent: InputContent, Hashable, Sendable {
 
     /// The content type discriminator (always `"video"`).

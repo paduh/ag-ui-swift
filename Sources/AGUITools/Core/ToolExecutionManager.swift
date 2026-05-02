@@ -13,25 +13,6 @@ import Foundation
 /// - Tool execution happens concurrently with event forwarding.
 /// - Execution lifecycle notifications are published via `executionEvents`.
 ///
-/// ## Usage
-///
-/// ```swift
-/// let manager = ToolExecutionManager(
-///     toolRegistry: registry,
-///     responseHandler: myHandler
-/// )
-///
-/// let processedStream = manager.processEventStream(
-///     rawStream,
-///     threadId: "thread_123",
-///     runId: "run_456"
-/// )
-///
-/// for try await event in processedStream {
-///     // Handle events as usual — tool calls are executed automatically
-/// }
-/// ```
-///
 /// - SeeAlso: ``ToolRegistry``, ``ToolResponseHandler``, ``ToolExecutionEvent``
 public actor ToolExecutionManager {
 

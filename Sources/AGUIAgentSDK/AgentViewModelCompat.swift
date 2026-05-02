@@ -11,52 +11,6 @@ import Foundation
 /// macOS 14+, prefer the zero-boilerplate ``AgentViewModel`` which uses the
 /// `@Observable` macro instead.
 ///
-/// ## Basic SwiftUI usage
-///
-/// ```swift
-/// @StateObject private var vm = AgentViewModelCompat(
-///     agent: StatefulAgUiAgent(baseURL: agentURL)
-/// )
-///
-/// var body: some View {
-///     VStack {
-///         ScrollView {
-///             ForEach(vm.messages) { message in
-///                 MessageBubble(message: message)
-///             }
-///         }
-///         HStack {
-///             TextField("Message", text: $draft)
-///             Button("Send") {
-///                 Task { await vm.send(draft) }
-///             }
-///             .disabled(vm.isRunning)
-///         }
-///         if let error = vm.lastError {
-///             Text(error.localizedDescription).foregroundColor(.red)
-///         }
-///     }
-/// }
-/// ```
-///
-/// ## Streaming text
-///
-/// As the agent streams tokens, each `TextMessageContentEvent` delta is appended
-/// to the last assistant `AgentMessage` in place — the message `id` stays the
-/// same so SwiftUI animates the existing row rather than replacing it.
-///
-/// ## Error handling
-///
-/// - `RunErrorEvent` from the agent sets `lastError` as ``AgentError/runError(message:code:)``
-/// - Transport-level failures (network, timeout) set `lastError` as whatever `Error` was thrown
-/// - `lastError` is cleared automatically at the start of each new `send()` call
-///
-/// ## Thread safety
-///
-/// `AgentViewModelCompat` is isolated to `@MainActor`. Call `send()` and `clear()`
-/// from SwiftUI button handlers or `Task { }` blocks — they are already on the main actor.
-///
-/// - SeeAlso: ``AgentViewModel``, ``ChatAgent``, ``AgentMessage``, ``AgentError``
 @MainActor
 public final class AgentViewModelCompat: ObservableObject {
 

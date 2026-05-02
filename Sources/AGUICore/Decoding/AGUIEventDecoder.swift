@@ -4,86 +4,6 @@ import Foundation
 
 /// Decoder for AG-UI protocol events with polymorphic deserialization.
 ///
-/// `AGUIEventDecoder` decodes JSON event data into strongly-typed event objects based on
-/// the "type" field in the JSON. It uses a registry-based architecture that allows you to
-/// customize which event types are supported and how unknown events are handled.
-///
-/// ## Basic Usage
-///
-/// ```swift
-/// // Create a decoder with default settings (strict mode)
-/// let decoder = AGUIEventDecoder()
-///
-/// // Decode an event from JSON data
-/// let event = try decoder.decode(jsonData)
-///
-/// // Pattern match on the event type
-/// switch event.eventType {
-/// case .runStarted:
-///     let runStarted = event as! RunStartedEvent
-///     print("Run started: \(runStarted.runId)")
-/// case .runFinished:
-///     let runFinished = event as! RunFinishedEvent
-///     print("Run finished: \(runFinished.runId)")
-/// default:
-///     print("Other event: \(event.eventType)")
-/// }
-/// ```
-///
-/// ## Configuration Modes
-///
-/// ### Strict Mode (Default)
-///
-/// In strict mode, unknown or unsupported events throw errors:
-///
-/// ```swift
-/// let decoder = AGUIEventDecoder() // Default: .throwError
-/// // Throws EventDecodingError.unknownEventType for unrecognized types
-/// ```
-///
-/// ### Tolerant Mode
-///
-/// In tolerant mode, unknown events are returned as `UnknownEvent`:
-///
-/// ```swift
-/// var config = AGUIEventDecoder.Configuration()
-/// config.unknownEventStrategy = .returnUnknown
-/// let decoder = AGUIEventDecoder(config: config)
-///
-/// let event = try decoder.decode(data)
-/// if let unknown = event as? UnknownEvent {
-///     print("Unknown event type: \(unknown.typeRaw)")
-///     // Can still access raw JSON for forwarding or logging
-/// }
-/// ```
-///
-/// ## Custom Registries
-///
-/// You can provide a custom registry to control which event types are supported:
-///
-/// ```swift
-/// let customRegistry: [EventType: AGUIEventDecoder.DecodeHandler] = [
-///     .runStarted: { data, decoder in
-///         try decoder.decode(RunStartedEventDTO.self, from: data).toDomain(rawEvent: data)
-///     }
-///     // Add more handlers as needed
-/// ]
-///
-/// let decoder = AGUIEventDecoder(registry: customRegistry)
-/// ```
-///
-/// ## Error Handling
-///
-/// The decoder throws `EventDecodingError` for various failure scenarios:
-///
-/// - `.missingTypeField`: The JSON is missing the required "type" field
-/// - `.invalidJSON`: The JSON data is malformed or invalid
-/// - `.unknownEventType(String)`: The event type is not recognized (strict mode only)
-/// - `.unsupportedEventType(EventType)`: The event type is known but has no handler (strict mode only)
-/// - `.decodingFailed(String)`: Field-level decoding errors with detailed messages
-///
-/// ## Thread Safety
-///
 /// `AGUIEventDecoder` is thread-safe and can be used concurrently. The decoder itself
 /// is immutable after initialization, and all configuration is `Sendable`.
 ///
@@ -110,12 +30,6 @@ public struct AGUIEventDecoder: Sendable {
     ///
     /// Use `Configuration` to customize decoder behavior, particularly how unknown
     /// or unsupported events are handled.
-    ///
-    /// ```swift
-    /// var config = AGUIEventDecoder.Configuration()
-    /// config.unknownEventStrategy = .returnUnknown
-    /// let decoder = AGUIEventDecoder(config: config)
-    /// ```
     public struct Configuration: Sendable {
         /// Strategy for handling unknown or unsupported event types.
         ///
@@ -165,16 +79,6 @@ public struct AGUIEventDecoder: Sendable {
     /// The decoder uses the provided registry to determine which event types can be decoded.
     /// If no registry is provided, it uses `defaultRegistry()` which includes all lifecycle events.
     ///
-    /// Example with custom JSON decoder:
-    /// ```swift
-    /// let decoder = AGUIEventDecoder(
-    ///     makeDecoder: {
-    ///         let jsonDecoder = JSONDecoder()
-    ///         jsonDecoder.dateDecodingStrategy = .millisecondsSince1970
-    ///         return jsonDecoder
-    ///     }
-    /// )
-    /// ```
     public init(
         config: Configuration = .init(),
         makeDecoder: @escaping @Sendable () -> JSONDecoder = {
@@ -202,23 +106,6 @@ public struct AGUIEventDecoder: Sendable {
     /// - Returns: A decoded `AGUIEvent` instance (specific type depends on the "type" field)
     /// - Throws: `EventDecodingError` if decoding fails or the event type is unknown/unsupported (in strict mode)
     ///
-    /// Example:
-    /// ```swift
-    /// let jsonData = """
-    /// {
-    ///   "type": "RUN_STARTED",
-    ///   "threadId": "thread-123",
-    ///   "runId": "run-456"
-    /// }
-    /// """.data(using: .utf8)!
-    ///
-    /// let decoder = AGUIEventDecoder()
-    /// let event = try decoder.decode(jsonData)
-    ///
-    /// if let runStarted = event as? RunStartedEvent {
-    ///     print("Run \(runStarted.runId) started in thread \(runStarted.threadId)")
-    /// }
-    /// ```
     public func decode(_ data: Data) throws -> any AGUIEvent {
         let decoder = makeDecoder()
 

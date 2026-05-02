@@ -10,36 +10,6 @@ import Foundation
 /// - Incremental updates using JSON Patch (`STATE_DELTA` events)
 /// - State retrieval and reset
 ///
-/// ## Usage
-///
-/// ```swift
-/// let manager = StateManager()
-///
-/// // Handle snapshot event
-/// await manager.handleSnapshot(snapshotEvent)
-///
-/// // Handle delta event
-/// try await manager.handleDelta(deltaEvent)
-///
-/// // Get current state
-/// let state = await manager.getState()
-/// ```
-///
-/// ## Thread Safety
-///
-/// `StateManager` is an actor, providing automatic thread safety for all
-/// state operations. All methods can be safely called from multiple
-/// concurrent tasks.
-///
-/// ## State Lifecycle
-///
-/// 1. Initialize with empty state `{}`
-/// 2. Receive `STATE_SNAPSHOT` → full state replacement
-/// 3. Receive `STATE_DELTA` → apply JSON Patch operations
-/// 4. Query current state with `getState()`
-/// 5. Reset to empty state with `reset()`
-///
-/// - SeeAlso: `PatchApplicator`, `StateSnapshotEvent`, `StateDeltaEvent`
 public actor StateManager {
     /// Current application state as raw JSON data.
     private var currentState: Data

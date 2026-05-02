@@ -12,26 +12,6 @@ extension AsyncSequence where Element == any AGUIEvent {
     /// triggering event. Callers should accumulate values from successive emissions
     /// to build the complete agent state.
     ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// var currentMessages: [any Message] = []
-    /// var currentState: State = Data("{}".utf8)
-    ///
-    /// for try await agentState in eventStream.applyEvents(input: input) {
-    ///     if let messages = agentState.messages {
-    ///         currentMessages = messages
-    ///     }
-    ///     if let state = agentState.state {
-    ///         currentState = state
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - input: The `RunAgentInput` that seeded this run, providing initial messages and state.
-    ///   - subscribers: Optional list of subscribers to notify of events (reserved for future use).
-    /// - Returns: An `AsyncThrowingStream` of `AgentState` emissions.
     public func applyEvents(
         input: RunAgentInput,
         subscribers: [any AgentSubscriber] = []

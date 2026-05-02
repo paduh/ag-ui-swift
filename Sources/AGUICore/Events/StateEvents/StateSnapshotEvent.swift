@@ -8,7 +8,6 @@ import Foundation
 /// or reset the application state. The snapshot is stored as raw JSON data
 /// to preserve its exact structure and allow for flexible state schemas.
 ///
-/// - SeeAlso: `StateDeltaEvent`, `MessagesSnapshotEvent`
 public struct StateSnapshotEvent: AGUIEvent, Equatable, Sendable {
 
     // MARK: - Properties

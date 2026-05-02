@@ -10,21 +10,6 @@ import Foundation
 /// Subscribers can replace the pending message collection, update state, or
 /// stop propagation so the default handlers skip their own processing.
 ///
-/// ## Example
-///
-/// ```swift
-/// // Append a custom message
-/// func onRunInitialized(params: AgentSubscriberParams) async -> AgentStateMutation? {
-///     var updatedMessages = params.messages
-///     updatedMessages.append(SystemMessage(
-///         id: "custom-prompt",
-///         content: "Be concise and helpful."
-///     ))
-///     return AgentStateMutation(messages: updatedMessages)
-/// }
-/// ```
-///
-/// - SeeAlso: ``AgentSubscriber``
 public struct AgentStateMutation: Sendable {
     /// Replacement messages for the agent's conversation history.
     ///

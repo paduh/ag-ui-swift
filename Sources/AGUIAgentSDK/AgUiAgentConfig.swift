@@ -10,23 +10,6 @@ import Foundation
 /// `AgUiAgentConfig` provides all options for a stateless AG-UI agent, including
 /// authentication helpers, tool registry, per-request context, and timeout tuning.
 ///
-/// ## Example
-///
-/// ```swift
-/// let agent = AgUiAgent(url: agentURL) { config in
-///     config.bearerToken = "sk-…"
-///     config.systemPrompt = "You are a helpful assistant."
-///     config.toolRegistry = myRegistry
-/// }
-/// ```
-///
-/// ## Auth Convenience
-///
-/// Setting `bearerToken` or `apiKey` automatically merges the corresponding header
-/// into the final header dictionary via ``buildHeaders()``. Explicit entries in
-/// ``headers`` take precedence over auto-generated auth headers.
-///
-/// - SeeAlso: ``AgUiAgent``, ``AgentBuilders``
 public struct AgUiAgentConfig: Sendable {
 
     // MARK: - Auth

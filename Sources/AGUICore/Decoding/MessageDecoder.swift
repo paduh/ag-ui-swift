@@ -8,58 +8,6 @@ import Foundation
 /// the "role" field in the JSON. It uses a registry-based architecture matching the pattern
 /// used by `AGUIEventDecoder`.
 ///
-/// ## Basic Usage
-///
-/// ```swift
-/// // Create a decoder with default registry
-/// let decoder = MessageDecoder()
-///
-/// // Decode a message from JSON data
-/// let message = try decoder.decode(jsonData)
-///
-/// // Pattern match on the message role
-/// switch message.role {
-/// case .user:
-///     let userMessage = message as! UserMessage
-///     print("User said: \(userMessage.content)")
-/// case .assistant:
-///     let assistantMessage = message as! AssistantMessage
-///     print("Assistant replied: \(assistantMessage.content ?? "")")
-/// default:
-///     print("Other message type: \(message.role)")
-/// }
-/// ```
-///
-/// ## Custom Registries
-///
-/// You can provide a custom registry to control which message types are supported:
-///
-/// ```swift
-/// let customRegistry: [Role: MessageDecoder.DecodeHandler] = [
-///     .user: { data, decoder in
-///         try UserMessageDTO.decode(from: data, decoder: decoder).toDomain()
-///     }
-///     // Add more handlers as needed
-/// ]
-///
-/// let decoder = MessageDecoder(registry: customRegistry)
-/// ```
-///
-/// ## Error Handling
-///
-/// The decoder throws `MessageDecodingError` for various failure scenarios:
-///
-/// - `.missingRoleField`: The JSON is missing the required "role" field
-/// - `.invalidJSON`: The JSON data is malformed or invalid
-/// - `.unknownRole(String)`: The role value is not recognized
-/// - `.unsupportedRole(Role)`: The role is known but has no handler
-/// - `.decodingFailed(String)`: Field-level decoding errors with detailed messages
-///
-/// ## Thread Safety
-///
-/// `MessageDecoder` is thread-safe and can be used concurrently. The decoder itself
-/// is immutable after initialization.
-///
 /// - SeeAlso: `Message`, `Role`, `MessageDecodingError`
 public struct MessageDecoder: Sendable {
 

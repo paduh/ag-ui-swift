@@ -8,49 +8,6 @@ import Foundation
 /// arbitrary chunks. It maintains an internal buffer for incomplete events
 /// and returns complete events as they become available.
 ///
-/// ## Usage
-///
-/// ```swift
-/// var parser = SseParser()
-///
-/// // Parse chunks as they arrive
-/// for chunk in streamChunks {
-///     let events = parser.parse(chunk)
-///     for event in events {
-///         print("Received: \(event.data)")
-///     }
-/// }
-/// ```
-///
-/// ## SSE Format
-///
-/// Server-Sent Events use a line-based format:
-/// - Lines starting with `data:` contain the payload
-/// - Lines starting with `id:` specify the event ID
-/// - Lines starting with `event:` specify the event type
-/// - Lines starting with `:` are comments (ignored)
-/// - Empty line (double newline) signals end of event
-/// - Multiple `data:` lines are concatenated with newlines
-///
-/// ## Example Input
-///
-/// ```
-/// data: {"type":"MESSAGE","content":"Hello"}
-///
-/// event: notification
-/// id: 123
-/// data: {"alert":"New message"}
-///
-/// ```
-///
-/// ## Thread Safety
-///
-/// `SseParser` is a mutable struct and not thread-safe. Each thread
-/// should maintain its own parser instance.
-///
-/// ## Reference
-///
-/// SSE specification: https://html.spec.whatwg.org/multipage/server-sent-events.html
 public struct SseParser {
     /// Maximum number of UTF-8 bytes the internal buffer may hold.
     ///

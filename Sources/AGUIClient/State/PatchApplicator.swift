@@ -8,40 +8,6 @@ import Foundation
 /// applying incremental changes to JSON documents. It supports all standard
 /// operations: add, remove, replace, move, copy, and test.
 ///
-/// ## Usage
-///
-/// ```swift
-/// let applicator = PatchApplicator()
-///
-/// let state = Data("{\"count\":5}".utf8)
-/// let patch = Data("""
-/// [{"op":"replace","path":"/count","value":10}]
-/// """.utf8)
-///
-/// let newState = try applicator.apply(patch: patch, to: state)
-/// ```
-///
-/// ## Supported Operations
-///
-/// - `add`: Adds a value to an object or inserts into an array
-/// - `remove`: Removes a value from an object or array
-/// - `replace`: Replaces a value
-/// - `move`: Moves a value from one location to another
-/// - `copy`: Copies a value from one location to another
-/// - `test`: Tests that a value equals the specified value
-///
-/// ## Path Format (RFC 6901)
-///
-/// Paths use JSON Pointer format:
-/// - `/foo` - Root-level field "foo"
-/// - `/foo/bar` - Nested field "bar" in object "foo"
-/// - `/items/0` - First element of array "items"
-/// - `/items/-` - Append to array "items"
-/// - `/a~0b` - Field "a~b" (~ encoded as ~0)
-/// - `/a~1b` - Field "a/b" (/ encoded as ~1)
-///
-/// - SeeAlso: [RFC 6902 - JSON Patch](https://tools.ietf.org/html/rfc6902)
-/// - SeeAlso: [RFC 6901 - JSON Pointer](https://tools.ietf.org/html/rfc6901)
 public struct PatchApplicator: Sendable {
     /// Errors that can occur during patch application.
     public enum PatchError: Error, LocalizedError {

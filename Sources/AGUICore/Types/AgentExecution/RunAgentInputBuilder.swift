@@ -8,56 +8,6 @@ import Foundation
 /// instances through method chaining, making the code more readable and reducing
 /// errors when working with multiple optional parameters.
 ///
-/// ## Basic Usage
-///
-/// ```swift
-/// let input = RunAgentInput.builder()
-///     .threadId("thread-123")
-///     .runId("run-456")
-///     .build()
-/// ```
-///
-/// ## Building Complex Inputs
-///
-/// ```swift
-/// let input = RunAgentInput.builder()
-///     .threadId("chat-session-1")
-///     .runId("run-1")
-///     .message(DeveloperMessage(id: "dev-1", content: "You are helpful"))
-///     .message(UserMessage(id: "user-1", content: "Hello!"))
-///     .tool(weatherTool)
-///     .contextItem(Context(description: "location", value: "SF"))
-///     .build()
-/// ```
-///
-/// ## Incremental Building
-///
-/// ```swift
-/// var builder = RunAgentInput.builder()
-///     .threadId("thread-1")
-///     .runId("run-1")
-///
-/// // Add messages conditionally
-/// if includeSystemPrompt {
-///     builder = builder.message(SystemMessage(id: "sys-1", content: "Be concise"))
-/// }
-///
-/// let input = builder.build()
-/// ```
-///
-/// ## Thread Safety
-///
-/// The builder uses value semantics (struct) and is naturally thread-safe. Each
-/// builder method returns a new builder instance, making it safe to use across
-/// isolation boundaries and in concurrent contexts.
-///
-/// ## Concurrency
-///
-/// The builder uses value semantics and is intended for use on a single task or actor.
-/// It does not conform to `Sendable` in Swift 6 because it contains mutable stored properties.
-/// Prefer building inputs on one actor/task and then pass the resulting `RunAgentInput` across boundaries.
-///
-/// - SeeAlso: `RunAgentInput`
 public struct RunAgentInputBuilder {
 
     private var _threadId: String?

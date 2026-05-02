@@ -8,15 +8,6 @@ import Foundation
 /// at compile time, commonly needed when bridging between strongly-typed Swift
 /// and loosely-typed JSON.
 ///
-/// ## Usage
-///
-/// Use with `KeyedEncodingContainer` and `KeyedDecodingContainer` to handle
-/// arbitrary JSON structures:
-///
-/// ```swift
-/// let container = try decoder.container(keyedBy: JSONCodingKeys.self)
-/// let jsonObject = try container.decodeJSONObject()
-/// ```
 public struct JSONCodingKeys: CodingKey {
     public var stringValue: String
     public var intValue: Int?

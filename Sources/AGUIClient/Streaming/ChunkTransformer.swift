@@ -23,23 +23,6 @@ public enum ChunkTransformError: Error, Sendable {
 /// This ensures downstream processing can rely on standard event sequences regardless
 /// of the upstream stream shape.
 ///
-/// ## Behavior
-///
-/// - **Text Chunks**: Transformed into TextMessageStart → TextMessageContent(s) → TextMessageEnd
-/// - **Tool Chunks**: Transformed into ToolCallStart → ToolCallArgs(s) → ToolCallEnd
-/// - **Existing Events**: Pass through unchanged
-/// - **Mode Switching**: Automatically closes pending sequences when switching between text/tool modes
-///
-/// ## Usage
-///
-/// ```swift
-/// let transformed = events.transformChunks()
-/// for try await event in transformed {
-///     // Process structured events
-/// }
-/// ```
-///
-/// - SeeAlso: ``ChunkTransformError``
 public struct ChunkTransformer {
     /// Creates a new chunk transformer.
     public init() {}

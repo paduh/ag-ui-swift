@@ -37,25 +37,6 @@ import Foundation
 /// All message types must conform to `Sendable` to safely cross actor isolation
 /// boundaries in Swift's structured concurrency model.
 ///
-/// ## Example
-///
-/// ```swift
-/// // Creating different message types
-/// let systemMsg = SystemMessage(
-///     id: "msg-1",
-///     content: "You are a helpful assistant."
-/// )
-///
-/// let userMsg = UserMessage(
-///     id: "msg-2",
-///     content: "Hello, how can you help me?"
-/// )
-///
-/// // All messages conform to the same protocol
-/// let messages: [any Message] = [systemMsg, userMsg]
-/// ```
-///
-/// - SeeAlso: ``Role``
 public protocol Message: Sendable {
     /// Unique identifier for this message.
     ///

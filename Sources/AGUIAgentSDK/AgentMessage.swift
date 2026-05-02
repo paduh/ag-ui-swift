@@ -9,22 +9,6 @@ import Foundation
 /// `AgentMessage` is a concrete value type that is `Identifiable` and `Equatable`,
 /// making it safe to use directly in `List`, `ForEach`, and `@Observable` properties.
 ///
-/// ## Usage in SwiftUI
-///
-/// ```swift
-/// List(viewModel.messages) { message in
-///     MessageBubble(message: message)
-/// }
-/// ```
-///
-/// ## Relationship to the protocol layer
-///
-/// `AgentMessage` is built by ``AgentViewModel`` / ``AgentViewModelCompat`` as events
-/// arrive from the stream. It is not decoded from the wire — it is assembled in the
-/// view model from `TextMessageStartEvent`, `TextMessageContentEvent`, and
-/// `TextMessageEndEvent` events.
-///
-/// - SeeAlso: ``AgentViewModel``, ``AgentViewModelCompat``, ``AgentError``
 public struct AgentMessage: Sendable, Identifiable, Equatable {
 
     // MARK: - Role

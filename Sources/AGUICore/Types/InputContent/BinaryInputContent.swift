@@ -23,45 +23,6 @@ import Foundation
 /// - Audio: `"audio/mpeg"`, `"audio/wav"`, `"audio/ogg"`
 /// - Video: `"video/mp4"`, `"video/webm"`
 ///
-/// ## Usage Examples
-///
-/// ```swift
-/// // Image from URL
-/// let imageContent = BinaryInputContent(
-///     mimeType: "image/jpeg",
-///     url: "https://example.com/photo.jpg",
-///     filename: "vacation.jpg"
-/// )
-///
-/// // Embedded base64 image
-/// let embeddedImage = BinaryInputContent(
-///     mimeType: "image/png",
-///     data: "iVBORw0KGgoAAAANSUhEUg...",
-///     filename: "screenshot.png"
-/// )
-///
-/// // Document by ID
-/// let document = BinaryInputContent(
-///     mimeType: "application/pdf",
-///     id: "doc-annual-report-2024"
-/// )
-///
-/// // Multimodal message
-/// let contents: [any InputContent] = [
-///     TextInputContent(text: "Analyze this image and document:"),
-///     imageContent,
-///     document
-/// ]
-/// ```
-///
-/// ## Content Source Selection
-///
-/// When multiple sources are provided, the consuming system typically prioritizes:
-/// 1. **Data** (embedded): Fastest, no external fetch required
-/// 2. **URL**: Enables streaming large files
-/// 3. **ID**: Requires content management system integration
-///
-/// - SeeAlso: ``InputContent``, ``TextInputContent``, ``UserMessage``
 public struct BinaryInputContent: InputContent {
     /// Validation errors for BinaryInputContent
     public enum ValidationError: Error, LocalizedError {

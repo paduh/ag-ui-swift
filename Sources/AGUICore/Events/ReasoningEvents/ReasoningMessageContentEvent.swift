@@ -5,8 +5,7 @@ import Foundation
 /// Event containing a streaming chunk of reasoning message content.
 ///
 /// This event delivers an incremental piece of reasoning text during a reasoning
-/// message's lifecycle. It is the replacement for the deprecated
-/// ``ThinkingTextMessageContentEvent``.
+/// message's lifecycle. 
 ///
 /// - SeeAlso: ``ReasoningMessageStartEvent``, ``ReasoningMessageEndEvent``
 public struct ReasoningMessageContentEvent: AGUIEvent, Equatable, Hashable, Sendable {

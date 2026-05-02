@@ -8,7 +8,6 @@ import Foundation
 /// It provides the message identifier that will be used to associate subsequent
 /// content chunks and the end event with this message.
 ///
-/// - SeeAlso: `TextMessageContentEvent`, `TextMessageEndEvent`, `TextMessageChunkEvent`
 public struct TextMessageStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

@@ -5,8 +5,7 @@ import Foundation
 /// Event marking the start of a reasoning phase.
 ///
 /// This event signals that the agent has begun its internal reasoning process
-/// for the message identified by `messageId`. It is the replacement for the
-/// deprecated ``ThinkingStartEvent``.
+/// for the message identified by `messageId`. 
 ///
 /// - SeeAlso: ``ReasoningEndEvent``, ``ReasoningMessageStartEvent``
 public struct ReasoningStartEvent: AGUIEvent, Equatable, Hashable, Sendable {

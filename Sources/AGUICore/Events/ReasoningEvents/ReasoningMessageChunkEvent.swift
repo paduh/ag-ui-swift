@@ -9,7 +9,6 @@ import Foundation
 /// start/content/end events. Both fields are optional; at least one should be non-nil
 /// for the event to be meaningful.
 ///
-/// - SeeAlso: ``ReasoningMessageStartEvent``, ``ReasoningMessageContentEvent``, ``ReasoningMessageEndEvent``
 public struct ReasoningMessageChunkEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

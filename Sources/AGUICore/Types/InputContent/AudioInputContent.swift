@@ -8,7 +8,6 @@ import Foundation
 /// base64-encoded bytes. The optional `format` field identifies the audio codec
 /// (e.g., `"mp3"`, `"wav"`, `"ogg"`).
 ///
-/// - SeeAlso: ``InputContent``, ``UserMessage``
 public struct AudioInputContent: InputContent, Hashable, Sendable {
 
     /// The content type discriminator (always `"audio"`).

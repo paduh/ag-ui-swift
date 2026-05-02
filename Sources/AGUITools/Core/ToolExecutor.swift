@@ -17,41 +17,6 @@ import Foundation
 /// - Defensive (validate all inputs)
 /// - Fast (avoid blocking operations when possible)
 ///
-/// ## Usage
-///
-/// ```swift
-/// actor WeatherToolExecutor: ToolExecutor {
-///     let tool: Tool
-///
-///     init() {
-///         self.tool = Tool(
-///             name: "get_weather",
-///             description: "Get current weather for a location",
-///             parameters: Data(#"{"type": "object", ...}"#.utf8)
-///         )
-///     }
-///
-///     func execute(context: ToolExecutionContext) async throws -> ToolExecutionResult {
-///         // Decode arguments
-///         let args = try JSONDecoder().decode(
-///             WeatherArgs.self,
-///             from: Data(context.toolCall.function.arguments.utf8)
-///         )
-///
-///         // Execute the tool
-///         let weather = try await fetchWeather(for: args.location)
-///
-///         // Return result
-///         let resultData = try JSONEncoder().encode(weather)
-///         return .success(result: resultData, message: "Weather retrieved")
-///     }
-///
-///     func maximumExecutionTime() -> Duration? {
-///         .seconds(30)
-///     }
-/// }
-/// ```
-///
 /// ## Thread Safety
 ///
 /// Tool executors should be implemented as actors to ensure thread-safe
@@ -123,18 +88,6 @@ public extension ToolExecutor {
 /// Indicates whether a tool call's arguments are valid according to the
 /// tool's parameter schema, and provides error messages for invalid calls.
 ///
-/// ## Usage
-///
-/// ```swift
-/// // Valid tool call
-/// let result = ToolValidationResult.valid
-///
-/// // Invalid tool call with errors
-/// let result = ToolValidationResult.invalid(errors: [
-///     "Missing required parameter: location",
-///     "Invalid type for parameter 'temperature': expected number"
-/// ])
-/// ```
 public struct ToolValidationResult: Sendable {
     /// Whether the validation passed.
     public let isValid: Bool
@@ -186,30 +139,6 @@ public struct ToolValidationResult: Sendable {
 /// - **toolNotFound**: Requested tool doesn't exist (configuration error, not retryable)
 /// - **executionFailed**: General execution failure (may be retryable depending on cause)
 ///
-/// ## Usage
-///
-/// ```swift
-/// // Validation failure
-/// throw ToolExecutionError.validationFailed(
-///     message: "Missing required parameter: location"
-/// )
-///
-/// // Timeout
-/// throw ToolExecutionError.timeout(
-///     toolName: "slow_api_call",
-///     duration: .seconds(30)
-/// )
-///
-/// // Execution failure with underlying error
-/// do {
-///     try await apiCall()
-/// } catch {
-///     throw ToolExecutionError.executionFailed(
-///         toolName: "api_tool",
-///         underlyingError: error
-///     )
-/// }
-/// ```
 public enum ToolExecutionError: Error, Sendable {
     /// Tool call validation failed.
     ///

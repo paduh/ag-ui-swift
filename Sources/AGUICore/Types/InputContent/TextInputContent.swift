@@ -8,36 +8,6 @@ import Foundation
 /// plain text. It is used alongside ``BinaryInputContent`` to build multimodal
 /// messages that combine text and binary data.
 ///
-/// ## Usage
-///
-/// Text content can be used in two ways:
-///
-/// 1. **Simple text messages** (via UserMessage string content)
-/// 2. **Multimodal messages** (via UserMessage content array)
-///
-/// ```swift
-/// // Standalone text content
-/// let textContent = TextInputContent(
-///     text: "What is the capital of France?"
-/// )
-///
-/// // Mixed with binary content in multimodal message
-/// let contents: [any InputContent] = [
-///     TextInputContent(text: "Analyze this image:"),
-///     BinaryInputContent(
-///         mimeType: "image/jpeg",
-///         url: "https://example.com/photo.jpg"
-///     ),
-///     TextInputContent(text: "What objects do you see?")
-/// ]
-/// ```
-///
-/// ## Text Content Characteristics
-///
-/// - **Simple**: Contains only text, no formatting or metadata
-/// - **Flexible**: Supports any string content including Unicode, code, markdown
-/// - **Composable**: Can be interleaved with binary content in multimodal messages
-///
 /// ## Type Discrimination
 ///
 /// The `type` field is always `"text"`, enabling polymorphic deserialization

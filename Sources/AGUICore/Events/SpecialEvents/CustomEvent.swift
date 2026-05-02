@@ -13,11 +13,6 @@ import Foundation
 /// - Extending the protocol with custom behavior
 /// - Handling domain-specific events (e.g., "com.example.analytics.pageView")
 ///
-/// Custom event type identifiers typically follow reverse-domain notation
-/// (e.g., "com.myapp.analytics.pageView", "org.example.userAction.buttonClick")
-/// to ensure uniqueness across applications.
-///
-/// - SeeAlso: `RawEvent`, `UnknownEvent`
 public struct CustomEvent: AGUIEvent, Equatable, Sendable {
 
     // MARK: - Properties
@@ -26,11 +21,7 @@ public struct CustomEvent: AGUIEvent, Equatable, Sendable {
     ///
     /// This string uniquely identifies the type of custom event. It's recommended
     /// to use reverse-domain notation for globally unique identifiers.
-    ///
-    /// Examples:
-    /// - "com.example.userAction"
-    /// - "org.myapp.analytics.pageView"
-    /// - "simple.message"
+
     public let name: String
 
     /// The custom event payload as raw JSON, matching the AG-UI protocol `value` wire field.

@@ -9,23 +9,6 @@ import Foundation
 /// dependency injection for testability and flexibility. It accepts any
 /// `HTTPClient` implementation, defaulting to `URLSessionHTTPClient`.
 ///
-/// ## Example
-///
-/// ```swift
-/// // Default usage with URLSession
-/// let config = HttpAgentConfiguration(baseURL: agentURL)
-/// let transport = HttpTransport(configuration: config)
-///
-/// // With custom HTTP client (e.g., for testing)
-/// let mockClient = MockHTTPClient()
-/// let transport = HttpTransport(
-///     configuration: config,
-///     httpClient: mockClient
-/// )
-///
-/// // Execute request
-/// let bytes = try await transport.execute(endpoint: "/run", input: input)
-/// ```
 public actor HttpTransport {
     private let httpClient: any HTTPClient
     private let configuration: HttpAgentConfiguration

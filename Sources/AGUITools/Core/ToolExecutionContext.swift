@@ -9,24 +9,6 @@ import Foundation
 /// including the tool call being executed, optional thread and run identifiers for tracking,
 /// and metadata for additional execution context.
 ///
-/// ## Usage
-///
-/// ```swift
-/// // Minimal context
-/// let context = ToolExecutionContext(toolCall: toolCall)
-///
-/// // Full context with tracking and metadata
-/// let context = ToolExecutionContext(
-///     toolCall: toolCall,
-///     threadId: "thread_abc123",
-///     runId: "run_xyz789",
-///     metadata: [
-///         "userId": "user_123",
-///         "sessionId": "session_456",
-///         "timestamp": "2025-01-01T12:00:00Z"
-///     ]
-/// )
-/// ```
 ///
 /// ## Thread and Run IDs
 ///

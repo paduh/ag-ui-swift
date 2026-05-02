@@ -8,22 +8,6 @@ import Foundation
 /// URLSession for networking. It supports full URLSession configuration
 /// and can be injected with a custom session for testing.
 ///
-/// ## Example
-///
-/// ```swift
-/// // Default usage
-/// let client = URLSessionHTTPClient.create()
-///
-/// // Custom configuration
-/// let config = URLSessionConfiguration.default
-/// config.timeoutIntervalForRequest = 30
-/// let session = URLSession(configuration: config)
-/// let client = URLSessionHTTPClient(session: session)
-///
-/// // Execute request
-/// let request = URLRequest(url: url)
-/// let response = try await client.execute(request)
-/// ```
 public actor URLSessionHTTPClient: HTTPClient {
     private let session: URLSession
 

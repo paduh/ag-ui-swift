@@ -8,7 +8,6 @@ import Foundation
 /// the standard text/tool paradigm, such as A2UI surfaces. The content field
 /// contains activity-type-specific data.
 ///
-/// - SeeAlso: `ActivityDeltaEvent`
 public struct ActivitySnapshotEvent: AGUIEvent, Equatable, Sendable {
 
     // MARK: - Properties

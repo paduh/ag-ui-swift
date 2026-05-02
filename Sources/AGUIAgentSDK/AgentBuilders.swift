@@ -9,27 +9,6 @@ import Foundation
 /// `AgentBuilders` mirrors the `AgentBuilders` pattern from the Kotlin SDK,
 /// providing clean one-liner factory calls for the most common agent configurations.
 ///
-/// ## Examples
-///
-/// ```swift
-/// // Bearer-token authenticated agent
-/// let agent = AgentBuilders.agentWithBearer(url: agentURL, token: "sk-…")
-///
-/// // API-key authenticated agent
-/// let agent = AgentBuilders.agentWithApiKey(url: agentURL, apiKey: "my-key")
-///
-/// // Agent with custom tool registry
-/// let agent = AgentBuilders.agentWithTools(url: agentURL, registry: myRegistry)
-///
-/// // Stateful chat agent with a system prompt
-/// let agent = AgentBuilders.chatAgent(url: agentURL, systemPrompt: "You are a helpful assistant.")
-///
-/// // Stateful agent with pre-seeded JSON state
-/// let agent = AgentBuilders.statefulAgent(url: agentURL, initialState: Data("{\"mode\":\"creative\"}".utf8))
-///
-/// // Debug agent that logs verbose pipeline output
-/// let agent = AgentBuilders.debugAgent(url: agentURL)
-/// ```
 public enum AgentBuilders {
 
     // MARK: - Stateless agents

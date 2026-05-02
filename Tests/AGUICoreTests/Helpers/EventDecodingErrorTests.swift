@@ -8,24 +8,6 @@ import XCTest
 /// Event test classes conforming to this protocol must implement required properties
 /// describing their event type, then automatically inherit 6 standard error tests.
 ///
-/// ## Usage
-///
-/// ```swift
-/// final class RunStartedEventTests: XCTestCase,
-///                                    AGUIEventDecoderTestHelpers,
-///                                    EventDecodingErrorTests {
-///
-///     var validEventFieldsWithoutType: [String: Any] {
-///         ["threadId": EventTestData.threadId, "runId": EventTestData.runId]
-///     }
-///
-///     var eventTypeString: String { "RUN_STARTED" }
-///     var expectedEventType: EventType { .runStarted }
-///
-///     // 6 error tests are automatically inherited!
-/// }
-/// ```
-///
 /// ## Benefits
 ///
 /// - **Eliminates Duplication**: Removes 78+ duplicated error tests across 13 files

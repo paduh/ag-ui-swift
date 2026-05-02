@@ -7,11 +7,6 @@ import Foundation
 /// When a bounded buffer fills up and new elements arrive, the strategy
 /// determines which elements to keep and which to drop.
 ///
-/// ## Usage
-///
-/// ```swift
-/// let buffered = stream.buffered(limit: 100, strategy: .dropOldest)
-/// ```
 public enum BufferingStrategy: Sendable {
     /// Drop the oldest elements when buffer is full.
     ///

@@ -4,7 +4,6 @@ import Foundation
 
 /// A non-agent system message injected into the chat list for lifecycle events.
 ///
-/// Examples: agent connection confirmation, inline error notifications.
 /// Rendered as distinct, non-interactive rows by `SupplementalMessageBubbleView`.
 struct SupplementalMessage: Identifiable, Sendable {
     let id: String

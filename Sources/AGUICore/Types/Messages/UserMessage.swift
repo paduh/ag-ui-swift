@@ -7,45 +7,6 @@ import Foundation
 /// `UserMessage` supports both simple text messages and multimodal messages
 /// containing text, images, audio, documents, and other binary data.
 ///
-/// ## Text-only Messages
-///
-/// For simple text input, use the standard initializer:
-///
-/// ```swift
-/// let message = UserMessage(
-///     id: "user-1",
-///     content: "What is the weather like today?"
-/// )
-/// ```
-///
-/// ## Multimodal Messages
-///
-/// For rich input combining text and binary data, use the multimodal factory:
-///
-/// ```swift
-/// let parts: [any InputContent] = [
-///     TextInputContent(text: "What's in this image?"),
-///     BinaryInputContent(
-///         mimeType: "image/jpeg",
-///         url: "https://example.com/photo.jpg"
-///     )
-/// ]
-///
-/// let message = UserMessage.multimodal(
-///     id: "user-2",
-///     parts: parts
-/// )
-/// ```
-///
-/// ## Serialization
-///
-/// UserMessage uses custom Codable serialization:
-/// - **Text-only**: `content` field is a JSON string
-/// - **Multimodal**: `content` field is a JSON array of InputContent objects
-///
-/// The serialization is transparent and handled automatically during encoding/decoding.
-///
-/// - SeeAlso: ``Message``, ``InputContent``, ``TextInputContent``, ``BinaryInputContent``
 public struct UserMessage: Message, Sendable, Hashable {
     /// The unique identifier for this message.
     public let id: String

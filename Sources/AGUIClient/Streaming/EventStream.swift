@@ -11,44 +11,6 @@ import Foundation
 /// 3. Decodes AG-UI events using AGUIEventDecoder
 /// 4. Handles errors gracefully
 ///
-/// ## Usage
-///
-/// ```swift
-/// let transport = HttpTransport(configuration: config)
-/// let bytes = try await transport.execute(endpoint: "/run", input: input)
-/// let decoder = AGUIEventDecoder()
-/// let stream = EventStream(bytes: bytes, decoder: decoder)
-///
-/// for try await event in stream {
-///     switch event.eventType {
-///     case .textMessageChunk:
-///         let chunk = event as! TextMessageChunkEvent
-///         print(chunk.delta, terminator: "")
-///     case .runFinished:
-///         print("\nDone!")
-///     default:
-///         break
-///     }
-/// }
-/// ```
-///
-/// ## Error Handling
-///
-/// - Malformed JSON events are logged and skipped
-/// - Unknown event types are returned as `UnknownEvent`
-/// - UTF-8 decoding errors are handled gracefully
-/// - Network errors propagate to the caller
-///
-/// ## Last-Event-ID tracking
-///
-/// `lastEventId` exposes the most recent `id:` field seen in the SSE stream.
-/// It is updated as events arrive and can be read after a mid-stream failure
-/// to resume from the correct position on reconnect.
-///
-/// ## Thread Safety
-///
-/// `EventStream` is Sendable and can be used across concurrency domains.
-/// Each iteration creates a new iterator with isolated state.
 public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Element == UInt8 {
     public typealias Element = any AGUIEvent
 

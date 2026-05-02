@@ -5,7 +5,6 @@ import Foundation
 /// Event indicating the end of a streaming reasoning message.
 ///
 /// This event marks the completion of a reasoning message within a reasoning phase.
-/// It is the replacement for the deprecated ``ThinkingTextMessageEndEvent``.
 ///
 /// - SeeAlso: ``ReasoningMessageStartEvent``, ``ReasoningMessageContentEvent``
 public struct ReasoningMessageEndEvent: AGUIEvent, Equatable, Hashable, Sendable {

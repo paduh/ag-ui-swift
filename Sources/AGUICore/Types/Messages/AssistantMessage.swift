@@ -24,51 +24,6 @@ import Foundation
 /// 3. Add tool calls through ToolCallStart/Args/End events
 /// 4. Complete with TextMessageEnd or ToolCallEnd events
 ///
-/// ## Example
-///
-/// ```swift
-/// // Simple text response
-/// let textResponse = AssistantMessage(
-///     id: "asst-1",
-///     content: "I understand your question. Let me explain..."
-/// )
-///
-/// // Tool call with explanation
-/// let weatherCall = ToolCall(
-///     id: "call_weather",
-///     function: FunctionCall(
-///         name: "get_current_weather",
-///         arguments: "{\"location\":\"San Francisco\"}"
-///     )
-/// )
-///
-/// let toolResponse = AssistantMessage(
-///     id: "asst-2",
-///     content: "Let me check the weather for you.",
-///     toolCalls: [weatherCall]
-/// )
-///
-/// // Multiple simultaneous tool calls
-/// let multiToolResponse = AssistantMessage(
-///     id: "asst-3",
-///     content: "Gathering information from multiple sources...",
-///     toolCalls: [
-///         ToolCall(...),
-///         ToolCall(...),
-///         ToolCall(...)
-///     ]
-/// )
-/// ```
-///
-/// ## Tool Call Flow
-///
-/// When an assistant message includes tool calls:
-/// 1. Assistant creates message with toolCalls array
-/// 2. Tool system executes each tool call
-/// 3. Results returned in ``ToolMessage`` instances with matching toolCallId
-/// 4. Assistant processes results and continues conversation
-///
-/// - SeeAlso: ``Message``, ``ToolCall``, ``ToolMessage``
 public struct AssistantMessage: Message, Sendable, Hashable {
     /// Unique identifier for this message.
     public let id: String
