@@ -7,7 +7,6 @@ import Foundation
 /// This event is emitted when an agent run fails due to an unrecoverable error.
 /// It provides error details and optional error codes for debugging and handling.
 ///
-/// - SeeAlso: `RunStartedEvent`, `RunFinishedEvent`
 public struct RunErrorEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

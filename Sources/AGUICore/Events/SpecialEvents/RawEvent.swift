@@ -13,7 +13,6 @@ import Foundation
 /// - Implementing custom event handling logic
 /// - Preserving raw event data for debugging or logging purposes
 ///
-/// - SeeAlso: `CustomEvent`, `UnknownEvent`
 public struct RawEvent: AGUIEvent, Equatable, Sendable {
 
     // MARK: - Properties

@@ -9,15 +9,6 @@ import Foundation
 /// are useful for monitoring tool performance, identifying problematic tools,
 /// and debugging execution issues.
 ///
-/// ## Usage
-///
-/// ```swift
-/// // Get stats from a registry
-/// let stats = await registry.stats(for: "my_tool")
-/// print("Success rate: \(stats.successRate * 100)%")
-/// print("Average time: \(stats.averageExecutionTime)")
-/// ```
-///
 /// ## Metrics Tracked
 ///
 /// - **Execution counts**: Total, successful, and failed executions
@@ -30,7 +21,6 @@ import Foundation
 /// - Sendable for safe concurrent access
 /// - Success rate computed property for convenience
 ///
-/// - SeeAlso: ``ToolRegistry``, ``DefaultToolRegistry``
 public struct ToolExecutionStats: Sendable, Equatable, Hashable {
     /// Total number of executions (successes + failures).
     public let executionCount: Int
@@ -74,11 +64,6 @@ public struct ToolExecutionStats: Sendable, Equatable, Hashable {
     /// Calculated as `successCount / executionCount`. Returns 0.0 if there
     /// have been no executions.
     ///
-    /// ## Examples
-    ///
-    /// - 10 successes out of 10 executions = 1.0 (100%)
-    /// - 7 successes out of 10 executions = 0.7 (70%)
-    /// - 0 executions = 0.0
     public var successRate: Double {
         guard executionCount > 0 else { return 0.0 }
         return Double(successCount) / Double(executionCount)

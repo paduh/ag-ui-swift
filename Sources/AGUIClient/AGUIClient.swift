@@ -11,16 +11,6 @@ import Foundation
 /// - Event stream management
 /// - State synchronization
 ///
-/// ## Usage
-///
-/// ```swift
-/// import AGUIClient
-///
-/// let agent = HttpAgent(baseURL: agentURL)
-/// for try await event in try await agent.run(input) {
-///     // Process events
-/// }
-/// ```
 public struct AGUIClient {
     /// The version of the AGUIClient module.
     public static let version = "0.1.0"

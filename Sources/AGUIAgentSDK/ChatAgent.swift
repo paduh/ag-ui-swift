@@ -10,26 +10,6 @@ import Foundation
 /// agent implementation and makes both the view models and any custom agent
 /// implementations fully testable through mocks.
 ///
-/// ## Built-in conformances
-///
-/// ``StatefulAgUiAgent`` conforms to `ChatAgent` out of the box via a retroactive
-/// extension in this file.
-///
-/// ## Custom agents
-///
-/// ```swift
-/// struct MockChatAgent: ChatAgent {
-///     func chat(message: String, threadId: String) async throws
-///         -> AsyncThrowingStream<any AGUIEvent, Error>
-///     {
-///         // Return test events
-///     }
-///
-///     func clearHistory(threadId: String?) async {}
-/// }
-/// ```
-///
-/// - SeeAlso: ``AgentViewModel``, ``AgentViewModelCompat``, ``StatefulAgUiAgent``
 public protocol ChatAgent: Sendable {
 
     /// Sends a user message and returns the resulting AG-UI event stream.

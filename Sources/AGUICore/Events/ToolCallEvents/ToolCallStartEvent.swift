@@ -8,7 +8,6 @@ import Foundation
 /// tool call identifier and name that will be used to associate subsequent
 /// argument chunks, the result, and the end event with this tool call.
 ///
-/// - SeeAlso: `ToolCallArgsEvent`, `ToolCallEndEvent`, `ToolCallResultEvent`, `ToolCallChunkEvent`
 public struct ToolCallStartEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

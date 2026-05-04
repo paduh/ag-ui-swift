@@ -8,19 +8,6 @@ import XCTest
 /// Conforming test classes automatically gain access to standardized
 /// decoder factory methods, ensuring consistency across all event tests.
 ///
-/// ## Usage
-///
-/// Add this protocol to your test class:
-/// ```swift
-/// final class MyEventTests: XCTestCase, AGUIEventDecoderTestHelpers {
-///     func test_decodeEvent() {
-///         let decoder = makeStrictDecoder()
-///         let data = jsonData("""{"type": "MY_EVENT"}""")
-///         // ...
-///     }
-/// }
-/// ```
-///
 /// ## Benefits
 ///
 /// - **Single Source of Truth**: All decoder configuration in one place

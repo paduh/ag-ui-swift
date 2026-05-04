@@ -9,7 +9,6 @@ import Foundation
 /// non-empty string. These events are associated with a tool call via the `toolCallId`
 /// field, which matches the ID from the corresponding `ToolCallStartEvent`.
 ///
-/// - SeeAlso: `ToolCallStartEvent`, `ToolCallEndEvent`, `ToolCallResultEvent`, `ToolCallChunkEvent`
 public struct ToolCallArgsEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

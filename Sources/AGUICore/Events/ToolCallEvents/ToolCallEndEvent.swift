@@ -8,7 +8,6 @@ import Foundation
 /// of the tool call process and is associated with the tool call via the `toolCallId`
 /// field, which matches the ID from the corresponding `ToolCallStartEvent`.
 ///
-/// - SeeAlso: `ToolCallStartEvent`, `ToolCallArgsEvent`, `ToolCallResultEvent`, `ToolCallChunkEvent`
 public struct ToolCallEndEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

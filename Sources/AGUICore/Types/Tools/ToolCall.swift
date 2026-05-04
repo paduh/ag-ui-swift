@@ -15,50 +15,6 @@ import Foundation
 /// 3. **Response**: Results are returned in a ``ToolMessage`` with matching toolCallId
 /// 4. **Correlation**: Agent matches response to request using the ID
 ///
-/// ## Type Field
-///
-/// The `type` field is always `"function"` and is included in JSON serialization
-/// to maintain protocol compatibility and avoid conflicts with event discriminators.
-///
-/// ## Example
-///
-/// ```swift
-/// // Create a tool call
-/// let weatherCall = ToolCall(
-///     id: "call_weather_123",
-///     function: FunctionCall(
-///         name: "get_current_weather",
-///         arguments: """
-///         {
-///             "location": "San Francisco",
-///             "unit": "celsius"
-///         }
-///         """
-///     )
-/// )
-///
-/// // Later, receive the response
-/// let response = ToolMessage(
-///     id: "msg_1",
-///     content: "Temperature: 18°C, Conditions: Partly cloudy",
-///     toolCallId: weatherCall.id  // Links back to the call
-/// )
-/// ```
-///
-/// ## Multiple Tool Calls
-///
-/// Agents can request multiple tool executions simultaneously by creating
-/// an array of ToolCalls, each with a unique ID:
-///
-/// ```swift
-/// let toolCalls: [ToolCall] = [
-///     ToolCall(id: "call_1", function: FunctionCall(...)),
-///     ToolCall(id: "call_2", function: FunctionCall(...)),
-///     ToolCall(id: "call_3", function: FunctionCall(...))
-/// ]
-/// ```
-///
-/// - SeeAlso: ``FunctionCall``, ``ToolMessage``, ``Tool``
 public struct ToolCall: Sendable, Codable, Hashable {
     /// Unique identifier for this tool call.
     ///

@@ -9,7 +9,6 @@ import Foundation
 /// `TextMessageChunkEvent` can automatically start and end text message sequences
 /// when no text message is currently active.
 ///
-/// - SeeAlso: `TextMessageStartEvent`, `TextMessageContentEvent`, `TextMessageEndEvent`
 public struct TextMessageChunkEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

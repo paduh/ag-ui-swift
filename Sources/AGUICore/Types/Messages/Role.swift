@@ -10,7 +10,6 @@ import Foundation
 /// The role field serves as the discriminator for polymorphic message types,
 /// allowing the protocol to deserialize messages into their specific concrete types.
 ///
-/// - SeeAlso: ``Message``
 public enum Role: String, Sendable, Codable, CaseIterable, Hashable {
     /// Developer-level instructions and configuration messages.
     ///

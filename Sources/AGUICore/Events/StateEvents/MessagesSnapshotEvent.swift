@@ -8,7 +8,6 @@ import Foundation
 /// history at a point in time. The messages are stored as raw JSON data to preserve
 /// their exact structure and allow for flexible message schemas.
 ///
-/// - SeeAlso: `StateSnapshotEvent`, `StateDeltaEvent`
 public struct MessagesSnapshotEvent: AGUIEvent, Equatable, Sendable {
 
     // MARK: - Properties

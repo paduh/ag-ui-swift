@@ -15,7 +15,7 @@ import Foundation
 /// - **Reasoning**: `reasoningStart`, `reasoningMessageStart`, `reasoningMessageContent`, `reasoningMessageEnd`, `reasoningMessageChunk`, `reasoningEnd`, `reasoningEncryptedValue`
 /// - **Activity**: `activitySnapshot`, `activityDelta`
 /// - **Special**: `raw`, `custom`
-
+///
 public enum EventType: String, Codable, CaseIterable, Sendable {
     // MARK: - Lifecycle Events (5)
 

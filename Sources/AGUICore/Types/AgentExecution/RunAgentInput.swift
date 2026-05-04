@@ -22,51 +22,6 @@ import Foundation
 /// - **context**: Additional contextual information
 /// - **forwardedProps**: Custom properties to forward to the agent
 ///
-/// ## Usage Examples
-///
-/// ```swift
-/// // Simple agent execution
-/// let input = RunAgentInput(
-///     threadId: "thread-123",
-///     runId: "run-456"
-/// )
-///
-/// // With conversation history
-/// let messages: [any Message] = [
-///     DeveloperMessage(id: "dev-1", content: "You are helpful"),
-///     UserMessage(id: "user-1", content: "Hello!")
-/// ]
-///
-/// let input = RunAgentInput(
-///     threadId: "thread-123",
-///     runId: "run-456",
-///     messages: messages
-/// )
-///
-/// // With tools and context
-/// let tools = [
-///     Tool(name: "get_weather", description: "Get weather", parameters: ...)
-/// ]
-///
-/// let contexts = [
-///     Context(description: "user_location", value: "San Francisco")
-/// ]
-///
-/// let input = RunAgentInput(
-///     threadId: "thread-123",
-///     runId: "run-456",
-///     messages: messages,
-///     tools: tools,
-///     context: contexts
-/// )
-/// ```
-///
-/// ## HTTP POST Request
-///
-/// This type is typically serialized to JSON and sent as the body of
-/// a POST request to an agent's endpoint.
-///
-/// - SeeAlso: ``Message``, ``Tool``, ``Context``
 public struct RunAgentInput: Sendable, Codable, Hashable {
     /// The conversation thread identifier.
     public let threadId: String

@@ -19,23 +19,6 @@ import Foundation
 /// by the agent's reasoning process, delivered via ``ReasoningEncryptedValueEvent``.
 /// It can be used in verified reasoning workflows to authenticate the reasoning output.
 ///
-/// ## Example
-///
-/// ```swift
-/// let reasoning = ReasoningMessage(
-///     id: "reasoning-1",
-///     content: "Let me think step by step about this problem..."
-/// )
-///
-/// // With an encrypted value for verified reasoning
-/// let verifiedReasoning = ReasoningMessage(
-///     id: "reasoning-2",
-///     content: "First, I need to analyse the inputs...",
-///     encryptedValue: "<encrypted-token>"
-/// )
-/// ```
-///
-/// - SeeAlso: ``Message``, ``Role``, ``ReasoningStartEvent``, ``ReasoningEncryptedValueEvent``
 public struct ReasoningMessage: Message, Sendable, Hashable {
     /// The unique identifier for this message.
     public let id: String

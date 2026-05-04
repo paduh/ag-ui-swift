@@ -5,8 +5,7 @@ import Foundation
 /// Event indicating the start of a streaming reasoning message.
 ///
 /// This event marks the beginning of a reasoning message within a reasoning phase.
-/// The `role` field will always be `"reasoning"`. It is the replacement for the
-/// deprecated ``ThinkingTextMessageStartEvent``.
+/// The `role` field will always be `"reasoning"`. 
 ///
 /// - SeeAlso: ``ReasoningMessageContentEvent``, ``ReasoningMessageEndEvent``
 public struct ReasoningMessageStartEvent: AGUIEvent, Equatable, Hashable, Sendable {

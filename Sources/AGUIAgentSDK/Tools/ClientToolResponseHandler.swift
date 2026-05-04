@@ -10,25 +10,6 @@ import Foundation
 /// Sends tool results back to the agent by initiating a new run containing
 /// only the tool result message. This mirrors the Kotlin `ClientToolResponseHandler`.
 ///
-/// ## How it works
-///
-/// When a tool call completes, the result must be delivered back to the agent
-/// so it can continue the conversation. `ClientToolResponseHandler` does this
-/// by constructing a minimal `RunAgentInput` containing the `ToolMessage` and
-/// executing a new run through the same `HttpAgent`. The resulting events are
-/// consumed and discarded — callers receive the results through the ongoing
-/// conversation stream, not here.
-///
-/// ## Example
-///
-/// ```swift
-/// let httpAgent = HttpAgent(baseURL: agentURL)
-/// let handler = ClientToolResponseHandler(httpAgent: httpAgent)
-/// let manager = ToolExecutionManager(
-///     toolRegistry: registry,
-///     responseHandler: handler
-/// )
-/// ```
 public final class ClientToolResponseHandler: ToolResponseHandler, Sendable {
 
     private let httpAgent: HttpAgent

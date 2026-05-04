@@ -16,54 +16,6 @@ import Observation
 /// SwiftUI views that read `messages`, `isRunning`, or `lastError` are re-rendered only
 /// when those specific properties change.
 ///
-/// For iOS 16 / macOS 13 support use ``AgentViewModelCompat`` (`ObservableObject`).
-///
-/// ## Basic SwiftUI usage
-///
-/// ```swift
-/// @State private var vm = AgentViewModel(
-///     agent: StatefulAgUiAgent(baseURL: agentURL)
-/// )
-///
-/// var body: some View {
-///     VStack {
-///         ScrollView {
-///             ForEach(vm.messages) { message in
-///                 MessageBubble(message: message)
-///             }
-///         }
-///         HStack {
-///             TextField("Message", text: $draft)
-///             Button("Send") {
-///                 Task { await vm.send(draft) }
-///             }
-///             .disabled(vm.isRunning)
-///         }
-///         if let error = vm.lastError {
-///             Text(error.localizedDescription).foregroundColor(.red)
-///         }
-///     }
-/// }
-/// ```
-///
-/// ## Streaming text
-///
-/// As the agent streams tokens, each `TextMessageContentEvent` delta is appended
-/// to the last assistant `AgentMessage` in place — the message `id` stays the
-/// same so SwiftUI animates the existing row rather than replacing it.
-///
-/// ## Error handling
-///
-/// - `RunErrorEvent` from the agent sets `lastError` as ``AgentError/runError(message:code:)``
-/// - Transport-level failures (network, timeout) set `lastError` as whatever `Error` was thrown
-/// - `lastError` is cleared automatically at the start of each new `send()` call
-///
-/// ## Thread safety
-///
-/// `AgentViewModel` is isolated to `@MainActor`. Call `send()` and `clear()`
-/// from SwiftUI button handlers or `Task { }` blocks — they are already on the main actor.
-///
-/// - SeeAlso: ``AgentViewModelCompat``, ``ChatAgent``, ``AgentMessage``, ``AgentError``
 @available(iOS 17, macOS 14, tvOS 17, watchOS 10, *)
 @Observable
 @MainActor

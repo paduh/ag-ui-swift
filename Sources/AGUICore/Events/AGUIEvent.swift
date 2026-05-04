@@ -23,7 +23,6 @@ import Foundation
 /// Uses polymorphic serialization where the "type" field determines which
 /// specific event type to deserialize to.
 ///
-/// - SeeAlso: `EventType`
 public protocol AGUIEvent: Sendable {
     /// The type of this event.
     ///

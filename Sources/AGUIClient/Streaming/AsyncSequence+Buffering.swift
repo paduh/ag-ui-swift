@@ -15,26 +15,6 @@ extension AsyncSequence where Self: Sendable, Element: Sendable {
     ///   - strategy: Strategy for handling overflow
     /// - Returns: Buffered async sequence
     ///
-    /// ## Example
-    ///
-    /// ```swift
-    /// let buffered = eventStream.buffered(limit: 100, strategy: .dropOldest)
-    ///
-    /// for try await event in buffered {
-    ///     // Buffer ensures max 100 events in memory
-    ///     await slowProcessing(event)
-    /// }
-    /// ```
-    ///
-    /// ## Memory Safety
-    ///
-    /// The buffer guarantees bounded memory usage: `limit * sizeof(Element)`.
-    ///
-    /// ## Performance
-    ///
-    /// - `.dropOldest`: O(1) append, O(n) drop (shifts elements)
-    /// - `.dropNewest`: O(1) append and drop
-    /// - `.suspend`: Natural backpressure (no buffer overhead)
     public func buffered(
         limit: Int,
         strategy: BufferingStrategy

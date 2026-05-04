@@ -21,68 +21,6 @@ import Foundation
 /// The `content` field stores flexible JSON data as a `Data` object,
 /// allowing each activity type to define its own content structure.
 ///
-/// ## Usage Examples
-///
-/// ```swift
-/// // Progress indicator
-/// let progressContent = Data("""
-/// {
-///     "percent": 75,
-///     "message": "Processing files...",
-///     "current": 15,
-///     "total": 20
-/// }
-/// """.utf8)
-///
-/// let progress = ActivityMessage(
-///     id: "progress-1",
-///     activityType: "progress",
-///     content: progressContent
-/// )
-///
-/// // Chart visualization
-/// let chartContent = Data("""
-/// {
-///     "chartType": "bar",
-///     "data": {
-///         "labels": ["Q1", "Q2", "Q3", "Q4"],
-///         "datasets": [
-///             {"label": "Sales", "values": [100, 150, 120, 180]}
-///         ]
-///     }
-/// }
-/// """.utf8)
-///
-/// let chart = ActivityMessage(
-///     id: "viz-1",
-///     activityType: "chart",
-///     content: chartContent
-/// )
-///
-/// // A2UI form surface
-/// let formContent = Data("""
-/// {
-///     "surfaceType": "form",
-///     "fields": [
-///         {"name": "email", "type": "text"},
-///         {"name": "submit", "type": "button"}
-///     ]
-/// }
-/// """.utf8)
-///
-/// let form = ActivityMessage(
-///     id: "surface-1",
-///     activityType: "a2ui-form",
-///     content: formContent
-/// )
-/// ```
-///
-/// ## Message Protocol
-///
-/// ActivityMessage conforms to the Message protocol. `name` and `encryptedValue`
-/// are always `nil` since activities use structured JSON `content` instead.
-///
-/// - SeeAlso: ``Message``, ``Role``
 public struct ActivityMessage: Message, Sendable, Hashable {
     /// The unique identifier for this message.
     public let id: String

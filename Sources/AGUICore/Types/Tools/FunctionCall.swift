@@ -17,43 +17,6 @@ import Foundation
 /// - Supports dynamic function signatures
 /// - Maintains compatibility with various serialization formats
 ///
-/// ## Example
-///
-/// ```swift
-/// // Simple function call with basic arguments
-/// let weatherCall = FunctionCall(
-///     name: "get_weather",
-///     arguments: """
-///     {
-///         "location": "San Francisco",
-///         "units": "celsius"
-///     }
-///     """
-/// )
-///
-/// // Function with no arguments
-/// let pingCall = FunctionCall(
-///     name: "ping",
-///     arguments: "{}"
-/// )
-///
-/// // Parsing arguments at execution time
-/// struct WeatherArgs: Codable {
-///     let location: String
-///     let units: String
-/// }
-///
-/// let argsData = Data(weatherCall.arguments.utf8)
-/// let parsedArgs = try JSONDecoder().decode(WeatherArgs.self, from: argsData)
-/// ```
-///
-/// ## Relationship with ToolCall
-///
-/// `FunctionCall` is typically embedded within a ``ToolCall``, which adds:
-/// - A unique identifier for tracking the call
-/// - The function type discriminator
-///
-/// - SeeAlso: ``ToolCall``, ``Tool``
 public struct FunctionCall: Sendable, Codable, Hashable {
     /// The name of the function to invoke.
     ///

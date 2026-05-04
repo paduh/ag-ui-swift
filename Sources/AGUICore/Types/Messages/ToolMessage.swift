@@ -18,42 +18,6 @@ import Foundation
 /// - Delivering API responses to the agent
 /// - Communicating database query results
 ///
-/// ## Example
-///
-/// ```swift
-/// // Successful tool execution
-/// let successMessage = ToolMessage(
-///     id: "tool-msg-1",
-///     content: "Successfully saved 3 files to /documents",
-///     toolCallId: "call-save-123",
-///     name: "save_files"
-/// )
-///
-/// // Failed tool execution
-/// let errorMessage = ToolMessage(
-///     id: "tool-msg-2",
-///     content: "Operation failed",
-///     toolCallId: "call-delete-456",
-///     name: "delete_file",
-///     error: "Permission denied: Cannot delete system file"
-/// )
-/// ```
-///
-/// ## Tool Call Linkage
-///
-/// The ``toolCallId`` property is critical for maintaining the request-response flow:
-/// 1. Assistant sends a tool call with ID "call-123"
-/// 2. Tool executes and returns a ToolMessage with toolCallId = "call-123"
-/// 3. Agent correlates the result with the original request
-///
-/// ## Error Handling
-///
-/// When tool execution fails, use the ``error`` property to communicate the failure:
-/// - Set ``content`` to a user-friendly error description
-/// - Set ``error`` to a technical error message for debugging
-/// - The agent can then decide how to handle or report the error
-///
-/// - SeeAlso: ``Message``, ``AssistantMessage``
 public struct ToolMessage: Message, Sendable, Hashable {
     /// Unique identifier for this message.
     public let id: String

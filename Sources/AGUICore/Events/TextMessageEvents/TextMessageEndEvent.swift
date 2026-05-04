@@ -9,7 +9,6 @@ import Foundation
 /// the message via the `messageId` field, which matches the ID from the
 /// corresponding `TextMessageStartEvent`.
 ///
-/// - SeeAlso: `TextMessageStartEvent`, `TextMessageContentEvent`, `TextMessageChunkEvent`
 public struct TextMessageEndEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

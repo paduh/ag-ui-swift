@@ -7,7 +7,6 @@ import Foundation
 /// This event is emitted when an agent has finished processing a run request
 /// and has generated all output. It signals the end of the execution lifecycle.
 ///
-/// - SeeAlso: `RunStartedEvent`, `RunErroredEvent`
 public struct RunFinishedEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

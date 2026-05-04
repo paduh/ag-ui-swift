@@ -8,25 +8,6 @@ import Foundation
 /// and testability. Implementations can use URLSession, mock responses,
 /// or custom networking stacks.
 ///
-/// ## Example Implementation
-///
-/// ```swift
-/// actor URLSessionHTTPClient: HTTPClient {
-///     private let session: URLSession
-///
-///     init(session: URLSession) {
-///         self.session = session
-///     }
-///
-///     func execute(_ request: URLRequest) async throws -> HTTPResponse {
-///         let (bytes, urlResponse) = try await session.bytes(for: request)
-///         guard let httpResponse = urlResponse as? HTTPURLResponse else {
-///             throw ClientError.invalidResponse
-///         }
-///         return HTTPResponse(bytes: bytes, httpResponse: httpResponse)
-///     }
-/// }
-/// ```
 public protocol HTTPClient: Sendable {
     /// Executes an HTTP request and returns the response.
     ///

@@ -9,22 +9,6 @@ import Foundation
 /// This type supports both successful outcomes with data and failed outcomes with
 /// error information.
 ///
-/// ## Usage
-///
-/// ```swift
-/// // Successful execution with data
-/// let jsonData = Data(#"{"temperature": 72, "conditions": "sunny"}"#.utf8)
-/// let result = ToolExecutionResult.success(
-///     result: jsonData,
-///     message: "Weather retrieved successfully"
-/// )
-///
-/// // Failed execution
-/// let error = ToolExecutionResult.failure(
-///     message: "Failed to connect to weather service"
-/// )
-/// ```
-///
 /// ## Design Notes
 ///
 /// - Result data is stored as `Data` (JSON) to maintain flexibility

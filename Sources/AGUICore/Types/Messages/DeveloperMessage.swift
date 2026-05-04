@@ -9,40 +9,6 @@ import Foundation
 /// typically contain meta-instructions about how the agent should behave or
 /// technical configuration details.
 ///
-/// ## Use Cases
-///
-/// Developer messages are used for:
-/// - System configuration and initialization
-/// - Meta-instructions about agent behavior
-/// - Technical constraints and requirements
-/// - Administrative control messages
-/// - Debug and logging configuration
-///
-/// ## Example
-///
-/// ```swift
-/// let configMessage = DeveloperMessage(
-///     id: "dev-config-1",
-///     content: """
-///     System configuration:
-///     - Enable debug logging
-///     - Set max response length to 2000 tokens
-///     - Use conservative safety settings
-///     """,
-///     name: "SystemConfigurator"
-/// )
-/// ```
-///
-/// ## Differences from SystemMessage
-///
-/// While both developer and system messages guide agent behavior:
-/// - **DeveloperMessage**: System-level technical configuration and meta-instructions
-/// - **SystemMessage**: High-level behavioral guidelines and personality instructions
-///
-/// Developer messages typically contain more technical, configuration-oriented
-/// content, while system messages focus on behavioral patterns and response style.
-///
-/// - SeeAlso: ``Message``, ``SystemMessage``
 public struct DeveloperMessage: Message, Sendable, Hashable {
     /// Unique identifier for this message.
     public let id: String

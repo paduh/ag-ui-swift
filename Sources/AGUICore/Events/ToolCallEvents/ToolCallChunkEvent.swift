@@ -9,7 +9,6 @@ import Foundation
 /// `ToolCallChunkEvent` can automatically start and end tool call sequences
 /// when no tool call is currently active.
 ///
-/// - SeeAlso: `ToolCallStartEvent`, `ToolCallArgsEvent`, `ToolCallEndEvent`, `ToolCallResultEvent`
 public struct ToolCallChunkEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

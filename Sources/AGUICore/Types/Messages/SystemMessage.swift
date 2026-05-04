@@ -18,41 +18,6 @@ import Foundation
 /// - Establishing response format preferences
 /// - Configuring safety and ethical boundaries
 ///
-/// ## Example
-///
-/// ```swift
-/// let systemPrompt = SystemMessage(
-///     id: "sys-1",
-///     content: """
-///     You are a professional coding assistant with expertise in Swift.
-///     Always:
-///     - Explain your reasoning
-///     - Write clean, well-documented code
-///     - Follow Swift best practices
-///     - Be concise but thorough
-///     """,
-///     name: "SwiftExpert"
-/// )
-/// ```
-///
-/// ## Optional Content
-///
-/// Unlike ``DeveloperMessage``, system messages allow nil content, which can be
-/// useful for:
-/// - Placeholder system messages to be filled later
-/// - System messages that rely only on name for identification
-/// - Resetting or clearing system context
-///
-/// ## Differences from DeveloperMessage
-///
-/// While both guide agent behavior:
-/// - **SystemMessage**: High-level behavioral guidelines, personality, and response patterns
-/// - **DeveloperMessage**: System-level technical configuration and meta-instructions
-///
-/// System messages focus on how the agent should communicate and behave, while
-/// developer messages focus on technical constraints and system configuration.
-///
-/// - SeeAlso: ``Message``, ``DeveloperMessage``
 public struct SystemMessage: Message, Sendable, Hashable {
     /// Unique identifier for this message.
     public let id: String

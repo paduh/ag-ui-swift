@@ -313,6 +313,17 @@ public actor ToolErrorHandler {
         await circuitBreaker.recordSuccess()
     }
 
+    /// Returns `true` if the circuit allows the next execution attempt.
+    ///
+    /// Call this **before** attempting tool execution to implement fast-fail
+    /// semantics. When the circuit is open, returns `false` immediately without
+    /// touching the underlying executor. After the recovery timeout elapses,
+    /// `allowRequest()` transitions the circuit to ``CircuitBreakerState/halfOpen``
+    /// and returns `true`, allowing one probe execution through.
+    public func shouldAllowExecution() async -> Bool {
+        await circuitBreaker.allowRequest()
+    }
+
     /// Returns the current circuit breaker state.
     public func circuitBreakerState() async -> CircuitBreakerState {
         await circuitBreaker.currentState()
@@ -348,6 +359,8 @@ public actor ToolErrorHandler {
                 return config.retryOnNotFound
             case .timeout, .executionFailed:
                 return true
+            case .circuitBreakerOpen:
+                return false
             }
         }
 

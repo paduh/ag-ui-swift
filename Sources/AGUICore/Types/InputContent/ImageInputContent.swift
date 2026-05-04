@@ -8,7 +8,6 @@ import Foundation
 /// base64-encoded bytes. The optional `detail` field controls how agents
 /// with vision capabilities process the image (e.g., `"high"`, `"low"`, `"auto"`).
 ///
-/// - SeeAlso: ``InputContent``, ``UserMessage``
 public struct ImageInputContent: InputContent, Hashable, Sendable {
 
     /// The content type discriminator (always `"image"`).

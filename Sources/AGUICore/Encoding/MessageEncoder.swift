@@ -8,50 +8,6 @@ import Foundation
 /// the message's role. It uses a registry-based architecture matching the pattern
 /// used by `MessageDecoder`.
 ///
-/// ## Basic Usage
-///
-/// ```swift
-/// // Create an encoder with default registry
-/// let encoder = MessageEncoder()
-///
-/// // Encode a message to JSON data
-/// let message = UserMessage(id: "msg-1", content: "Hello!")
-/// let jsonData = try encoder.encode(message)
-///
-/// // Convert to string for viewing
-/// let jsonString = String(data: jsonData, encoding: .utf8)
-/// ```
-///
-/// ## Custom Registries
-///
-/// You can provide a custom registry to control how message types are encoded:
-///
-/// ```swift
-/// let customRegistry: [Role: MessageEncoder.EncodeHandler] = [
-///     .user: { message, encoder in
-///         let userMessage = message as! UserMessage
-///         // Custom encoding logic
-///         return customEncoding(userMessage)
-///     }
-/// ]
-///
-/// let encoder = MessageEncoder(registry: customRegistry)
-/// ```
-///
-/// ## Error Handling
-///
-/// The encoder throws `MessageEncodingError` for various failure scenarios:
-///
-/// - `.unsupportedRole(Role)`: The message role has no registered encoder
-/// - `.invalidMessageType(Role, String)`: Message type doesn't match its role
-/// - `.encodingFailed(String)`: Field-level encoding errors
-///
-/// ## Thread Safety
-///
-/// `MessageEncoder` is thread-safe and can be used concurrently. The encoder itself
-/// is immutable after initialization.
-///
-/// - SeeAlso: `Message`, `Role`, `MessageDecoder`
 public struct MessageEncoder: Sendable {
 
     /// Handler function type for encoding a specific message type.

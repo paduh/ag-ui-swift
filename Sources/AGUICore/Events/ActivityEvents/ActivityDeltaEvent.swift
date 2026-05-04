@@ -8,8 +8,6 @@ import Foundation
 /// RFC 6902 JSON Patch format. It allows efficient updates to structured
 /// activity content without sending the full content each time.
 ///
-/// - SeeAlso: `ActivitySnapshotEvent`, `StateDeltaEvent`
-/// - SeeAlso: [RFC 6902 - JSON Patch](https://tools.ietf.org/html/rfc6902)
 public struct ActivityDeltaEvent: AGUIEvent, Equatable, Sendable {
 
     // MARK: - Properties

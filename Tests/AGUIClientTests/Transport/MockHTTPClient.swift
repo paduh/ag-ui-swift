@@ -234,27 +234,6 @@ extension Dictionary where Key == UUID {
 /// This protocol intercepts URLSession requests and returns mock data from a
 /// thread-safe registry, enabling isolated testing without network calls.
 ///
-/// ## Usage
-///
-/// Don't instantiate this directly. Use `URLSession.makeMockSession(registry:)`
-/// to create a properly configured test session.
-///
-/// ## Example
-///
-/// ```swift
-/// let registry = MockURLProtocolRegistry()
-/// await registry.register(
-///     url: URL(string: "https://api.example.com/data")!,
-///     data: Data("response".utf8),
-///     statusCode: 200
-/// )
-///
-/// let session = URLSession.makeMockSession(registry: registry)
-/// let client = URLSessionHTTPClient(session: session)
-///
-/// // Requests will use mocked responses from registry
-/// let (data, _) = try await session.data(from: URL(string: "https://api.example.com/data")!)
-/// ```
 final class MockURLProtocol: URLProtocol {
     /// Header key for passing the registry ID
     static let registryIDHeader = "X-MockURLProtocol-Registry-ID"

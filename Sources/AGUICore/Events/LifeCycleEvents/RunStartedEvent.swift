@@ -7,7 +7,6 @@ import Foundation
 /// This event is emitted when an agent begins processing a new run request.
 /// It provides the thread and run identifiers that will be used throughout
 /// the execution lifecycle.
-/// - SeeAlso: `RunFinishedEvent`, `RunErrorEvent`
 public struct RunStartedEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties

@@ -7,29 +7,6 @@ import Foundation
 /// Server-Sent Events (SSE) is a standard for server-to-client streaming
 /// over HTTP. Each event can contain data, an ID for reconnection, and an
 /// event type.
-///
-/// ## SSE Format
-///
-/// ```
-/// event: notification
-/// id: 123
-/// data: {"message":"hello"}
-///
-/// ```
-///
-/// ## Example
-///
-/// ```swift
-/// let event = SseEvent(
-///     data: "{\"type\":\"MESSAGE\"}",
-///     id: "123",
-///     event: "message"
-/// )
-/// ```
-///
-/// ## Reference
-///
-/// SSE specification: https://html.spec.whatwg.org/multipage/server-sent-events.html
 public struct SseEvent: Sendable, Equatable {
     /// The event data payload.
     ///

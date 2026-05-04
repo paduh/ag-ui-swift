@@ -28,28 +28,6 @@ import Foundation
 /// - `"video"`: Deserializes to ``VideoInputContent``
 /// - `"document"`: Deserializes to ``DocumentInputContent``
 ///
-/// ## Usage in UserMessage
-///
-/// User messages can contain:
-/// 1. **Simple text**: Single string content field
-/// 2. **Multimodal**: Array of InputContent mixing text and binary data
-///
-/// ```swift
-/// // Multimodal message with text and image
-/// let contents: [any InputContent] = [
-///     TextInputContent(text: "What's in this image?"),
-///     BinaryInputContent(
-///         mimeType: "image/png",
-///         url: "https://example.com/photo.png"
-///     )
-/// ]
-/// ```
-///
-/// ## Type Discrimination
-///
-/// The `type` property identifies the concrete content type during deserialization,
-/// enabling the protocol to route JSON to the appropriate Swift type via DTOs.
-///
 /// ## Serialization
 ///
 /// InputContent types use the DTO pattern for serialization:

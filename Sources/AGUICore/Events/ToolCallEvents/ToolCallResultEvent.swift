@@ -8,7 +8,6 @@ import Foundation
 /// It provides the tool call result content and associates it with both the
 /// tool call (via `toolCallId`) and the conversation message (via `messageId`).
 ///
-/// - SeeAlso: `ToolCallStartEvent`, `ToolCallArgsEvent`, `ToolCallEndEvent`, `ToolCallChunkEvent`
 public struct ToolCallResultEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties
