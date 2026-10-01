@@ -153,14 +153,17 @@ final class RunFinishedEventTests: XCTestCase,
 
     // MARK: - Feature: Decode outcome field
 
-    func test_decodeRunFinished_withOutcomeCompleted_populatesOutcome() throws {
+    // Regression: "success" is the AG-UI 1.0 wire value for a normal completion.
+    // Previously the SDK used "COMPLETED" which never matched, causing every outcome
+    // to fall back to .completed regardless of what the server sent.
+    func test_decodeRunFinished_withOutcomeSuccess_populatesCompleted() throws {
         // Given
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
           "threadId": "\(EventTestData.threadId)",
           "runId": "\(EventTestData.runId)",
-          "outcome": "COMPLETED"
+          "outcome": "success"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -173,14 +176,16 @@ final class RunFinishedEventTests: XCTestCase,
         XCTAssertEqual(runFinished.outcome, .completed)
     }
 
-    func test_decodeRunFinished_withOutcomeCancelled_populatesOutcome() throws {
+    // Regression: "cancelled" is the AG-UI 1.0 wire value. Previously it was decoded
+    // as .completed because the raw value "CANCELLED" never matched "cancelled".
+    func test_decodeRunFinished_withOutcomeCancelled_populatesCancelled() throws {
         // Given
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
           "threadId": "\(EventTestData.threadId)",
           "runId": "\(EventTestData.runId)",
-          "outcome": "CANCELLED"
+          "outcome": "cancelled"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -191,26 +196,6 @@ final class RunFinishedEventTests: XCTestCase,
         // Then
         let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
         XCTAssertEqual(runFinished.outcome, .cancelled)
-    }
-
-    func test_decodeRunFinished_withOutcomeMaxIterationsReached_populatesOutcome() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_FINISHED",
-          "threadId": "\(EventTestData.threadId)",
-          "runId": "\(EventTestData.runId)",
-          "outcome": "MAX_ITERATIONS_REACHED"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
-        XCTAssertEqual(runFinished.outcome, .maxIterationsReached)
     }
 
     func test_decodeRunFinished_missingOutcome_defaultsToCompleted() throws {
@@ -233,13 +218,14 @@ final class RunFinishedEventTests: XCTestCase,
     }
 
     func test_decodeRunFinished_unknownOutcomeString_defaultsToCompleted() throws {
-        // Given – unrecognised outcome value from a future protocol version
+        // Given – "interrupt" is the AG-UI 1.0 human-in-the-loop outcome; not yet
+        // modelled by this SDK so it falls back to .completed gracefully.
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
           "threadId": "\(EventTestData.threadId)",
           "runId": "\(EventTestData.runId)",
-          "outcome": "SUSPENDED"
+          "outcome": "interrupt"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -276,14 +262,6 @@ final class RunFinishedEventTests: XCTestCase,
 
         // Then
         XCTAssertEqual(event.outcome, .cancelled)
-    }
-
-    func test_runFinishedEvent_outcomeCanBeSetToMaxIterationsReached() {
-        // Given
-        let event = RunFinishedEvent(threadId: "t", runId: "r", outcome: .maxIterationsReached)
-
-        // Then
-        XCTAssertEqual(event.outcome, .maxIterationsReached)
     }
 
     func test_runFinishedEvent_equatable_sameFields_areEqual() {

@@ -3,16 +3,22 @@
 /// Describes why an agent run finished.
 ///
 /// Carried by `RunFinishedEvent` and decoded from the `"outcome"` field in the
-/// AG-UI wire format. Unknown values from future protocol versions fall back to
-/// `.completed`.
+/// AG-UI wire format. Raw values match the AG-UI 1.0 wire contract.
+///
+/// ## Protocol version note
+///
+/// This SDK targets the AG-UI 1.0 wire format for outcome values (`"success"`,
+/// `"cancelled"`). The `"interrupt"` outcome (human-in-the-loop) is not yet
+/// modelled; streams carrying it will decode the outcome field as `.completed`
+/// via the unknown-value fallback in ``RunFinishedEventDTO``. Full 1.0 interrupt
+/// support is planned as a fast-follow.
 public enum RunFinishedOutcome: String, Equatable, Hashable, Sendable, Codable {
 
     /// The run completed normally with a result (or no result).
-    case completed = "COMPLETED"
+    /// AG-UI 1.0 wire value: `"success"`.
+    case completed = "success"
 
-    /// The run was cancelled before it produced a final result.
-    case cancelled = "CANCELLED"
-
-    /// The run stopped because it reached the configured iteration ceiling.
-    case maxIterationsReached = "MAX_ITERATIONS_REACHED"
+    /// The run was stopped before it completed, without failing.
+    /// AG-UI 1.0 wire value: `"cancelled"`.
+    case cancelled = "cancelled"
 }
