@@ -3,22 +3,36 @@
 /// Describes why an agent run finished.
 ///
 /// Carried by `RunFinishedEvent` and decoded from the `"outcome"` field in the
-/// AG-UI wire format. Raw values match the AG-UI 1.0 wire contract.
+/// AG-UI wire format. The field is a discriminated union object keyed on `"type"`:
 ///
-/// ## Protocol version note
+/// ```json
+/// { "type": "success" }
+/// { "type": "interrupt", "interrupts": [ { "id": "...", "reason": "..." } ] }
+/// ```
 ///
-/// This SDK targets the AG-UI 1.0 wire format for outcome values (`"success"`,
-/// `"cancelled"`). The `"interrupt"` outcome (human-in-the-loop) is not yet
-/// modelled; streams carrying it will decode the outcome field as `.completed`
-/// via the unknown-value fallback in ``RunFinishedEventDTO``. Full 1.0 interrupt
-/// support is planned as a fast-follow.
-public enum RunFinishedOutcome: String, Equatable, Hashable, Sendable, Codable {
+/// A `nil` outcome on `RunFinishedEvent` means the field was absent or `null` —
+/// this occurs with legacy producers (e.g. the Python SDK using `model_dump()`
+/// without `exclude_none=True`) and should be treated as a normal completion.
+///
+/// - SeeAlso: `RunFinishedEvent`, `Interrupt`
+public enum RunFinishedOutcome: Equatable, Hashable, Sendable {
 
-    /// The run completed normally with a result (or no result).
-    /// AG-UI 1.0 wire value: `"success"`.
-    case completed = "success"
+    /// The run completed normally.
+    ///
+    /// Wire: `{ "type": "success" }`
+    case success
 
     /// The run was stopped before it completed, without failing.
-    /// AG-UI 1.0 wire value: `"cancelled"`.
-    case cancelled = "cancelled"
+    ///
+    /// Wire: `{ "type": "cancelled" }`
+    case cancelled
+
+    /// The run paused and is waiting for human input.
+    ///
+    /// Wire: `{ "type": "interrupt", "interrupts": [...] }`
+    ///
+    /// The associated array contains at least one `Interrupt` describing what
+    /// the agent is waiting for. Resume the run by sending a new `RunAgentInput`
+    /// with a `resume` array referencing each interrupt's `id`.
+    case interrupt([Interrupt])
 }

@@ -12,6 +12,26 @@ extension AsyncSequence where Element == any AGUIEvent {
     /// triggering event. Callers should accumulate values from successive emissions
     /// to build the complete agent state.
     ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// var currentMessages: [any Message] = []
+    /// var currentState: State = Data("{}".utf8)
+    ///
+    /// for try await agentState in eventStream.applyEvents(input: input) {
+    ///     if let messages = agentState.messages {
+    ///         currentMessages = messages
+    ///     }
+    ///     if let state = agentState.state {
+    ///         currentState = state
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - input: The `RunAgentInput` that seeded this run, providing initial messages and state.
+    ///   - subscribers: Optional list of subscribers to notify of events (reserved for future use).
+    /// - Returns: An `AsyncThrowingStream` of `AgentState` emissions.
     public func applyEvents(
         input: RunAgentInput,
         subscribers: [any AgentSubscriber] = []
@@ -109,16 +129,7 @@ extension AsyncSequence where Element == any AGUIEvent {
                             continuation.yield(AgentState(messages: messages))
 
                         case let e as MessagesSnapshotEvent:
-                            let decoder = MessageDecoder()
-                            let rawArray = try JSONSerialization.jsonObject(
-                                with: e.messages,
-                                options: []
-                            ) as? [[String: Any]] ?? []
-                            let decodedMessages = try rawArray.compactMap { dict -> (any Message)? in
-                                let data = try JSONSerialization.data(withJSONObject: dict)
-                                return try? decoder.decode(data)
-                            }
-                            messages = decodedMessages
+                            messages = e.messages
                             continuation.yield(AgentState(messages: messages))
 
                         case let e as StateSnapshotEvent:

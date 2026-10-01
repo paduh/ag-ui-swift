@@ -8,6 +8,22 @@ import Foundation
 /// URLSession for networking. It supports full URLSession configuration
 /// and can be injected with a custom session for testing.
 ///
+/// ## Example
+///
+/// ```swift
+/// // Default usage
+/// let client = URLSessionHTTPClient.create()
+///
+/// // Custom configuration
+/// let config = URLSessionConfiguration.default
+/// config.timeoutIntervalForRequest = 30
+/// let session = URLSession(configuration: config)
+/// let client = URLSessionHTTPClient(session: session)
+///
+/// // Execute request
+/// let request = URLRequest(url: url)
+/// let response = try await client.execute(request)
+/// ```
 public actor URLSessionHTTPClient: HTTPClient {
     private let session: URLSession
 
@@ -29,6 +45,12 @@ public actor URLSessionHTTPClient: HTTPClient {
     /// ```
     public init(session: URLSession) {
         self.session = session
+    }
+
+    deinit {
+        // Release OS-level socket pool and free the session delegate.
+        // invalidateAndCancel() is synchronous and safe to call from deinit.
+        session.invalidateAndCancel()
     }
 
     /// Creates a new URLSession HTTP client with the specified configuration.
@@ -83,7 +105,7 @@ public actor URLSessionHTTPClient: HTTPClient {
         // Bridge URLSession.AsyncBytes → AsyncThrowingStream<UInt8, Error> so that
         // HTTPResponse is decoupled from URLSession and can be mocked in tests.
         let stream = AsyncThrowingStream<UInt8, Error> { continuation in
-            Task {
+            let task = Task {
                 do {
                     for try await byte in bytes {
                         continuation.yield(byte)
@@ -93,6 +115,7 @@ public actor URLSessionHTTPClient: HTTPClient {
                     continuation.finish(throwing: error)
                 }
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
 
         return HTTPResponse(bytes: stream, httpResponse: httpResponse)

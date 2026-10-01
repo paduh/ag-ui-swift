@@ -18,6 +18,28 @@ import Foundation
 /// When trimming, the manager preserves system messages while removing the
 /// oldest user/assistant message pairs to fit within the specified limit.
 ///
+/// ## Example
+///
+/// ```swift
+/// let manager = ConversationHistoryManager()
+///
+/// // Add messages to a thread
+/// await manager.append(
+///     message: SystemMessage(id: "sys1", content: "You are helpful"),
+///     to: "chat-1"
+/// )
+/// await manager.append(
+///     message: UserMessage(id: "usr1", content: "Hello"),
+///     to: "chat-1"
+/// )
+///
+/// // Get history
+/// let history = await manager.history(for: "chat-1")
+/// print(history.count) // 2
+///
+/// // Trim to size
+/// await manager.trim(threadId: "chat-1", maxLength: 10)
+/// ```
 actor ConversationHistoryManager {
     /// Storage for per-thread conversation histories.
     private var threadHistories: [String: [any Message]] = [:]
@@ -67,9 +89,9 @@ actor ConversationHistoryManager {
         // Check for system message at the beginning
         let hasSystemMessage = history.first is SystemMessage
         if hasSystemMessage && history.count > 1 {
-            // Keep system message + last maxLength-1 messages
+            // Keep system message + last maxLength messages (system excluded from count)
             let systemMessage = history.first!
-            let trimmed = Array(history.dropFirst().suffix(maxLength - 1))
+            let trimmed = Array(history.dropFirst().suffix(maxLength))
             threadHistories[threadId] = [systemMessage] + trimmed
         } else {
             // No system message, just keep last maxLength messages

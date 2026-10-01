@@ -15,7 +15,7 @@ import Foundation
 /// - **Reasoning**: `reasoningStart`, `reasoningMessageStart`, `reasoningMessageContent`, `reasoningMessageEnd`, `reasoningMessageChunk`, `reasoningEnd`, `reasoningEncryptedValue`
 /// - **Activity**: `activitySnapshot`, `activityDelta`
 /// - **Special**: `raw`, `custom`
-///
+
 public enum EventType: String, Codable, CaseIterable, Sendable {
     // MARK: - Lifecycle Events (5)
 
@@ -119,9 +119,8 @@ public enum EventType: String, Codable, CaseIterable, Sendable {
 
     /// A subagent invocation has started within this run.
     ///
-    /// All subsequent events attributed to this subagent carry the matching
-    /// `subagentRunId`. Decoded as ``UnknownEvent`` until full subagent support
-    /// is implemented (AG-UI 1.0 fast-follow).
+    /// Carried by AG-UI 1.0 streams that include subagent orchestration. Decoded as
+    /// ``UnknownEvent`` until full subagent support is implemented.
     case subagentStarted = "SUBAGENT_STARTED"
 
     /// A subagent invocation's segment of this run has ended.

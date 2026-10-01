@@ -10,6 +10,17 @@ import Foundation
 /// This struct provides all configuration options for creating a stateful agent,
 /// including HTTP settings, conversation management, and agent behavior.
 ///
+/// ## Example
+///
+/// ```swift
+/// var config = StatefulAgUiAgentConfig(baseURL: agentURL)
+/// config.systemPrompt = "You are a helpful AI assistant."
+/// config.maxHistoryLength = 50
+/// config.timeout = .seconds(60)
+/// config.headers = ["Authorization": "Bearer token"]
+///
+/// let agent = StatefulAgUiAgent(configuration: config)
+/// ```
 public struct StatefulAgUiAgentConfig: Sendable {
     /// The base URL of the AG-UI agent server.
     public var baseURL: URL
@@ -117,17 +128,12 @@ public struct StatefulAgUiAgentConfig: Sendable {
     ///
     /// - Returns: Merged header dictionary ready for `HttpAgentConfiguration`.
     public func buildHeaders() -> [String: String] {
-        var result: [String: String] = [:]
-        if let key = apiKey {
-            result[apiKeyHeader] = key
-        }
-        if let token = bearerToken {
-            result["Authorization"] = "Bearer \(token)"
-        }
-        for (k, v) in headers {
-            result[k] = v
-        }
-        return result
+        AgentHeaderBuilder.buildHeaders(
+            headers: headers,
+            bearerToken: bearerToken,
+            apiKey: apiKey,
+            apiKeyHeader: apiKeyHeader
+        )
     }
 
     /// Creates a new stateful agent configuration.

@@ -260,6 +260,24 @@ final class ToolExecutorTests: XCTestCase {
 
     // MARK: - Sendable Conformance
 
+    func test_toolExecutionError_executionFailed_isSendable() async {
+        // ToolExecutionError is Sendable. executionFailed's underlyingError must also
+        // be Sendable; otherwise passing the error across a Task boundary is a Swift 6
+        // compile error. This test verifies the associated value crosses a Task boundary.
+        struct SendableFailure: Error, Sendable { let code: Int }
+        let error = ToolExecutionError.executionFailed(
+            toolName: "my_tool",
+            underlyingError: SendableFailure(code: 42)
+        )
+        let result = await Task.detached { error }.value
+        if case .executionFailed(_, let underlying) = result,
+           let failure = underlying as? SendableFailure {
+            XCTAssertEqual(failure.code, 42)
+        } else {
+            XCTFail("Expected .executionFailed with SendableFailure")
+        }
+    }
+
     func testToolExecutorSendable() async {
         // Given: A tool executor
         let tool = Tool(
@@ -325,6 +343,38 @@ final class ToolExecutorTests: XCTestCase {
         let callCount = await executor.getExecuteCallCount()
         XCTAssertEqual(callCount, 1)
     }
+
+    // MARK: - Default nonisolated implementations (Issue 43)
+
+    func test_defaultValidate_isCallableFromNonisolatedContextOnActorConformer() {
+        // Verifies that actor conformers can call the default `validate` and
+        // `maximumExecutionTime` without `await`, as required by the `nonisolated`
+        // protocol declaration. This is a compile-time contract: without `nonisolated`
+        // on the extension defaults, Swift 6 would require `await` here (or error).
+        let executor = MinimalActorExecutor()
+        let toolCall = ToolCall(id: "x", function: FunctionCall(name: "minimal", arguments: "{}"))
+        // These must be callable synchronously from a nonisolated context.
+        let validation = executor.validate(toolCall: toolCall)
+        let timeout = executor.maximumExecutionTime()
+        XCTAssertTrue(validation.isValid)
+        XCTAssertNil(timeout)
+    }
+}
+
+// MARK: - Minimal actor conformer (no override of default implementations)
+
+/// An actor that satisfies `ToolExecutor` with only the required `execute` method.
+/// `validate` and `maximumExecutionTime` deliberately rely on extension defaults.
+/// If the extension defaults are missing `nonisolated`, this actor cannot satisfy
+/// the `nonisolated` protocol requirements in Swift 6.
+private actor MinimalActorExecutor: ToolExecutor {
+    let tool = Tool(name: "minimal", description: "Minimal", parameters: Data("{}".utf8))
+
+    func execute(context: ToolExecutionContext) async throws -> ToolExecutionResult {
+        .success()
+    }
+
+    // No override of validate or maximumExecutionTime — uses extension defaults.
 }
 
 // MARK: - Test Helper Extensions

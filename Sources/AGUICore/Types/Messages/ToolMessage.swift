@@ -18,7 +18,43 @@ import Foundation
 /// - Delivering API responses to the agent
 /// - Communicating database query results
 ///
-public struct ToolMessage: Message, Sendable, Hashable {
+/// ## Example
+///
+/// ```swift
+/// // Successful tool execution
+/// let successMessage = ToolMessage(
+///     id: "tool-msg-1",
+///     content: "Successfully saved 3 files to /documents",
+///     toolCallId: "call-save-123",
+///     name: "save_files"
+/// )
+///
+/// // Failed tool execution
+/// let errorMessage = ToolMessage(
+///     id: "tool-msg-2",
+///     content: "Operation failed",
+///     toolCallId: "call-delete-456",
+///     name: "delete_file",
+///     error: "Permission denied: Cannot delete system file"
+/// )
+/// ```
+///
+/// ## Tool Call Linkage
+///
+/// The ``toolCallId`` property is critical for maintaining the request-response flow:
+/// 1. Assistant sends a tool call with ID "call-123"
+/// 2. Tool executes and returns a ToolMessage with toolCallId = "call-123"
+/// 3. Agent correlates the result with the original request
+///
+/// ## Error Handling
+///
+/// When tool execution fails, use the ``error`` property to communicate the failure:
+/// - Set ``content`` to a user-friendly error description
+/// - Set ``error`` to a technical error message for debugging
+/// - The agent can then decide how to handle or report the error
+///
+/// - SeeAlso: ``Message``, ``AssistantMessage``
+public struct ToolMessage: Message, Sendable, Hashable, Decodable {
     /// Unique identifier for this message.
     public let id: String
 
@@ -29,10 +65,8 @@ public struct ToolMessage: Message, Sendable, Hashable {
     ///
     /// This contains the result of the tool execution, whether successful or failed.
     /// For failed executions, this typically contains a user-friendly error description.
-    ///
-    /// While the protocol allows optional content, tool messages in practice always
-    /// contain content describing the result.
-    public let content: String?
+    /// Matches the TypeScript schema `content: z.string()` — required, non-nullable.
+    public let content: String
 
     /// The ID of the tool call this message responds to.
     ///
@@ -84,5 +118,26 @@ public struct ToolMessage: Message, Sendable, Hashable {
         self.name = name
         self.error = error
         self.encryptedValue = encryptedValue
+    }
+}
+
+// MARK: - Decodable
+
+extension ToolMessage {
+    private enum CodingKeys: String, CodingKey {
+        case id, content, toolCallId, name, error, encryptedValue
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        role = .tool
+        // Default to "" when absent — matches TypeScript z.string() (required but may be
+        // missing in legacy payloads).
+        content = try container.decodeIfPresent(String.self, forKey: .content) ?? ""
+        toolCallId = try container.decode(String.self, forKey: .toolCallId)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+        encryptedValue = try container.decodeIfPresent(String.self, forKey: .encryptedValue)
     }
 }

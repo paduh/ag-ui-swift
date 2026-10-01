@@ -5,8 +5,10 @@ import Foundation
 /// Event marking the end of a reasoning phase.
 ///
 /// This event signals that the agent has completed its internal reasoning process
-/// for the message identified by `messageId`. 
+/// for the message identified by `messageId`. It is the replacement for the
+/// deprecated ``ThinkingEndEvent``.
 ///
+/// - SeeAlso: ``ReasoningStartEvent``, ``ReasoningMessageEndEvent``
 public struct ReasoningEndEvent: AGUIEvent, Equatable, Hashable, Sendable {
 
     // MARK: - Properties
