@@ -460,4 +460,70 @@ final class SseParserTests: XCTestCase {
 
         XCTAssertEqual(totalEvents, iterations)
     }
+
+    // MARK: - Regression: CRLF line endings split across chunk boundaries
+
+    // WHATWG SSE spec §9.2.6: \r, \n, and \r\n are all valid line terminators.
+    // When \r arrives at the end of one chunk and \n at the start of the next,
+    // the pair forms a single \r\n line terminator — not two separate newlines.
+    // The pre-fix implementation normalized each chunk independently, so the lone
+    // \r was stored as \n in the buffer. The subsequent \n created \n\n, which the
+    // parser incorrectly interpreted as an event separator.
+
+    func test_parse_crlfLineEndings_singleChunk_parsesCorrectly() {
+        // Baseline: CRLF line endings that arrive together in one chunk must parse.
+        var parser = SseParser()
+        let events = parser.parse("data: hello\r\n\r\n")
+
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(events[0].data, "hello")
+    }
+
+    func test_parse_crlfSplitAcrossChunks_doesNotSplitMultiLineEvent() {
+        // Regression: this stream is ONE event with data "line1\nline2".
+        //
+        //   data: line1\r\n   ← first data line (CRLF line ending)
+        //   data: line2\r\n   ← second data line (CRLF line ending)
+        //   \r\n              ← event separator
+        //
+        // Split so that the \r of the first line ending arrives in chunk 1 and
+        // its \n arrives at the start of chunk 2.
+        var parser = SseParser()
+
+        _ = parser.parse("data: line1\r")             // lone \r at end of chunk
+        let events = parser.parse("\ndata: line2\r\n\r\n") // \n completes the \r\n
+
+        XCTAssertEqual(
+            events.count, 1,
+            "Cross-chunk \\r\\n must not create a spurious event separator"
+        )
+        XCTAssertEqual(events[0].data, "line1\nline2")
+    }
+
+    func test_parse_crlfSplitAcrossChunks_threeLineEvent() {
+        // Same regression, with three data lines — every internal \r\n split.
+        var parser = SseParser()
+
+        var all: [SseEvent] = []
+        all += parser.parse("data: a\r")
+        all += parser.parse("\ndata: b\r")
+        all += parser.parse("\ndata: c\r\n\r\n")
+
+        XCTAssertEqual(all.count, 1)
+        XCTAssertEqual(all[0].data, "a\nb\nc")
+    }
+
+    func test_parse_crlfSplitAcrossChunks_twoSequentialEvents() {
+        // Two separate events whose separators don't span chunk boundaries.
+        // Verifies correct behaviour is not disturbed for the common case.
+        var parser = SseParser()
+
+        var all: [SseEvent] = []
+        all += parser.parse("data: first\r\n\r\n")
+        all += parser.parse("data: second\r\n\r\n")
+
+        XCTAssertEqual(all.count, 2)
+        XCTAssertEqual(all[0].data, "first")
+        XCTAssertEqual(all[1].data, "second")
+    }
 }

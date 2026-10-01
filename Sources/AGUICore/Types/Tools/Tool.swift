@@ -161,13 +161,18 @@ private struct AnyCodable: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
+        // Bool must be checked before Int. JSONSerialization returns __NSCFBoolean
+        // for JSON booleans. Due to NSNumber bridging, `__NSCFBoolean as? Int`
+        // succeeds (false → 0, true → 1), so Int would match first and encode
+        // the boolean as an integer — breaking JSON Schema validators that
+        // distinguish `false` from `0`.
         switch value {
+        case let boolValue as Bool:
+            try container.encode(boolValue)
         case let intValue as Int:
             try container.encode(intValue)
         case let doubleValue as Double:
             try container.encode(doubleValue)
-        case let boolValue as Bool:
-            try container.encode(boolValue)
         case let stringValue as String:
             try container.encode(stringValue)
         case let arrayValue as [Any]:
