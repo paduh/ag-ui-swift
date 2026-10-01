@@ -109,6 +109,113 @@ final class RunFinishedEventTests: XCTestCase,
         XCTAssertEqual(runFinished.runId, EventTestData.runId)
     }
 
+    // MARK: - Feature: Decode result field
+
+    // Regression: scalar result values (number, string, bool) previously raised an
+    // uncaught NSException because JSONSerialization.data(withJSONObject:) rejects
+    // non-collection top-level values and NSException bypasses try?.
+
+    func test_decodeRunFinished_withNumericResult_doesNotCrash() throws {
+        // Given: "result": 42 — the exact case reported in the PR review
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": 42
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then: must not crash
+        let event = try decoder.decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result, "Numeric result should be preserved as Data")
+    }
+
+    func test_decodeRunFinished_withStringResult_doesNotCrash() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": "ok"
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withBoolResult_doesNotCrash() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": true
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withNullResult_treatedAsAbsent() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": null
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNil(runFinished.result, "null result should be treated as absent")
+    }
+
+    func test_decodeRunFinished_withObjectResult_decodesSuccessfully() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": { "status": "done", "count": 3 }
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withArrayResult_decodesSuccessfully() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": [1, 2, 3]
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withAbsentResult_isNil() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)"
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNil(runFinished.result)
+    }
+
     // MARK: - Feature: Error handling (event-specific)
 
     func test_decodeRunFinished_missingThreadId_throwsDecodingFailed() {
