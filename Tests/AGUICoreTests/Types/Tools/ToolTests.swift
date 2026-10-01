@@ -580,16 +580,34 @@ final class ToolTests: XCTestCase {
         let tool = Tool(name: "code_tool", description: "Code tool", parameters: schema)
 
         let encoded = try JSONEncoder().encode(tool)
-        let decoded = try JSONDecoder().decode(Tool.self, from: encoded)
 
+        // Check the WIRE JSON — this is the authoritative test.
+        // __NSCFBoolean(true) as? Int returns 1 via NSNumber bridging, so
+        // asserting on the decoded value's Int cast would give a false positive.
+        let wire = String(data: encoded, encoding: .utf8) ?? ""
+        XCTAssertTrue(
+            wire.contains("\"minLength\":1") || wire.contains("\"minLength\": 1"),
+            "minLength:1 must be integer 1 on the wire, not true. Got: \(wire)"
+        )
+        XCTAssertTrue(
+            wire.contains("\"maxLength\":10") || wire.contains("\"maxLength\": 10"),
+            "maxLength:10 must be integer 10 on the wire. Got: \(wire)"
+        )
+
+        let decoded = try JSONDecoder().decode(Tool.self, from: encoded)
         let decodedSchema = try JSONSerialization.jsonObject(with: decoded.parameters) as? [String: Any]
         let properties = decodedSchema?["properties"] as? [String: Any]
         let codeSchema = properties?["code"] as? [String: Any]
 
-        let minLength = codeSchema?["minLength"]
-        let maxLength = codeSchema?["maxLength"]
-
-        XCTAssertEqual(minLength as? Int, 1, "minLength must remain an integer, not become Bool(true)")
-        XCTAssertEqual(maxLength as? Int, 10, "maxLength must remain an integer")
+        // isJSONBoolean uses CFGetTypeID — the only reliable way to distinguish
+        // __NSCFBoolean from __NSCFNumber after JSONSerialization round-trips.
+        XCTAssertFalse(
+            isJSONBoolean(codeSchema?["minLength"] as Any),
+            "minLength must be an integer NSNumber, not __NSCFBoolean"
+        )
+        XCTAssertFalse(
+            isJSONBoolean(codeSchema?["maxLength"] as Any),
+            "maxLength must be an integer NSNumber, not __NSCFBoolean"
+        )
     }
 }
