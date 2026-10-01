@@ -109,6 +109,113 @@ final class RunFinishedEventTests: XCTestCase,
         XCTAssertEqual(runFinished.runId, EventTestData.runId)
     }
 
+    // MARK: - Feature: Decode result field
+
+    // Regression: scalar result values (number, string, bool) previously raised an
+    // uncaught NSException because JSONSerialization.data(withJSONObject:) rejects
+    // non-collection top-level values and NSException bypasses try?.
+
+    func test_decodeRunFinished_withNumericResult_doesNotCrash() throws {
+        // Given: "result": 42 — the exact case reported in the PR review
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": 42
+        }
+        """)
+        let decoder = makeStrictDecoder()
+
+        // When / Then: must not crash
+        let event = try decoder.decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result, "Numeric result should be preserved as Data")
+    }
+
+    func test_decodeRunFinished_withStringResult_doesNotCrash() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": "ok"
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withBoolResult_doesNotCrash() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": true
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withNullResult_treatedAsAbsent() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": null
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNil(runFinished.result, "null result should be treated as absent")
+    }
+
+    func test_decodeRunFinished_withObjectResult_decodesSuccessfully() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": { "status": "done", "count": 3 }
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withArrayResult_decodesSuccessfully() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)",
+          "result": [1, 2, 3]
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNotNil(runFinished.result)
+    }
+
+    func test_decodeRunFinished_withAbsentResult_isNil() throws {
+        let data = jsonData("""
+        {
+          "type": "RUN_FINISHED",
+          "threadId": "\(EventTestData.threadId)",
+          "runId": "\(EventTestData.runId)"
+        }
+        """)
+        let event = try makeStrictDecoder().decode(data)
+        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
+        XCTAssertNil(runFinished.result)
+    }
+
     // MARK: - Feature: Error handling (event-specific)
 
     func test_decodeRunFinished_missingThreadId_throwsDecodingFailed() {
@@ -153,14 +260,17 @@ final class RunFinishedEventTests: XCTestCase,
 
     // MARK: - Feature: Decode outcome field
 
-    func test_decodeRunFinished_withOutcomeCompleted_populatesOutcome() throws {
+    // Regression: "success" is the AG-UI 1.0 wire value for a normal completion.
+    // Previously the SDK used "COMPLETED" which never matched, causing every outcome
+    // to fall back to .completed regardless of what the server sent.
+    func test_decodeRunFinished_withOutcomeSuccess_populatesCompleted() throws {
         // Given
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
           "threadId": "\(EventTestData.threadId)",
           "runId": "\(EventTestData.runId)",
-          "outcome": "COMPLETED"
+          "outcome": "success"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -173,14 +283,16 @@ final class RunFinishedEventTests: XCTestCase,
         XCTAssertEqual(runFinished.outcome, .completed)
     }
 
-    func test_decodeRunFinished_withOutcomeCancelled_populatesOutcome() throws {
+    // Regression: "cancelled" is the AG-UI 1.0 wire value. Previously it was decoded
+    // as .completed because the raw value "CANCELLED" never matched "cancelled".
+    func test_decodeRunFinished_withOutcomeCancelled_populatesCancelled() throws {
         // Given
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
           "threadId": "\(EventTestData.threadId)",
           "runId": "\(EventTestData.runId)",
-          "outcome": "CANCELLED"
+          "outcome": "cancelled"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -191,26 +303,6 @@ final class RunFinishedEventTests: XCTestCase,
         // Then
         let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
         XCTAssertEqual(runFinished.outcome, .cancelled)
-    }
-
-    func test_decodeRunFinished_withOutcomeMaxIterationsReached_populatesOutcome() throws {
-        // Given
-        let data = jsonData("""
-        {
-          "type": "RUN_FINISHED",
-          "threadId": "\(EventTestData.threadId)",
-          "runId": "\(EventTestData.runId)",
-          "outcome": "MAX_ITERATIONS_REACHED"
-        }
-        """)
-        let decoder = makeStrictDecoder()
-
-        // When
-        let event = try decoder.decode(data)
-
-        // Then
-        let runFinished = try XCTUnwrap(event as? RunFinishedEvent)
-        XCTAssertEqual(runFinished.outcome, .maxIterationsReached)
     }
 
     func test_decodeRunFinished_missingOutcome_defaultsToCompleted() throws {
@@ -233,13 +325,14 @@ final class RunFinishedEventTests: XCTestCase,
     }
 
     func test_decodeRunFinished_unknownOutcomeString_defaultsToCompleted() throws {
-        // Given – unrecognised outcome value from a future protocol version
+        // Given – "interrupt" is the AG-UI 1.0 human-in-the-loop outcome; not yet
+        // modelled by this SDK so it falls back to .completed gracefully.
         let data = jsonData("""
         {
           "type": "RUN_FINISHED",
           "threadId": "\(EventTestData.threadId)",
           "runId": "\(EventTestData.runId)",
-          "outcome": "SUSPENDED"
+          "outcome": "interrupt"
         }
         """)
         let decoder = makeStrictDecoder()
@@ -276,14 +369,6 @@ final class RunFinishedEventTests: XCTestCase,
 
         // Then
         XCTAssertEqual(event.outcome, .cancelled)
-    }
-
-    func test_runFinishedEvent_outcomeCanBeSetToMaxIterationsReached() {
-        // Given
-        let event = RunFinishedEvent(threadId: "t", runId: "r", outcome: .maxIterationsReached)
-
-        // Then
-        XCTAssertEqual(event.outcome, .maxIterationsReached)
     }
 
     func test_runFinishedEvent_equatable_sameFields_areEqual() {

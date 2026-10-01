@@ -161,22 +161,26 @@ private struct AnyCodable: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
-        switch value {
-        case let intValue as Int:
-            try container.encode(intValue)
-        case let doubleValue as Double:
-            try container.encode(doubleValue)
-        case let boolValue as Bool:
+        // Use isJSONBoolean to distinguish genuine JSON booleans (backed by
+        // CFBoolean / __NSCFBoolean) from numeric NSNumbers. On Apple/Linux
+        // Foundation, `NSNumber(value: 0) as? Bool` succeeds (returns false),
+        // so checking Bool before Int without the CF type-ID guard would silently
+        // turn integer 0 → false and 1 → true on the wire.
+        if isJSONBoolean(value), let boolValue = value as? Bool {
             try container.encode(boolValue)
-        case let stringValue as String:
+        } else if let intValue = value as? Int {
+            try container.encode(intValue)
+        } else if let doubleValue = value as? Double {
+            try container.encode(doubleValue)
+        } else if let stringValue = value as? String {
             try container.encode(stringValue)
-        case let arrayValue as [Any]:
+        } else if let arrayValue = value as? [Any] {
             try container.encode(arrayValue.map { AnyCodable($0) })
-        case let dictionaryValue as [String: Any]:
+        } else if let dictionaryValue = value as? [String: Any] {
             try container.encode(dictionaryValue.mapValues { AnyCodable($0) })
-        case is NSNull:
+        } else if value is NSNull {
             try container.encodeNil()
-        default:
+        } else {
             throw EncodingError.invalidValue(
                 value,
                 EncodingError.Context(

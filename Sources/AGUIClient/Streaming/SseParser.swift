@@ -20,6 +20,15 @@ public struct SseParser {
     /// Internal buffer for incomplete events.
     private var buffer: String = ""
 
+    /// True when the previous chunk's last raw character was a lone `\r`.
+    ///
+    /// Per the WHATWG SSE spec, `\r`, `\n`, and `\r\n` are all valid line
+    /// terminators. When `\r` arrives at the end of one chunk and `\n` at the
+    /// start of the next, they form a single `\r\n` line terminator — not two
+    /// separate newlines. This flag lets `parse(_:)` detect and handle that
+    /// cross-chunk `\r\n` sequence correctly.
+    private var endsWithCR = false
+
     /// Creates a new SSE parser.
     public init() {}
 
@@ -53,10 +62,34 @@ public struct SseParser {
     /// - Very long lines are supported
     /// - Multiple events in one chunk are all returned
     public mutating func parse(_ chunk: String) -> [SseEvent] {
-        // Normalize all line endings to \n per SSE spec (WHATWG):
-        // \r\n and \r are both valid line ending sequences.
-        let normalized = chunk.replacingOccurrences(of: "\r\n", with: "\n")
-                              .replacingOccurrences(of: "\r", with: "\n")
+        // WHATWG SSE spec: \r, \n, and \r\n are all valid line terminators.
+        // Normalise line endings to \n — but handle the cross-chunk case where
+        // \r arrives at the end of one chunk and \n at the start of the next.
+        // Without special handling, the lone \r would be stored as \n in the
+        // buffer and the subsequent \n would create \n\n, which the parser
+        // incorrectly reads as an event separator.
+        var toNormalize = chunk
+
+        if endsWithCR {
+            if toNormalize.hasPrefix("\n") {
+                // The \r at the end of the previous chunk and the \n at the
+                // start of this chunk together form a single \r\n line ending.
+                // Undo the \n that was already added to the buffer for the lone
+                // \r, then consume the leading \n from this chunk.
+                buffer.removeLast()
+                toNormalize = String(toNormalize.dropFirst())
+                buffer += "\n" // one correct \n for the \r\n pair
+            }
+            // else: the lone \r was a standalone line terminator — the \n
+            // already in the buffer is correct; nothing to undo.
+            endsWithCR = false
+        }
+
+        // Replace \r\n first so that any remaining lone \r is genuinely standalone.
+        let step1 = toNormalize.replacingOccurrences(of: "\r\n", with: "\n")
+        // Remember whether this chunk ends with a lone \r before it is erased.
+        endsWithCR = step1.hasSuffix("\r")
+        let normalized = step1.replacingOccurrences(of: "\r", with: "\n")
         buffer += normalized
 
         // Guard against unbounded buffer growth from malformed/malicious streams.
@@ -164,5 +197,6 @@ public struct SseParser {
     /// ```
     public mutating func reset() {
         buffer = ""
+        endsWithCR = false
     }
 }
