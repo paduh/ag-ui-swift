@@ -7,32 +7,46 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Cancel any in-progress run for the same workflow + ref so that a
+# force-push or rapid iteration doesn't queue a backlog of stale runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Build and test on macOS
   test-macos:
     name: Test macOS
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
       - name: Resolve Dependencies
         run: swift package resolve
-      
+
       - name: Build Package
         run: swift build
-      
+
       - name: Run Tests
         run: swift test
-      
+
       - name: Build for iOS
         run: |
           xcodebuild build \
             -scheme AGUISwift-Package \
             -destination 'platform=iOS Simulator,name=iPhone 15' \
             -quiet || true
-      
+
       - name: Build for macOS
         run: |
           xcodebuild build \
@@ -50,7 +64,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install SwiftLint
-        run: brew install swiftlint
+        run: brew list swiftlint &>/dev/null || brew install swiftlint
 
       - name: Run SwiftLint
         run: swiftlint lint
@@ -62,17 +76,26 @@ jobs:
 
   # Build all targets individually
   build-targets:
-    name: Build All Targets
+    name: Build ${{ matrix.target }}
     runs-on: macos-latest
-    
+
     strategy:
       matrix:
         target: [AGUICore, AGUIClient, AGUITools, AGUIAgentSDK]
-    
+      max-parallel: 2
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
       - name: Build ${{ matrix.target }}
         run: swift build --target ${{ matrix.target }}
 
@@ -80,14 +103,22 @@ jobs:
   coverage:
     name: Test Coverage
     runs-on: macos-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
       - name: Resolve Dependencies
         run: swift package resolve
-      
+
       - name: Run Tests with Coverage
         run: swift test --enable-code-coverage
 
