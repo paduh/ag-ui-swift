@@ -47,7 +47,7 @@ public actor HttpTransport {
     ) {
         self.configuration = configuration
 
-        if let httpClient = httpClient {
+        if let httpClient {
             self.httpClient = httpClient
         } else {
             // Create default URLSession-based client
@@ -97,8 +97,8 @@ public actor HttpTransport {
     /// ## Response Validation
     ///
     /// Validates the HTTP response:
-    /// - Status code must be 200-299
-    /// - Response must be HTTPURLResponse
+    /// - A streaming run must return HTTP 200
+    /// - Content-Type must be `text/event-stream` (parameters are accepted)
     ///
     /// ## Error Handling
     ///
@@ -121,6 +121,12 @@ public actor HttpTransport {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
 
+        // Apply headers to the request itself so injected clients receive them too.
+        // Explicit configuration overrides defaults regardless of header name casing.
+        for (field, value) in configuration.buildHeaders() {
+            request.setValue(value, forHTTPHeaderField: field)
+        }
+
         // SSE reconnection resume cursor — only set when the caller has a prior event id
         if let lastEventId {
             request.setValue(lastEventId, forHTTPHeaderField: "Last-Event-ID")
@@ -138,8 +144,17 @@ public actor HttpTransport {
         let response = try await httpClient.execute(request)
 
         // Validate HTTP status code
-        guard (200...299).contains(response.statusCode) else {
+        guard (200 ... 299).contains(response.statusCode) else {
             throw ClientError.httpError(statusCode: response.statusCode)
+        }
+
+        let mediaType = response.httpResponse.value(forHTTPHeaderField: "Content-Type")?
+            .split(separator: ";", maxSplits: 1, omittingEmptySubsequences: false)
+            .first?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        guard response.statusCode == 200, mediaType == "text/event-stream" else {
+            throw ClientError.invalidResponse
         }
 
         return response.bytes
