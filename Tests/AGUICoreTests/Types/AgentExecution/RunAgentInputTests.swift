@@ -620,4 +620,44 @@ final class RunAgentInputTests: XCTestCase {
         XCTAssertTrue(input.tools.isEmpty)
         XCTAssertTrue(input.context.isEmpty)
     }
+
+    // MARK: - JSON Booleans
+
+    /// A JSON `true` in forwardedProps or state must leave as `true`, not `1`,
+    /// and a JSON `1` must leave as `1`, not `true`: servers that check
+    /// `is True` (Python) or `=== true` (JS) see the difference.
+    func testBooleansAndNumbersKeepTheirJSONTypes() throws {
+        let json = Data("""
+        {"flag":true,"off":false,"one":1,"zero":0,"ratio":0.5,
+         "nested":{"flag":true,"one":1},"list":[true,1,false,0]}
+        """.utf8)
+        let input = RunAgentInput(threadId: "t", runId: "r", state: json, forwardedProps: json)
+        let text = try XCTUnwrap(String(data: JSONEncoder().encode(input), encoding: .utf8))
+        let frame = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+
+        for key in ["forwardedProps", "state"] {
+            let object = try XCTUnwrap(frame[key] as? [String: Any], key)
+            XCTAssertEqual(JSONBoolean.value(of: object["flag"] as Any), true, key)
+            XCTAssertEqual(JSONBoolean.value(of: object["off"] as Any), false, key)
+            XCTAssertNil(JSONBoolean.value(of: object["one"] as Any), key)
+            XCTAssertNil(JSONBoolean.value(of: object["zero"] as Any), key)
+            XCTAssertEqual(object["one"] as? Int, 1, key)
+            XCTAssertEqual(object["ratio"] as? Double, 0.5, key)
+            let nested = try XCTUnwrap(object["nested"] as? [String: Any], key)
+            XCTAssertEqual(JSONBoolean.value(of: nested["flag"] as Any), true, key)
+            XCTAssertNil(JSONBoolean.value(of: nested["one"] as Any), key)
+            let list = try XCTUnwrap(object["list"] as? [Any], key)
+            XCTAssertEqual(list.map { JSONBoolean.value(of: $0) }, [true, nil, false, nil], key)
+        }
+        XCTAssertFalse(text.contains("\"flag\":1"), text)
+        XCTAssertFalse(text.contains("\"one\":true"), text)
+    }
+
+    func testJSONBooleanTellsSwiftValuesApart() {
+        XCTAssertEqual(JSONBoolean.value(of: true), true)
+        XCTAssertNil(JSONBoolean.value(of: 1))
+        XCTAssertNil(JSONBoolean.value(of: NSNumber(value: 1)))
+        XCTAssertEqual(JSONBoolean.value(of: NSNumber(value: false)), false)
+        XCTAssertNil(JSONBoolean.value(of: "true"))
+    }
 }
