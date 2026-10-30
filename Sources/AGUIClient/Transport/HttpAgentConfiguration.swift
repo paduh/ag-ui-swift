@@ -53,6 +53,7 @@ public struct HttpAgentConfiguration: Sendable {
     /// 1. Entries already in ``headers`` (override everything)
     /// 2. `bearerToken` → `Authorization: Bearer <token>`
     /// 3. `apiKey` → `<apiKeyHeader>: <key>`
+    ///
     /// Header names are compared case-insensitively when applying this priority.
     ///
     /// - Returns: Merged header dictionary ready for request construction.

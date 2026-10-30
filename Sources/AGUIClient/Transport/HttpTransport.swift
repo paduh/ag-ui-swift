@@ -91,6 +91,7 @@ public actor HttpTransport {
     /// - Headers:
     ///   - Content-Type: application/json
     ///   - Accept: text/event-stream
+    ///   - Headers from `configuration.buildHeaders()`, overriding the defaults above
     ///   - Last-Event-ID: `lastEventId` (when non-nil)
     /// - Body: JSON-encoded `RunAgentInput`
     ///

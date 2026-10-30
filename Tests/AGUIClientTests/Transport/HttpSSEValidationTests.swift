@@ -58,11 +58,12 @@ final class HttpSSEValidationTests: XCTestCase {
         try await client.setResponse(response())
         let configuration = try HttpAgentConfiguration(
             baseURL: XCTUnwrap(URL(string: "https://agent.example.com")),
-            headers: ["last-event-id": "old-cursor"]
+            headers: ["last-event-id": "old-cursor", "X-Request-Tag": "example"]
         )
         let transport = HttpTransport(configuration: configuration, httpClient: client)
         _ = try await transport.execute(endpoint: "/run", input: input, lastEventId: "new-cursor")
         let request = await client.lastRequest
+        XCTAssertEqual(request?.value(forHTTPHeaderField: "X-Request-Tag"), "example")
         XCTAssertEqual(request?.value(forHTTPHeaderField: "Last-Event-ID"), "new-cursor")
     }
 

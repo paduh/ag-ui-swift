@@ -30,6 +30,21 @@ final class StatefulAgUiAgentTests: XCTestCase {
         return received
     }
 
+    // MARK: - HTTP configuration
+
+    func testHttpConfigurationIncludesAuthHeaders() {
+        var cfg = StatefulAgUiAgentConfig(baseURL: URL(string: "https://agent.example.com")!)
+        cfg.bearerToken = "example-token"
+        cfg.apiKey = "example-key"
+        cfg.headers = ["X-Request-Tag": "example"]
+
+        let headers = StatefulAgUiAgent.httpConfiguration(for: cfg).buildHeaders()
+
+        XCTAssertEqual(headers["Authorization"], "Bearer example-token")
+        XCTAssertEqual(headers["X-API-Key"], "example-key")
+        XCTAssertEqual(headers["X-Request-Tag"], "example")
+    }
+
     // MARK: - RunAgentInput construction
 
     func testUserMessageIncludedInInput() async throws {
