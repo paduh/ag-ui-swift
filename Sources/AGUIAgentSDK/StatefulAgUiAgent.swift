@@ -58,12 +58,7 @@ public final class StatefulAgUiAgent: Sendable {
     /// ```
     public init(configuration: StatefulAgUiAgentConfig) {
         self.config = configuration
-        let agent = HttpAgent(configuration: HttpAgentConfiguration(
-            baseURL: configuration.baseURL,
-            timeout: configuration.timeout,
-            headers: configuration.headers,
-            debug: configuration.debug
-        ))
+        let agent = HttpAgent(configuration: Self.httpConfiguration(for: configuration))
         self.httpAgent = agent
         self.agentTransport = nil
         self.historyManager = ConversationHistoryManager()
@@ -76,6 +71,16 @@ public final class StatefulAgUiAgent: Sendable {
         } else {
             self.toolExecutionManager = nil
         }
+    }
+
+    /// Maps the stateful agent configuration onto the HTTP layer.
+    static func httpConfiguration(for configuration: StatefulAgUiAgentConfig) -> HttpAgentConfiguration {
+        HttpAgentConfiguration(
+            baseURL: configuration.baseURL,
+            timeout: configuration.timeout,
+            headers: configuration.buildHeaders(),
+            debug: configuration.debug
+        )
     }
 
     /// Creates a stateful agent backed by a custom transport (test path).
