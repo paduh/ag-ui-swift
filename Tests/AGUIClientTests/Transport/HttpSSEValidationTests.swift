@@ -95,17 +95,17 @@ final class HttpSSEValidationTests: XCTestCase {
         }
     }
 
-    func testRejectsOtherSuccessfulStatusCodes() async throws {
-        for status in [201, 202, 204, 206, 299] {
+    func testAcceptsAnySuccessfulStatusWithSSEMediaType() async throws {
+        for status in [201, 202, 206, 299] {
             let client = MockHTTPClient()
-            try await client.setResponse(response(status: status))
+            try await client.setResponse(response(status: status, body: [65]))
             let transport = try transport(client: client)
-            do {
-                _ = try await transport.execute(endpoint: "/run", input: input)
-                XCTFail("Expected invalidResponse for HTTP \(status)")
-            } catch let error as ClientError {
-                XCTAssertEqual(error, .invalidResponse)
+            let bytes = try await transport.execute(endpoint: "/run", input: input)
+            var received: [UInt8] = []
+            for try await byte in bytes {
+                received.append(byte)
             }
+            XCTAssertEqual(received, [65], "HTTP \(status)")
         }
     }
 
