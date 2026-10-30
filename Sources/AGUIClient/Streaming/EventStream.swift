@@ -71,9 +71,7 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
     /// Iterator that processes streaming bytes into AG-UI events.
     ///
     /// The iterator maintains internal state for:
-    /// - UTF-8 byte accumulation
-    /// - SSE event parsing
-    /// - Event queue management
+    /// - Bounded SSE byte parsing
     /// - Last-Event-ID tracking (via shared `LastEventIdBox`)
     public struct AsyncIterator: AsyncIteratorProtocol {
         /// Source byte iterator.
@@ -85,12 +83,6 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
         /// SSE parser for extracting events from stream.
         private var sseParser = SseParser()
 
-        /// Queue of decoded events ready to return.
-        private var eventQueue: [any AGUIEvent] = []
-
-        /// Buffer for accumulating UTF-8 bytes.
-        private var utf8Buffer: [UInt8] = []
-
         /// Shared reference that is updated with the most recent SSE `id:` value.
         private let lastEventIdBox: LastEventIdBox
 
@@ -101,7 +93,7 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
         ///   - decoder: AG-UI event decoder
         ///   - lastEventIdBox: Shared box written to whenever a non-nil SSE id is seen
         init(bytes: Bytes.AsyncIterator, decoder: AGUIEventDecoder, lastEventIdBox: LastEventIdBox) {
-            self.bytesIterator = bytes
+            bytesIterator = bytes
             self.decoder = decoder
             self.lastEventIdBox = lastEventIdBox
         }
@@ -109,82 +101,26 @@ public struct EventStream<Bytes: AsyncSequence>: AsyncSequence where Bytes.Eleme
         /// Returns the next AG-UI event from the stream.
         ///
         /// This method:
-        /// 1. Returns queued events first
-        /// 2. Reads and accumulates bytes until valid UTF-8
-        /// 3. Parses SSE events from UTF-8 strings
-        /// 4. Decodes AG-UI events from SSE data
-        /// 5. Returns the next available event
+        /// 1. Feeds bytes to the SSE parser until an event is complete
+        /// 2. Records the event's `id:` for reconnection
+        /// 3. Decodes the AG-UI event, skipping events that fail to decode
+        /// 4. Returns the event, or nil when the stream ends
         ///
         /// - Returns: Next event, or nil when stream ends
-        /// - Throws: Network errors or critical decoding failures
+        /// - Throws: Errors from the underlying byte sequence
         public mutating func next() async throws -> (any AGUIEvent)? {
-            // Return queued events first.
-            // Yield before returning a buffered event so callers on the main actor
-            // give the run loop a chance to render UI between events. Without this,
-            // a burst of SSE data arriving in one network packet fills the queue and
-            // all events are consumed synchronously — SwiftUI never sees the
-            // intermediate streaming states (typing dots, streaming cursor).
-            guard eventQueue.isEmpty else {
-                await Task.yield()
-                return eventQueue.removeFirst()
-            }
-
-            // Read and process bytes until we have events
             while let byte = try await bytesIterator.next() {
-                utf8Buffer.append(byte)
-
-                // Try to decode accumulated bytes as UTF-8
-                if let string = String(bytes: utf8Buffer, encoding: .utf8) {
-                    // Successful decode - process the chunk
-                    utf8Buffer.removeAll()
-
-                    // Parse SSE events from the string chunk
-                    let sseEvents = sseParser.parse(string)
-
-                    // Decode AG-UI events from SSE data
-                    for sseEvent in sseEvents {
-                        // Track the last-event-id for reconnection support.
-                        // The id is captured before decoding so it is available even
-                        // when the accompanying data fails to decode.
-                        if let id = sseEvent.id {
-                            await lastEventIdBox.set(id)
-                        }
-
-                        guard let data = sseEvent.data.data(using: .utf8) else {
-                            // Skip events with invalid UTF-8 data
-                            continue
-                        }
-
-                        do {
-                            let event = try decoder.decode(data)
-                            eventQueue.append(event)
-                        } catch {
-                            // Non-fatal decoding errors are silently ignored
-                            // The stream continues processing subsequent events
-                            // Applications can implement custom error handling if needed
-                            #if DEBUG
-                            print("[EventStream] ⚠ Decode error: \(error) — raw: \(sseEvent.data.prefix(200))")
-                            #endif
-                        }
-                    }
-
-                    // Return first decoded event if available
-                    guard eventQueue.isEmpty else {
-                        return eventQueue.removeFirst()
-                    }
-                } else if utf8Buffer.count > 4 {
-                    // Invalid UTF-8 sequence (UTF-8 characters are max 4 bytes)
-                    // Skip the first byte and try to resynchronize
-                    utf8Buffer.removeFirst()
+                guard let sseEvent = sseParser.consume(byte) else { continue }
+                // Capture the id before decoding so it is available even when the data fails to decode.
+                if let id = sseEvent.id {
+                    await lastEventIdBox.set(id)
                 }
+                guard let event = try? decoder.decode(Data(sseEvent.data.utf8)) else { continue }
+                // Yield so callers on the main actor can render between events that
+                // arrived in a single network packet.
+                await Task.yield()
+                return event
             }
-
-            // Stream ended - return any remaining queued events
-            guard eventQueue.isEmpty else {
-                return eventQueue.removeFirst()
-            }
-
-            // No more events
             return nil
         }
     }

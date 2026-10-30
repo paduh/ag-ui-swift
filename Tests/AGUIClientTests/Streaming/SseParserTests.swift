@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
-import XCTest
 @testable import AGUIClient
+import XCTest
 
 /// Comprehensive tests for Server-Sent Events (SSE) parser.
 ///
@@ -17,6 +17,40 @@ import XCTest
 /// - Empty events (heartbeat)
 /// - UTF-8 edge cases
 final class SseParserTests: XCTestCase {
+    // MARK: - Line Endings and Size Limit
+
+    func testOversizedEventCannotDispatchItsSuffix() {
+        var parser = SseParser()
+        let oversized = String(repeating: "x", count: SseParser.maxBufferByteCount + 1)
+        let events = parser.parse(oversized + "\ndata: suffix\n\ndata: valid\n\n")
+        XCTAssertEqual(events.map(\.data), ["valid"])
+    }
+
+    func testBareCRLineEndings() {
+        var parser = SseParser()
+        let events = parser.parse("data: first\rdata: second\r\r")
+        XCTAssertEqual(events.map(\.data), ["first\nsecond"])
+    }
+
+    func testEveryCRLFChunkBoundaryMatchesWholeInput() {
+        let input = "data: first\r\ndata: second\r\n\r\ndata: third\r\n\r\n"
+        let bytes = Array(input.utf8)
+        for index in 0 ... bytes.count {
+            var parser = SseParser()
+            let events = parser.parse(String(decoding: bytes[..<index], as: UTF8.self))
+                + parser.parse(String(decoding: bytes[index...], as: UTF8.self))
+            XCTAssertEqual(events.map(\.data), ["first\nsecond", "third"])
+        }
+    }
+
+    func testLargeChunkOfSmallEventsDoesNotExceedPerEventLimit() {
+        var parser = SseParser()
+        let event = "data: small\n\n"
+        let count = SseParser.maxBufferByteCount / event.utf8.count + 1
+        let events = parser.parse(String(repeating: event, count: count))
+        XCTAssertEqual(events.count, count)
+    }
+
     // MARK: - Basic Parsing Tests
 
     func testParseSingleEvent() {
@@ -453,7 +487,7 @@ final class SseParserTests: XCTestCase {
         let iterations = 1000
         var totalEvents = 0
 
-        for i in 0..<iterations {
+        for i in 0 ..< iterations {
             let events = parser.parse("data: event\(i)\n\n")
             totalEvents += events.count
         }
