@@ -9,16 +9,19 @@ import Foundation
 /// and returns complete events as they become available.
 ///
 public struct SseParser {
-    /// Maximum number of UTF-8 bytes the internal buffer may hold.
+    /// Maximum number of UTF-8 bytes a single event may occupy.
     ///
-    /// If a stream sends data faster than complete events arrive — or sends a
-    /// pathologically large payload without a double-newline terminator — the
-    /// buffer is reset and parsing continues with the next chunk. This prevents
-    /// unbounded memory growth from malformed or malicious streams.
+    /// An event that grows past this limit before its blank-line terminator
+    /// arrives is discarded through that terminator, and parsing continues with
+    /// the next event. This prevents unbounded memory growth from malformed or
+    /// malicious streams.
     public static let maxBufferByteCount = 10 * 1_048_576 // 10 MB
 
-    /// Internal buffer for incomplete events.
-    private var buffer: String = ""
+    /// Bytes of the current event, with line endings normalized to `\n`.
+    private var buffer: [UInt8] = []
+    private var lineIsEmpty = true
+    private var previousWasCR = false
+    private var discardingEvent = false
 
     /// Creates a new SSE parser.
     public init() {}
@@ -49,38 +52,43 @@ public struct SseParser {
     /// ## Edge Cases
     ///
     /// - Empty chunks are handled gracefully
-    /// - Partial UTF-8 sequences are preserved in buffer
-    /// - Very long lines are supported
+    /// - `\r\n` split across chunks is a single line ending
+    /// - Very long lines are supported, up to ``maxBufferByteCount`` per event
     /// - Multiple events in one chunk are all returned
     public mutating func parse(_ chunk: String) -> [SseEvent] {
-        // Normalize all line endings to \n per SSE spec (WHATWG):
-        // \r\n and \r are both valid line ending sequences.
-        let normalized = chunk.replacingOccurrences(of: "\r\n", with: "\n")
-                              .replacingOccurrences(of: "\r", with: "\n")
-        buffer += normalized
+        chunk.utf8.compactMap { consume($0) }
+    }
 
-        // Guard against unbounded buffer growth from malformed/malicious streams.
-        guard buffer.utf8.count <= Self.maxBufferByteCount else {
-            buffer = ""
-            return []
+    /// Feeds a byte without accumulating an unbounded line or UTF-8 buffer.
+    ///
+    /// Invalid UTF-8 is replaced with U+FFFD. Data after the last blank line is
+    /// never dispatched, as the SSE specification requires.
+    mutating func consume(_ byte: UInt8) -> SseEvent? {
+        if previousWasCR {
+            previousWasCR = false
+            if byte == 10 { return nil }
         }
-
-        var events: [SseEvent] = []
-
-        // Split on double newline (event separator — handles \n\n after normalization)
-        let parts = buffer.components(separatedBy: "\n\n")
-
-        // Keep the last part in buffer (might be incomplete)
-        buffer = parts.last ?? ""
-
-        // Process complete events (all parts except the last)
-        for part in parts.dropLast() where !part.isEmpty {
-            if let event = parseEvent(part) {
-                events.append(event)
+        if byte == 13 { previousWasCR = true }
+        let isNewline = byte == 10 || byte == 13
+        if isNewline, lineIsEmpty {
+            defer {
+                buffer.removeAll()
+                discardingEvent = false
             }
+            guard !discardingEvent, !buffer.isEmpty else { return nil }
+            // Foundation's initializer strips a leading BOM; the fallback replaces invalid UTF-8.
+            let text = String(bytes: buffer, encoding: .utf8) ?? String(decoding: buffer, as: UTF8.self)
+            return parseEvent(text)
         }
-
-        return events
+        lineIsEmpty = isNewline
+        guard !discardingEvent else { return nil }
+        guard buffer.count < Self.maxBufferByteCount else {
+            buffer.removeAll()
+            discardingEvent = true
+            return nil
+        }
+        buffer.append(isNewline ? 10 : byte)
+        return nil
     }
 
     /// Parses a single complete event from its text representation.
@@ -163,6 +171,9 @@ public struct SseParser {
     /// let events = parser.parse("data: new\n\n")
     /// ```
     public mutating func reset() {
-        buffer = ""
+        buffer.removeAll()
+        lineIsEmpty = true
+        previousWasCR = false
+        discardingEvent = false
     }
 }

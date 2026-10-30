@@ -1,8 +1,8 @@
 // Copyright (c) 2025 Perfect Aduh. MIT License. See LICENSE for details.
 
-import XCTest
 @testable import AGUIClient
 @testable import AGUICore
+import XCTest
 
 /// Comprehensive tests for EventStream AsyncSequence.
 ///
@@ -254,6 +254,54 @@ final class EventStreamTests: XCTestCase {
         XCTAssertEqual(count, 5)
     }
 
+    // MARK: - Incremental Parsing Tests
+
+    func testCRLFIdLineSetsLastEventId() async throws {
+        let sseData = "id: 7\r\ndata: {\"type\":\"RUN_STARTED\",\"threadId\":\"t1\",\"runId\":\"r1\"}\r\n\r\n"
+        let stream = EventStream(bytes: MockAsyncBytes(data: Data(sseData.utf8)), decoder: AGUIEventDecoder())
+
+        var events: [any AGUIEvent] = []
+        for try await event in stream {
+            events.append(event)
+        }
+
+        XCTAssertEqual(events.count, 1)
+        let lastEventId = await stream.lastEventId
+        XCTAssertEqual(lastEventId, "7")
+    }
+
+    func testInvalidUTF8IsReplacedWithReplacementCharacter() async throws {
+        var data = Data("data: {\"type\":\"TEXT_MESSAGE_CONTENT\",\"messageId\":\"m1\",\"delta\":\"a".utf8)
+        data.append(0xFF)
+        data.append(contentsOf: Data("b\"}\n\n".utf8))
+        let stream = EventStream(bytes: MockAsyncBytes(data: data), decoder: AGUIEventDecoder())
+
+        var events: [any AGUIEvent] = []
+        for try await event in stream {
+            events.append(event)
+        }
+
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual((events.first as? TextMessageContentEvent)?.delta, "a\u{FFFD}b")
+    }
+
+    func testLargeEventIsParsedInLinearTime() async throws {
+        let delta = String(repeating: "x", count: 64 * 1024)
+        let sseData = "data: {\"type\":\"TEXT_MESSAGE_CONTENT\",\"messageId\":\"m1\",\"delta\":\"\(delta)\"}\n\n"
+        let data = Data(sseData.utf8)
+        let stream = EventStream(bytes: MockAsyncBytes(data: data, chunkSize: data.count), decoder: AGUIEventDecoder())
+
+        let start = Date()
+        var events: [any AGUIEvent] = []
+        for try await event in stream {
+            events.append(event)
+        }
+
+        XCTAssertEqual(events.count, 1)
+        // Rescanning the buffer on every byte took about 30 s for this event.
+        XCTAssertLessThan(Date().timeIntervalSince(start), 5)
+    }
+
     // MARK: - Multi-line Data Tests
 
     func testStreamHandlesMultiLineSSEData() async throws {
@@ -282,7 +330,7 @@ final class EventStreamTests: XCTestCase {
 
     func testStreamHandlesLargeNumberOfEvents() async throws {
         var sseData = ""
-        for i in 0..<1000 {
+        for i in 0 ..< 1000 {
             sseData += "data: {\"type\":\"TEXT_MESSAGE_CHUNK\",\"messageId\":\"msg1\",\"delta\":\"\(i)\"}\n\n"
         }
 
