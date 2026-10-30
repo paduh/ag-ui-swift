@@ -61,7 +61,7 @@ public actor URLSessionHTTPClient: HTTPClient {
     ///
     /// ## Error Mapping
     ///
-    /// URLErrors are mapped to ClientError:
+    /// URLErrors, including those raised while streaming, are mapped to ClientError:
     /// - `.timedOut` → `.timeout`
     /// - `.cancelled` → `.cancelled`
     /// - Other errors → `.networkError`
@@ -71,7 +71,7 @@ public actor URLSessionHTTPClient: HTTPClient {
         do {
             (bytes, response) = try await session.bytes(for: request)
         } catch let error as URLError {
-            throw mapURLError(error)
+            throw Self.mapURLError(error)
         } catch {
             throw ClientError.networkError(error)
         }
@@ -83,15 +83,23 @@ public actor URLSessionHTTPClient: HTTPClient {
         // Bridge URLSession.AsyncBytes → AsyncThrowingStream<UInt8, Error> so that
         // HTTPResponse is decoupled from URLSession and can be mocked in tests.
         let stream = AsyncThrowingStream<UInt8, Error> { continuation in
-            Task {
+            let producer = Task {
                 do {
                     for try await byte in bytes {
                         continuation.yield(byte)
                     }
                     continuation.finish()
+                } catch let error as URLError {
+                    // Map mid-stream failures so callers (and retry) see ClientError.
+                    continuation.finish(throwing: Self.mapURLError(error))
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+            // Stop the request when the consumer cancels or releases the stream.
+            continuation.onTermination = { _ in
+                producer.cancel()
+                bytes.task.cancel()
             }
         }
 
@@ -99,7 +107,7 @@ public actor URLSessionHTTPClient: HTTPClient {
     }
 
     /// Maps URLError to ClientError.
-    private func mapURLError(_ error: URLError) -> ClientError {
+    private static func mapURLError(_ error: URLError) -> ClientError {
         switch error.code {
         case .timedOut:
             return .timeout
