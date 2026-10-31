@@ -154,8 +154,8 @@ final class EventStreamTests: XCTestCase {
         XCTAssertTrue(events[1] is RunFinishedEvent)
     }
 
-    func testStreamHandlesUnknownEventType() async throws {
-        // In strict mode (default), an unrecognised event type causes the decoder to
+    func testStrictDecoderThrowsForUnknownEventType() async throws {
+        // In explicitly configured strict mode, an unrecognised event type causes the decoder to
         // throw EventDecodingError.unknownEventType. The TypeScript reference implementation
         // calls eventSubject.error(err) for all decode failures — the stream terminates.
         // EventStream must propagate, not swallow, the error.
@@ -169,7 +169,9 @@ final class EventStreamTests: XCTestCase {
 
         """
         let bytes = MockAsyncBytes(data: Data(sseData.utf8))
-        let decoder = AGUIEventDecoder() // strict mode by default
+        var config = AGUIEventDecoder.Configuration()
+        config.unknownEventStrategy = .throwError
+        let decoder = AGUIEventDecoder(config: config)
 
         let stream = EventStream(bytes: bytes, decoder: decoder)
 
