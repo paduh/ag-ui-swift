@@ -11,6 +11,24 @@ import Foundation
 /// - Tracking execution statistics
 /// - Managing tool lifecycle
 ///
+/// ## Usage
+///
+/// ```swift
+/// // Create and configure a registry
+/// let registry = DefaultToolRegistry()
+///
+/// // Register tools
+/// try await registry.register(executor: MyToolExecutor())
+///
+/// // Execute a tool call
+/// let result = try await registry.execute(context: context)
+///
+/// // Query statistics
+/// if let stats = await registry.stats(for: "my_tool") {
+///     print("Success rate: \(stats.successRate)")
+/// }
+/// ```
+///
 /// ## Thread Safety
 ///
 /// All ToolRegistry implementations must be thread-safe and support
@@ -126,6 +144,24 @@ public enum ToolRegistryError: Error, Sendable {
 /// - Supports timeout handling based on tool configuration
 /// - Handles errors gracefully with statistics updates
 ///
+/// ## Usage
+///
+/// ```swift
+/// // Create a registry
+/// let registry = DefaultToolRegistry()
+///
+/// // Register tools
+/// try await registry.register(executor: WeatherToolExecutor())
+/// try await registry.register(executor: CalculatorToolExecutor())
+///
+/// // Execute tool calls from agent
+/// for toolCall in agentToolCalls {
+///     let context = ToolExecutionContext(toolCall: toolCall)
+///     let result = try await registry.execute(context: context)
+///     // Send result back to agent
+/// }
+/// ```
+///
 /// ## Thread Safety
 ///
 /// This actor-based implementation provides automatic thread safety through
@@ -191,6 +227,14 @@ public actor DefaultToolRegistry: ToolRegistry {
 
         guard let handler = errorHandlers[toolName] else {
             throw ToolRegistryError.toolNotFound(toolName)
+        }
+
+        // Validate before entering the retry loop
+        let validation = executor.validate(toolCall: context.toolCall)
+        if !validation.isValid {
+            throw ToolExecutionError.validationFailed(
+                message: validation.errors.joined(separator: "; ")
+            )
         }
 
         var attempt = 0

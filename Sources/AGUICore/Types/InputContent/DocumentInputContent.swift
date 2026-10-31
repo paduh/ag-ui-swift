@@ -8,6 +8,7 @@ import Foundation
 /// base64-encoded bytes. The optional `mimeType` and `title` fields provide
 /// metadata about the document.
 ///
+/// - SeeAlso: ``InputContent``, ``UserMessage``
 public struct DocumentInputContent: InputContent, Hashable, Sendable {
 
     /// The content type discriminator (always `"document"`).

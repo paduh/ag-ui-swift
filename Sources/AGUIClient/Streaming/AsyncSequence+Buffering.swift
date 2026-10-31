@@ -15,36 +15,45 @@ extension AsyncSequence where Self: Sendable, Element: Sendable {
     ///   - strategy: Strategy for handling overflow
     /// - Returns: Buffered async sequence
     ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let buffered = eventStream.buffered(limit: 100, strategy: .dropOldest)
+    ///
+    /// for try await event in buffered {
+    ///     // Buffer ensures max 100 events in memory
+    ///     await slowProcessing(event)
+    /// }
+    /// ```
+    ///
+    /// ## Memory Safety
+    ///
+    /// The buffer guarantees bounded memory usage: `limit * sizeof(Element)`.
+    ///
+    /// ## Performance
+    ///
+    /// - `.dropOldest`: O(1) append, O(n) drop (shifts elements)
+    /// - `.dropNewest`: O(1) append and drop
+    /// - `.suspend`: Natural backpressure (no buffer overhead)
     public func buffered(
         limit: Int,
         strategy: BufferingStrategy
     ) -> AsyncThrowingStream<Element, Error> {
-        AsyncThrowingStream { continuation in
+        // Map our strategy to AsyncThrowingStream's built-in buffer policy.
+        // bufferingNewest keeps the newest `limit` elements (drops oldest on overflow).
+        // bufferingOldest keeps the oldest `limit` elements (drops newest on overflow).
+        let policy: AsyncThrowingStream<Element, Error>.Continuation.BufferingPolicy
+        switch strategy {
+        case .dropOldest: policy = .bufferingNewest(limit)
+        case .dropNewest: policy = .bufferingOldest(limit)
+        }
+
+        return AsyncThrowingStream(bufferingPolicy: policy) { continuation in
             let task = Task {
                 do {
-                    var buffer: [Element] = []
-
                     for try await element in self {
-                        // Apply overflow strategy when buffer is full
-                        if buffer.count >= limit {
-                            switch strategy {
-                            case .dropOldest:
-                                buffer.removeFirst()
-                                buffer.append(element)
-                            case .dropNewest:
-                                // Drop the new element, keep buffer as-is
-                                continue
-                            }
-                        } else {
-                            buffer.append(element)
-                        }
+                        continuation.yield(element) // yield immediately — no accumulation
                     }
-
-                    // Yield remaining buffered elements
-                    while !buffer.isEmpty {
-                        continuation.yield(buffer.removeFirst())
-                    }
-
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)

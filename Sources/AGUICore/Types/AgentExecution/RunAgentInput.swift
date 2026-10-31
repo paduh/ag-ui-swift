@@ -22,6 +22,51 @@ import Foundation
 /// - **context**: Additional contextual information
 /// - **forwardedProps**: Custom properties to forward to the agent
 ///
+/// ## Usage Examples
+///
+/// ```swift
+/// // Simple agent execution
+/// let input = RunAgentInput(
+///     threadId: "thread-123",
+///     runId: "run-456"
+/// )
+///
+/// // With conversation history
+/// let messages: [any Message] = [
+///     DeveloperMessage(id: "dev-1", content: "You are helpful"),
+///     UserMessage(id: "user-1", content: "Hello!")
+/// ]
+///
+/// let input = RunAgentInput(
+///     threadId: "thread-123",
+///     runId: "run-456",
+///     messages: messages
+/// )
+///
+/// // With tools and context
+/// let tools = [
+///     Tool(name: "get_weather", description: "Get weather", parameters: ...)
+/// ]
+///
+/// let contexts = [
+///     Context(description: "user_location", value: "San Francisco")
+/// ]
+///
+/// let input = RunAgentInput(
+///     threadId: "thread-123",
+///     runId: "run-456",
+///     messages: messages,
+///     tools: tools,
+///     context: contexts
+/// )
+/// ```
+///
+/// ## HTTP POST Request
+///
+/// This type is typically serialized to JSON and sent as the body of
+/// a POST request to an agent's endpoint.
+///
+/// - SeeAlso: ``Message``, ``Tool``, ``Context``
 public struct RunAgentInput: Sendable, Codable, Hashable {
     /// The conversation thread identifier.
     public let threadId: String
@@ -57,6 +102,15 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
     /// Defaults to an empty JSON object.
     public let forwardedProps: Data
 
+    /// Responses to human-in-the-loop interrupts from the previous run.
+    ///
+    /// Populate this when resuming a run that finished with
+    /// `RunFinishedOutcome.interrupt`. Each entry references one `Interrupt` by
+    /// its `id` and carries the caller's resolution status and optional payload.
+    ///
+    /// Defaults to `nil` (omitted from the wire payload).
+    public let resume: [ResumeEntry]?
+
     /// Creates a new agent input.
     ///
     /// - Parameters:
@@ -68,6 +122,7 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
     ///   - tools: Available tools (defaults to empty)
     ///   - context: Context items (defaults to empty)
     ///   - forwardedProps: Custom properties as JSON (defaults to empty object)
+    ///   - resume: Interrupt resume entries (defaults to nil)
     public init(
         threadId: String,
         runId: String,
@@ -76,7 +131,8 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         messages: [any Message] = [],
         tools: [Tool] = [],
         context: [Context] = [],
-        forwardedProps: Data = Data("{}".utf8)
+        forwardedProps: Data = Data("{}".utf8),
+        resume: [ResumeEntry]? = nil
     ) {
         self.threadId = threadId
         self.runId = runId
@@ -86,6 +142,7 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         self.tools = tools
         self.context = context
         self.forwardedProps = forwardedProps
+        self.resume = resume
     }
 
     // MARK: - Codable
@@ -99,6 +156,7 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         case tools
         case context
         case forwardedProps
+        case resume
     }
 
     public init(from decoder: Decoder) throws {
@@ -137,6 +195,9 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         // Decode tools and context arrays (these already conform to Codable)
         tools = try container.decodeIfPresent([Tool].self, forKey: .tools) ?? []
         context = try container.decodeIfPresent([Context].self, forKey: .context) ?? []
+
+        // Decode resume entries (optional — absent when not resuming an interrupt)
+        resume = try container.decodeIfPresent([ResumeEntry].self, forKey: .resume)
 
         // Decode forwardedProps as arbitrary JSON object and convert to Data
         if container.contains(.forwardedProps) {
@@ -183,6 +244,9 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         try container.encode(tools, forKey: .tools)
         try container.encode(context, forKey: .context)
 
+        // Encode resume entries — omit the key entirely when nil (not null)
+        try container.encodeIfPresent(resume, forKey: .resume)
+
         // Encode forwardedProps as arbitrary JSON object
         let propsObject = try JSONSerialization.jsonObject(with: forwardedProps)
         var propsContainer = container.nestedContainer(keyedBy: JSONCodingKeys.self, forKey: .forwardedProps)
@@ -199,6 +263,7 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
         hasher.combine(tools)
         hasher.combine(context)
         hasher.combine(forwardedProps)
+        hasher.combine(resume)
 
         // Hash each message's identifying properties
         for message in messages {
@@ -217,6 +282,7 @@ public struct RunAgentInput: Sendable, Codable, Hashable {
               lhs.tools == rhs.tools &&
               lhs.context == rhs.context &&
               lhs.forwardedProps == rhs.forwardedProps &&
+              lhs.resume == rhs.resume &&
               lhs.messages.count == rhs.messages.count else {
             return false
         }

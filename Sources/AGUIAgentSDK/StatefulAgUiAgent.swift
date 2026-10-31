@@ -11,6 +11,55 @@ import Foundation
 /// conversational AI interfaces. It automatically tracks message history per thread,
 /// manages state updates, and provides convenient methods for common patterns.
 ///
+/// ## Basic Usage
+///
+/// ```swift
+/// let agent = StatefulAgUiAgent(baseURL: URL(string: "https://agent.example.com")!)
+///
+/// let stream = try await agent.chat(message: "Hello!")
+/// for try await event in stream {
+///     if let content = event as? TextMessageContentEvent {
+///         print(content.delta, terminator: "")
+///     }
+/// }
+/// ```
+///
+/// ## Advanced Configuration
+///
+/// ```swift
+/// var config = StatefulAgUiAgentConfig(baseURL: agentURL)
+/// config.systemPrompt = "You are a helpful AI assistant."
+/// config.maxHistoryLength = 50
+/// config.timeout = .seconds(60)
+///
+/// let agent = StatefulAgUiAgent(configuration: config)
+///
+/// // Multi-turn conversation
+/// _ = try await agent.chat(message: "What's the weather?")
+/// _ = try await agent.chat(message: "And tomorrow?") // Maintains context
+/// ```
+///
+/// ## Thread Management
+///
+/// Each conversation can have its own thread with independent history:
+///
+/// ```swift
+/// // Conversation 1
+/// let stream1 = try await agent.chat(message: "Hello", threadId: "user-123")
+///
+/// // Conversation 2 (separate history)
+/// let stream2 = try await agent.chat(message: "Hi", threadId: "user-456")
+/// ```
+///
+/// ## Features
+///
+/// - **Automatic History**: User and assistant messages are tracked automatically
+/// - **System Prompts**: Configurable system message for agent behavior
+/// - **History Trimming**: Keeps conversations within token limits
+/// - **State Management**: Tracks and updates agent state from events
+/// - **Thread Safety**: Actor-based concurrency for safe multi-threaded use
+///
+/// - SeeAlso: ``StatefulAgUiAgentConfig``, ``ConversationHistoryManager``
 public final class StatefulAgUiAgent: Sendable {
     /// The underlying HTTP agent for communication.
     private let httpAgent: HttpAgent
@@ -61,7 +110,7 @@ public final class StatefulAgUiAgent: Sendable {
         let agent = HttpAgent(configuration: HttpAgentConfiguration(
             baseURL: configuration.baseURL,
             timeout: configuration.timeout,
-            headers: configuration.headers,
+            headers: configuration.buildHeaders(),
             debug: configuration.debug
         ))
         self.httpAgent = agent
@@ -308,7 +357,6 @@ public final class StatefulAgUiAgent: Sendable {
             let task = Task {
                 var currentAssistantMessage: AssistantMessage?
                 let patchApplicator = PatchApplicator()
-                let messageDecoder = MessageDecoder()
 
                 do {
                     for try await event in stream {
@@ -425,15 +473,9 @@ public final class StatefulAgUiAgent: Sendable {
 
                         case let msgSnapshot as MessagesSnapshotEvent:
                             // Replace the thread history with the authoritative snapshot.
-                            if let rawArray = try? JSONSerialization.jsonObject(with: msgSnapshot.messages) as? [[String: Any]] {
-                                let msgs: [any Message] = rawArray.compactMap { dict in
-                                    guard let data = try? JSONSerialization.data(withJSONObject: dict) else { return nil }
-                                    return try? messageDecoder.decode(data)
-                                }
-                                await self.historyManager.clear(threadId: threadId)
-                                for msg in msgs {
-                                    await self.historyManager.append(message: msg, to: threadId)
-                                }
+                            await self.historyManager.clear(threadId: threadId)
+                            for msg in msgSnapshot.messages {
+                                await self.historyManager.append(message: msg, to: threadId)
                             }
 
                         default:

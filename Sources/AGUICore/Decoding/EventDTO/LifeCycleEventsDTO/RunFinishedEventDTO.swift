@@ -48,21 +48,42 @@ struct RunFinishedEventDTO {
             )
         }
 
-        // Decode outcome; unknown or missing values fall back to .completed for
-        // forward-compatibility with future protocol versions.
+        // Decode the AG-UI 1.0 outcome discriminated union: { "type": "success" | "cancelled" |
+        // "interrupt", "interrupts"?: [...] }. Missing or unrecognised values fall back to
+        // .success for forward compatibility with legacy producers and future protocol versions.
         let outcome: RunFinishedOutcome
-        if let raw = jsonObject["outcome"] as? String,
-           let parsed = RunFinishedOutcome(rawValue: raw) {
-            outcome = parsed
+        if let outcomeObject = jsonObject["outcome"] as? [String: Any],
+           let typeRaw = outcomeObject["type"] as? String {
+            switch typeRaw {
+            case "success":
+                outcome = .success
+            case "cancelled":
+                outcome = .cancelled
+            case "interrupt":
+                let interruptDicts = (outcomeObject["interrupts"] as? [[String: Any]]) ?? []
+                let interrupts = interruptDicts.compactMap { try? Interrupt.decode(from: $0) }
+                outcome = .interrupt(interrupts)
+            default:
+                outcome = .success
+            }
         } else {
-            outcome = .completed
+            outcome = .success
         }
 
         let timestamp = try EventDecodingHelpers.extractTimestamp(from: jsonObject)
 
         var resultData: Data?
         if let resultValue = jsonObject["result"], !(resultValue is NSNull) {
-            resultData = try? JSONSerialization.data(withJSONObject: resultValue)
+            if resultValue is [Any] || resultValue is [String: Any] {
+                // Collections are valid top-level JSON objects for JSONSerialization.
+                resultData = try? JSONSerialization.data(withJSONObject: resultValue, options: [])
+            } else {
+                // Scalar result (number, string, bool) — JSONSerialization.data(withJSONObject:)
+                // raises an NSException (not a Swift error) for non-collection top-level values,
+                // so try? does not protect against the crash. Use JSONPrimitiveWrapper + JSONEncoder
+                // instead, matching how StateSnapshotEventDTO handles scalar state values.
+                resultData = try? JSONEncoder().encode(JSONPrimitiveWrapper(value: resultValue))
+            }
         }
 
         return RunFinishedEventDTO(threadId: threadId, runId: runId, outcome: outcome, result: resultData, timestamp: timestamp)

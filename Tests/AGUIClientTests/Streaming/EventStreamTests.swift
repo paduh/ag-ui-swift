@@ -154,7 +154,11 @@ final class EventStreamTests: XCTestCase {
         XCTAssertTrue(events[1] is RunFinishedEvent)
     }
 
-    func testStreamHandlesUnknownEventType() async throws {
+    func testStrictDecoderThrowsForUnknownEventType() async throws {
+        // In explicitly configured strict mode, an unrecognised event type causes the decoder to
+        // throw EventDecodingError.unknownEventType. The TypeScript reference implementation
+        // calls eventSubject.error(err) for all decode failures — the stream terminates.
+        // EventStream must propagate, not swallow, the error.
         let sseData = """
         data: {"type":"RUN_STARTED","threadId":"t1","runId":"r1"}
 
@@ -165,7 +169,46 @@ final class EventStreamTests: XCTestCase {
 
         """
         let bytes = MockAsyncBytes(data: Data(sseData.utf8))
-        let decoder = AGUIEventDecoder()
+        var config = AGUIEventDecoder.Configuration()
+        config.unknownEventStrategy = .throwError
+        let decoder = AGUIEventDecoder(config: config)
+
+        let stream = EventStream(bytes: bytes, decoder: decoder)
+
+        var eventsBeforeThrow: [any AGUIEvent] = []
+        do {
+            for try await event in stream {
+                eventsBeforeThrow.append(event)
+            }
+            XCTFail("Expected stream to throw EventDecodingError.unknownEventType")
+        } catch let error as EventDecodingError {
+            guard case .unknownEventType(let typeString) = error else {
+                XCTFail("Expected .unknownEventType, got \(error)")
+                return
+            }
+            XCTAssertEqual(typeString, "UNKNOWN_EVENT_TYPE")
+            // The first event was yielded before the error occurred.
+            XCTAssertEqual(eventsBeforeThrow.count, 1)
+            XCTAssertTrue(eventsBeforeThrow[0] is RunStartedEvent)
+        }
+    }
+
+    func test_tolerantDecoder_returnsUnknownEventForUnrecognisedType() async throws {
+        // With .returnUnknown strategy, unknown event types are wrapped in UnknownEvent
+        // and forwarded instead of being silently dropped.
+        let sseData = """
+        data: {"type":"RUN_STARTED","threadId":"t1","runId":"r1"}
+
+        data: {"type":"UNKNOWN_EVENT_TYPE","data":"something"}
+
+        data: {"type":"RUN_FINISHED","threadId":"t1","runId":"r1"}
+
+
+        """
+        let bytes = MockAsyncBytes(data: Data(sseData.utf8))
+        var config = AGUIEventDecoder.Configuration()
+        config.unknownEventStrategy = .returnUnknown
+        let decoder = AGUIEventDecoder(config: config)
 
         let stream = EventStream(bytes: bytes, decoder: decoder)
 
@@ -174,19 +217,13 @@ final class EventStreamTests: XCTestCase {
             events.append(event)
         }
 
-        // Should include unknown events as UnknownEvent
-        XCTAssertGreaterThanOrEqual(events.count, 2, "Should have at least known events")
-        if events.count >= 1 {
-            XCTAssertTrue(events[0] is RunStartedEvent)
-        }
-        // Unknown event might be included as UnknownEvent or skipped
-        if events.count == 3 {
-            XCTAssertTrue(events[1] is UnknownEvent)
-            XCTAssertTrue(events[2] is RunFinishedEvent)
-        } else if events.count == 2 {
-            // Unknown event was skipped
-            XCTAssertTrue(events[1] is RunFinishedEvent)
-        }
+        // Tolerant decoder yields all 3 events; the middle one is UnknownEvent.
+        XCTAssertEqual(events.count, 3)
+        XCTAssertTrue(events[0] is RunStartedEvent)
+        XCTAssertTrue(events[1] is UnknownEvent)
+        let unknown = events[1] as! UnknownEvent
+        XCTAssertEqual(unknown.typeRaw, "UNKNOWN_EVENT_TYPE")
+        XCTAssertTrue(events[2] is RunFinishedEvent)
     }
 
     // MARK: - Lifecycle Tests
@@ -339,10 +376,12 @@ final class EventStreamTests: XCTestCase {
     }
 
     func testStreamHandlesToolCallScenario() async throws {
+        // Wire format uses "toolCallName" (not "toolName") per ToolCallStartEvent.CodingKeys.
+        // All 5 events must decode successfully and be yielded in order.
         let sseData = """
         data: {"type":"RUN_STARTED","threadId":"t1","runId":"r1"}
 
-        data: {"type":"TOOL_CALL_START","toolCallId":"tc1","toolName":"weather"}
+        data: {"type":"TOOL_CALL_START","toolCallId":"tc1","toolCallName":"weather"}
 
         data: {"type":"TOOL_CALL_ARGS","toolCallId":"tc1","delta":"{\\\"location\\\":\\\"NYC\\\"}"}
 
@@ -358,20 +397,19 @@ final class EventStreamTests: XCTestCase {
         let stream = EventStream(bytes: bytes, decoder: decoder)
 
         var events: [any AGUIEvent] = []
-        var eventCount = 0
         for try await event in stream {
             events.append(event)
-            eventCount += 1
-            if eventCount >= 10 {
-                // Safety limit to prevent infinite loop
-                break
-            }
         }
 
-        XCTAssertGreaterThanOrEqual(events.count, 3, "Should have at least some events")
-        if events.count >= 1 {
-            XCTAssertTrue(events[0] is RunStartedEvent)
-        }
+        XCTAssertEqual(events.count, 5)
+        XCTAssertTrue(events[0] is RunStartedEvent)
+        XCTAssertTrue(events[1] is ToolCallStartEvent)
+        let toolStart = events[1] as! ToolCallStartEvent
+        XCTAssertEqual(toolStart.toolCallId, "tc1")
+        XCTAssertEqual(toolStart.toolCallName, "weather")
+        XCTAssertTrue(events[2] is ToolCallArgsEvent)
+        XCTAssertTrue(events[3] is ToolCallEndEvent)
+        XCTAssertTrue(events[4] is RunFinishedEvent)
     }
 
     // MARK: - Edge Cases
@@ -424,5 +462,22 @@ final class EventStreamTests: XCTestCase {
 
         // Empty data fields should be skipped
         XCTAssertEqual(events.count, 2)
+    }
+}
+
+extension EventStreamTests {
+    func testByteByByteCRLFWithMultilineDataAndSplitFinalSeparator() async throws {
+        let wire = "id: first\r\ndata: {\"type\":\"RUN_STARTED\",\r\ndata: \"threadId\":\"t1\",\"runId\":\"r1\"}\r\n\r\n"
+            + "id: last\r\ndata: {\"type\":\"RUN_FINISHED\",\"threadId\":\"t1\",\"runId\":\"r1\"}\r\n\r\n"
+        // EventStream passes every ASCII byte separately to the parser, including
+        // the final LF after the last event has already been dispatched on CR.
+        let stream = EventStream(bytes: MockAsyncBytes(data: Data(wire.utf8), chunkSize: 1), decoder: AGUIEventDecoder())
+        var events: [any AGUIEvent] = []
+        for try await event in stream { events.append(event) }
+        XCTAssertEqual(events.count, 2)
+        XCTAssertTrue(events.first is RunStartedEvent)
+        XCTAssertTrue(events.last is RunFinishedEvent)
+        let lastID = await stream.lastEventId
+        XCTAssertEqual(lastID, "last")
     }
 }

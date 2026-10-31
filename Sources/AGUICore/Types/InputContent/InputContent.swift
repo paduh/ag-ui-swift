@@ -28,6 +28,28 @@ import Foundation
 /// - `"video"`: Deserializes to ``VideoInputContent``
 /// - `"document"`: Deserializes to ``DocumentInputContent``
 ///
+/// ## Usage in UserMessage
+///
+/// User messages can contain:
+/// 1. **Simple text**: Single string content field
+/// 2. **Multimodal**: Array of InputContent mixing text and binary data
+///
+/// ```swift
+/// // Multimodal message with text and image
+/// let contents: [any InputContent] = [
+///     TextInputContent(text: "What's in this image?"),
+///     BinaryInputContent(
+///         mimeType: "image/png",
+///         url: "https://example.com/photo.png"
+///     )
+/// ]
+/// ```
+///
+/// ## Type Discrimination
+///
+/// The `type` property identifies the concrete content type during deserialization,
+/// enabling the protocol to route JSON to the appropriate Swift type via DTOs.
+///
 /// ## Serialization
 ///
 /// InputContent types use the DTO pattern for serialization:
@@ -45,4 +67,25 @@ public protocol InputContent: Sendable, Hashable {
     /// The type field enables polymorphic deserialization, allowing mixed
     /// content arrays to contain different concrete types.
     var type: String { get }
+}
+
+// MARK: - Type-erased equality and hashing for existential arrays
+
+extension InputContent {
+    /// Returns `true` if `other` is the same concrete type and compares equal.
+    ///
+    /// Because `[any InputContent]` cannot use `==` directly on the existential,
+    /// this helper downcasts to `Self` before delegating to the type's `Equatable`
+    /// conformance. Used by ``UserMessage`` to compare `contentParts`.
+    func isEqual(to other: any InputContent) -> Bool {
+        guard let other = other as? Self else { return false }
+        return self == other
+    }
+
+    /// A type-erased wrapper suitable for use with `Hasher`.
+    ///
+    /// In a protocol extension `self` is the concrete conforming type, so
+    /// `AnyHashable(self)` wraps the underlying value without losing type
+    /// information. Used by ``UserMessage`` to hash `contentParts`.
+    var anyHashable: AnyHashable { AnyHashable(self) }
 }

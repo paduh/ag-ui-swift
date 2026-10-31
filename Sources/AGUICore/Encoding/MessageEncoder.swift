@@ -8,6 +8,50 @@ import Foundation
 /// the message's role. It uses a registry-based architecture matching the pattern
 /// used by `MessageDecoder`.
 ///
+/// ## Basic Usage
+///
+/// ```swift
+/// // Create an encoder with default registry
+/// let encoder = MessageEncoder()
+///
+/// // Encode a message to JSON data
+/// let message = UserMessage(id: "msg-1", content: "Hello!")
+/// let jsonData = try encoder.encode(message)
+///
+/// // Convert to string for viewing
+/// let jsonString = String(data: jsonData, encoding: .utf8)
+/// ```
+///
+/// ## Custom Registries
+///
+/// You can provide a custom registry to control how message types are encoded:
+///
+/// ```swift
+/// let customRegistry: [Role: MessageEncoder.EncodeHandler] = [
+///     .user: { message, encoder in
+///         let userMessage = message as! UserMessage
+///         // Custom encoding logic
+///         return customEncoding(userMessage)
+///     }
+/// ]
+///
+/// let encoder = MessageEncoder(registry: customRegistry)
+/// ```
+///
+/// ## Error Handling
+///
+/// The encoder throws `MessageEncodingError` for various failure scenarios:
+///
+/// - `.unsupportedRole(Role)`: The message role has no registered encoder
+/// - `.invalidMessageType(Role, String)`: Message type doesn't match its role
+/// - `.encodingFailed(String)`: Field-level encoding errors
+///
+/// ## Thread Safety
+///
+/// `MessageEncoder` is thread-safe and can be used concurrently. The encoder itself
+/// is immutable after initialization.
+///
+/// - SeeAlso: `Message`, `Role`, `MessageDecoder`
 public struct MessageEncoder: Sendable {
 
     /// Handler function type for encoding a specific message type.
@@ -183,6 +227,9 @@ private func encodeDeveloperMessage(_ message: any Message, encoder: JSONEncoder
     if let name = devMsg.name {
         dict["name"] = name
     }
+    if let encryptedValue = devMsg.encryptedValue {
+        dict["encryptedValue"] = encryptedValue
+    }
     return try JSONSerialization.data(withJSONObject: dict)
 }
 
@@ -194,13 +241,14 @@ private func encodeSystemMessage(_ message: any Message, encoder: JSONEncoder) t
 
     var dict: [String: Any] = [
         "id": sysMsg.id,
-        "role": sysMsg.role.rawValue
+        "role": sysMsg.role.rawValue,
+        "content": sysMsg.content
     ]
-    if let content = sysMsg.content {
-        dict["content"] = content
-    }
     if let name = sysMsg.name {
         dict["name"] = name
+    }
+    if let encryptedValue = sysMsg.encryptedValue {
+        dict["encryptedValue"] = encryptedValue
     }
     return try JSONSerialization.data(withJSONObject: dict)
 }
@@ -282,6 +330,9 @@ private func encodeUserMessage(_ message: any Message, encoder: JSONEncoder) thr
     if let name = userMsg.name {
         dict["name"] = name
     }
+    if let encryptedValue = userMsg.encryptedValue {
+        dict["encryptedValue"] = encryptedValue
+    }
     return try JSONSerialization.data(withJSONObject: dict)
 }
 
@@ -306,6 +357,9 @@ private func encodeAssistantMessage(_ message: any Message, encoder: JSONEncoder
         let toolCallsArray = try JSONSerialization.jsonObject(with: toolCallsData)
         dict["toolCalls"] = toolCallsArray
     }
+    if let encryptedValue = assistantMsg.encryptedValue {
+        dict["encryptedValue"] = encryptedValue
+    }
     return try JSONSerialization.data(withJSONObject: dict)
 }
 
@@ -318,16 +372,17 @@ private func encodeToolMessage(_ message: any Message, encoder: JSONEncoder) thr
     var dict: [String: Any] = [
         "id": toolMsg.id,
         "role": toolMsg.role.rawValue,
-        "toolCallId": toolMsg.toolCallId
+        "toolCallId": toolMsg.toolCallId,
+        "content": toolMsg.content
     ]
-    if let content = toolMsg.content {
-        dict["content"] = content
-    }
     if let name = toolMsg.name {
         dict["name"] = name
     }
     if let error = toolMsg.error {
         dict["error"] = error
+    }
+    if let encryptedValue = toolMsg.encryptedValue {
+        dict["encryptedValue"] = encryptedValue
     }
     return try JSONSerialization.data(withJSONObject: dict)
 }
